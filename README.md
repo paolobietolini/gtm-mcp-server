@@ -34,4 +34,4 @@ Paolo Bietolini
 
 ## License
 
-BSD-3
+[BSD-3](https://github.com/paolobietolini/gtm-mcp-server/LICENSE)
