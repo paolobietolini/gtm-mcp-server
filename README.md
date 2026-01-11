@@ -24,7 +24,9 @@ As a remote MCP server, this tool operates over HTTP/SSE (Server-Sent Events), a
 
 ## Status
 
-This project was started in January 2026. [Watch](https://github.com/paolobietolini/gtm-mcp-server) to follow updates, or feel free to open [Pull Requests](https://github.com/paolobietolini/gtm-mcp-server/pulls) to contribute.
+This project was started in January 2026.
+
+[Watch](https://github.com/paolobietolini/gtm-mcp-server) to follow updates, or feel free to open [Pull Requests](https://github.com/paolobietolini/gtm-mcp-server/pulls) to contribute.
 
 ## Author
 
@@ -34,4 +36,4 @@ Paolo Bietolini
 
 ## License
 
-[BSD-3](https://github.com/paolobietolini/gtm-mcp-server/LICENSE)
+[BSD-3](https://github.com/paolobietolini/gtm-mcp-server/blob/main/LICENSE)
