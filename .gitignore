@@ -1,4 +1,6 @@
+*.example
 go-sdk-main/
 *.md
 .env
 !README.md
+
