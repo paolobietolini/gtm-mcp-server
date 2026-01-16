@@ -1,0 +1,28 @@
+# GTM MCP Server - Caddy Configuration
+# Replace mcp.gtmeditor.com with your actual domain
+
+mcp.gtmeditor.com {
+    # Reverse proxy to the MCP server
+    reverse_proxy gtm-mcp:8080
+
+    # Enable compression
+    encode gzip
+
+    # Logging
+    log {
+        output file /data/access.log {
+            roll_size 10mb
+            roll_keep 5
+        }
+    }
+
+    # Security headers
+    header {
+        # Prevent clickjacking
+        X-Frame-Options "DENY"
+        # XSS protection
+        X-Content-Type-Options "nosniff"
+        # Remove server header
+        -Server
+    }
+}
