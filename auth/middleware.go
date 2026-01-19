@@ -2,6 +2,8 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"strings"
@@ -109,10 +111,20 @@ func GetGoogleToken(ctx context.Context) *oauth2.Token {
 	return nil
 }
 
-// unauthorized sends a 401 response with WWW-Authenticate header.
+// unauthorized sends a 401 response with WWW-Authenticate header per RFC 9728
 func unauthorized(w http.ResponseWriter, baseURL, message string) {
-	w.Header().Set("WWW-Authenticate", `Bearer realm="`+baseURL+`"`)
+	// Costruisci l'header WWW-Authenticate con resource_metadata
+	resourceMetadataURL := baseURL + "/.well-known/oauth-protected-resource"
+
+	authHeader := fmt.Sprintf(`Bearer resource_metadata="%s"`, resourceMetadataURL)
+
+	w.Header().Set("WWW-Authenticate", authHeader)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusUnauthorized)
-	w.Write([]byte(`{"error":"unauthorized","error_description":"` + message + `"}`))
+
+	resp := map[string]string{
+		"error":             "unauthorized",
+		"error_description": message,
+	}
+	json.NewEncoder(w).Encode(resp)
 }

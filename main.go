@@ -76,7 +76,12 @@ func main() {
 		})
 	})
 
-	// OAuth metadata endpoint (no auth required)
+	// OAuth metadata endpoints (always served, no auth required)
+	// RFC 9728: Protected Resource Metadata - tells clients where to find the authorization server
+	mux.HandleFunc("GET /.well-known/oauth-protected-resource",
+		auth.ProtectedResourceMetadataHandler(cfg.BaseURL, cfg.BaseURL))
+
+	// RFC 8414: Authorization Server Metadata - tells clients about OAuth endpoints
 	mux.HandleFunc("GET /.well-known/oauth-authorization-server", auth.MetadataHandler(cfg.BaseURL))
 
 	// Check if OAuth is configured
@@ -101,6 +106,7 @@ func main() {
 		mux.HandleFunc("GET /authorize", authServer.AuthorizeHandler)
 		mux.HandleFunc("GET /oauth/callback", authServer.CallbackHandler)
 		mux.HandleFunc("POST /token", authServer.TokenHandler)
+		mux.HandleFunc("POST /register", authServer.RegistrationHandler)
 
 		// MCP endpoint with REQUIRED auth middleware
 		// Returns 401 if no valid Bearer token - triggers Claude's OAuth flow
@@ -111,6 +117,9 @@ func main() {
 			"authorize_endpoint", cfg.BaseURL+"/authorize",
 			"token_endpoint", cfg.BaseURL+"/token",
 			"callback_endpoint", cfg.BaseURL+"/oauth/callback",
+			"register_endpoint", cfg.BaseURL+"/register",
+			"protected_resource_metadata", cfg.BaseURL+"/.well-known/oauth-protected-resource",
+			"authorization_server_metadata", cfg.BaseURL+"/.well-known/oauth-authorization-server",
 		)
 	}
 

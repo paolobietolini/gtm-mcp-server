@@ -40,6 +40,17 @@ type AuthState struct {
 	CreatedAt    time.Time
 }
 
+// ClientInfo holds information about a registered OAuth client (RFC 7591).
+type ClientInfo struct {
+	ClientID                string
+	RedirectURIs            []string
+	ClientName              string
+	GrantTypes              []string
+	ResponseTypes           []string
+	TokenEndpointAuthMethod string
+	CreatedAt               time.Time
+}
+
 // TokenStore defines the interface for token storage.
 type TokenStore interface {
 	// Token operations
@@ -53,6 +64,11 @@ type TokenStore interface {
 	StoreState(state *AuthState) error
 	GetState(stateValue string) (*AuthState, error)
 	DeleteState(stateValue string) error
+
+	// Client registration operations (RFC 7591)
+	StoreClient(client *ClientInfo) error
+	GetClient(clientID string) (*ClientInfo, error)
+	DeleteClient(clientID string) error
 }
 
 // MemoryTokenStore is an in-memory implementation of TokenStore.
@@ -60,6 +76,7 @@ type MemoryTokenStore struct {
 	mu     sync.RWMutex
 	tokens map[string]*TokenInfo  // keyed by access token
 	states map[string]*AuthState  // keyed by state value
+	clients map[string]*ClientInfo // keyed by client_id
 
 	// Secondary index for refresh token lookup
 	refreshIndex map[string]string // refresh token -> access token
@@ -70,6 +87,7 @@ func NewMemoryTokenStore() *MemoryTokenStore {
 	store := &MemoryTokenStore{
 		tokens:       make(map[string]*TokenInfo),
 		states:       make(map[string]*AuthState),
+		clients:      make(map[string]*ClientInfo),
 		refreshIndex: make(map[string]string),
 	}
 
@@ -179,6 +197,37 @@ func (s *MemoryTokenStore) DeleteState(stateValue string) error {
 	defer s.mu.Unlock()
 
 	delete(s.states, stateValue)
+	return nil
+}
+
+// StoreClient stores a registered OAuth client.
+func (s *MemoryTokenStore) StoreClient(client *ClientInfo) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.clients[client.ClientID] = client
+	return nil
+}
+
+// GetClient retrieves a registered OAuth client by client_id.
+func (s *MemoryTokenStore) GetClient(clientID string) (*ClientInfo, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	client, ok := s.clients[clientID]
+	if !ok {
+		return nil, ErrTokenNotFound
+	}
+
+	return client, nil
+}
+
+// DeleteClient removes a registered OAuth client.
+func (s *MemoryTokenStore) DeleteClient(clientID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	delete(s.clients, clientID)
 	return nil
 }
 

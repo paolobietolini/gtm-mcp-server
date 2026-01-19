@@ -58,8 +58,31 @@ func (s *Server) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate redirect URI (must be Claude's callback)
-	if !isValidRedirectURI(redirectURI) {
+	// Validate redirect URI
+	// If client is registered via DCR, validate against their registered URIs
+	// Otherwise fall back to known safe patterns
+	if clientID != "" {
+		if client, err := s.store.GetClient(clientID); err == nil {
+			// Client is registered, validate against registered redirect_uris
+			validRedirect := false
+			for _, uri := range client.RedirectURIs {
+				if uri == redirectURI {
+					validRedirect = true
+					break
+				}
+			}
+			if !validRedirect {
+				s.errorResponse(w, "invalid_request", "redirect_uri does not match registered URIs")
+				return
+			}
+		} else {
+			// Client not registered via DCR, fall back to default validation
+			if !isValidRedirectURI(redirectURI) {
+				s.errorResponse(w, "invalid_request", "Invalid redirect_uri")
+				return
+			}
+		}
+	} else if !isValidRedirectURI(redirectURI) {
 		s.errorResponse(w, "invalid_request", "Invalid redirect_uri")
 		return
 	}

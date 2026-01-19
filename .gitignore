@@ -2,5 +2,16 @@
 go-sdk-main/
 *.md
 .env
+.env.deploy
 !README.md
+
+# Binary
+gtm-mcp-server
+
+# Deployment
+deploy.sh
+
+# Swap files
+*.swp
+*.swo
 
