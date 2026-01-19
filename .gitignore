@@ -10,6 +10,8 @@ gtm-mcp-server
 
 # Deployment
 deploy.sh
+Caddyfile
+docker-compose.yml
 
 # Swap files
 *.swp
