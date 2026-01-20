@@ -27,8 +27,8 @@ type Config struct {
 // Load reads configuration from environment variables.
 func Load() (*Config, error) {
 	cfg := &Config{
-		Port:              getEnvInt("PORT", 8080),
-		BaseURL:           getEnv("BASE_URL", "http://localhost:8080"),
+		Port:              getEnvInt("PORT", 8081),
+		BaseURL:           getEnv("BASE_URL", "http://localhost:8081"),
 		GoogleClientID:    getEnv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret: getEnv("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURI: getEnv("GOOGLE_REDIRECT_URI", ""),

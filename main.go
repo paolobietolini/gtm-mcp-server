@@ -13,6 +13,7 @@ import (
 
 	"gtm-mcp-server/auth"
 	"gtm-mcp-server/config"
+	"gtm-mcp-server/gtm"
 	"gtm-mcp-server/middleware"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -166,60 +167,50 @@ func main() {
 
 // registerTools adds MCP tools to the server.
 func registerTools(server *mcp.Server) {
-	// Placeholder ping tool for testing connectivity
+	registerUtilityTools(server)
+	gtm.RegisterTools(server)
+}
+
+// registerUtilityTools adds ping and auth_status tools.
+func registerUtilityTools(server *mcp.Server) {
+	// Ping tool for testing connectivity
 	type PingInput struct {
 		Message string `json:"message,omitempty" jsonschema:"Optional message to echo back"`
 	}
-
 	type PingOutput struct {
 		Reply     string `json:"reply"`
 		Timestamp string `json:"timestamp"`
 	}
 
-	pingHandler := func(ctx context.Context, req *mcp.CallToolRequest, input PingInput) (*mcp.CallToolResult, PingOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "ping",
+		Description: "Test connectivity to the GTM MCP server",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input PingInput) (*mcp.CallToolResult, PingOutput, error) {
 		reply := "pong"
 		if input.Message != "" {
 			reply = fmt.Sprintf("pong: %s", input.Message)
 		}
+		return nil, PingOutput{Reply: reply, Timestamp: time.Now().UTC().Format(time.RFC3339)}, nil
+	})
 
-		output := PingOutput{
-			Reply:     reply,
-			Timestamp: time.Now().UTC().Format(time.RFC3339),
-		}
-
-		return nil, output, nil
-	}
-
-	mcp.AddTool(server, &mcp.Tool{
-		Name:        "ping",
-		Description: "Test connectivity to the GTM MCP server",
-	}, pingHandler)
-
-	// Auth status tool - tells user if they're authenticated
+	// Auth status tool
 	type AuthStatusInput struct{}
 	type AuthStatusOutput struct {
 		Authenticated bool   `json:"authenticated"`
 		Message       string `json:"message"`
 	}
 
-	authStatusHandler := func(ctx context.Context, req *mcp.CallToolRequest, input AuthStatusInput) (*mcp.CallToolResult, AuthStatusOutput, error) {
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "auth_status",
+		Description: "Check authentication status with Google Tag Manager",
+	}, func(ctx context.Context, req *mcp.CallToolRequest, input AuthStatusInput) (*mcp.CallToolResult, AuthStatusOutput, error) {
 		tokenInfo := auth.GetTokenInfo(ctx)
-
-		output := AuthStatusOutput{
-			Authenticated: tokenInfo != nil,
-		}
-
+		output := AuthStatusOutput{Authenticated: tokenInfo != nil}
 		if tokenInfo != nil {
 			output.Message = "You are authenticated and can access GTM data"
 		} else {
 			output.Message = "Not authenticated. GTM tools will require authentication."
 		}
-
 		return nil, output, nil
-	}
-
-	mcp.AddTool(server, &mcp.Tool{
-		Name:        "auth_status",
-		Description: "Check authentication status with Google Tag Manager",
-	}, authStatusHandler)
+	})
 }
