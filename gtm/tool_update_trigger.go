@@ -19,7 +19,7 @@ type UpdateTriggerInput struct {
 	FilterJSON            string `json:"filterJson,omitempty" jsonschema:"description:Filter conditions as JSON array for pageview triggers (optional)"`
 	AutoEventFilterJSON   string `json:"autoEventFilterJson,omitempty" jsonschema:"description:Auto-event filter as JSON array for click/form triggers (optional)"`
 	CustomEventFilterJSON string `json:"customEventFilterJson,omitempty" jsonschema:"description:Custom event filter as JSON array for customEvent triggers (optional)"`
-	ParameterJSON         string `json:"parameterJson,omitempty" jsonschema:"description:Trigger parameters as JSON array. For triggerGroup type use: [{type: triggerReference, key: trigger, value: triggerId}] for each member trigger"`
+	ParameterJSON         string `json:"parameterJson,omitempty" jsonschema:"description:Trigger parameters as JSON array. For triggerGroup type use: [{key: triggerIds, type: list, list: [{type: triggerReference, value: triggerId}, ...]}]"`
 	Notes                 string `json:"notes,omitempty" jsonschema:"description:Trigger notes (optional)"`
 }
 
@@ -110,6 +110,6 @@ func registerUpdateTrigger(server *mcp.Server) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "update_trigger",
-		Description: "Update an existing trigger. For trigger groups, use parameterJson to set member triggers with format: [{\"type\": \"triggerReference\", \"key\": \"trigger\", \"value\": \"<triggerId>\"}]",
+		Description: "Update an existing trigger. For trigger groups, use parameterJson with format: [{\"key\": \"triggerIds\", \"type\": \"list\", \"list\": [{\"type\": \"triggerReference\", \"value\": \"<triggerId>\"}, ...]}]",
 	}, handler)
 }
