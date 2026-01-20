@@ -100,6 +100,8 @@ https://your-domain.com/oauth/callback
 | `search_tags` | Search tags by name or type |
 | `list_triggers` | List all triggers in a workspace |
 | `list_variables` | List all variables in a workspace |
+| `list_folders` | List all folders in a workspace |
+| `get_folder_entities` | Get tags, triggers, and variables in a folder |
 
 ### Write Operations
 
@@ -108,7 +110,9 @@ https://your-domain.com/oauth/callback
 | `create_tag` | Create a new tag in a workspace |
 | `update_tag` | Update an existing tag (handles fingerprint automatically) |
 | `delete_tag` | Delete a tag (requires `confirm: true`) |
-| `create_trigger` | Create a new trigger |
+| `create_trigger` | Create a new trigger (supports trigger groups, custom events, etc.) |
+| `update_trigger` | Update an existing trigger (handles fingerprint automatically) |
+| `delete_trigger` | Delete a trigger (requires `confirm: true`) |
 | `create_variable` | Create a new variable |
 
 ### Version Operations
