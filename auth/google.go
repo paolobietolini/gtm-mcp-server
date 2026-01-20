@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log/slog"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -101,12 +102,17 @@ func (s *AutoRefreshTokenSource) Token() (*oauth2.Token, error) {
 		return s.current, nil
 	}
 
+	slog.Info("Google token expired, refreshing...")
+
 	// Token expired or about to expire, refresh it
 	tokenSource := s.config.TokenSource(context.Background(), s.current)
 	newToken, err := tokenSource.Token()
 	if err != nil {
+		slog.Error("Failed to refresh Google token", "error", err)
 		return nil, fmt.Errorf("failed to refresh Google token: %w", err)
 	}
+
+	slog.Info("Google token refreshed successfully", "new_expiry", newToken.Expiry)
 
 	// Update our current token
 	s.current = newToken
