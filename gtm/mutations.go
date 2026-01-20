@@ -82,11 +82,12 @@ func (c *Client) CreateTrigger(ctx context.Context, accountID, containerID, work
 	parent := BuildWorkspacePath(accountID, containerID, workspaceID)
 
 	trigger := &tagmanager.Trigger{
-		Name:            input.Name,
-		Type:            input.Type,
-		Filter:          toAPIConditions(input.Filter),
-		AutoEventFilter: toAPIConditions(input.AutoEventFilter),
-		Notes:           input.Notes,
+		Name:              input.Name,
+		Type:              input.Type,
+		Filter:            toAPIConditions(input.Filter),
+		AutoEventFilter:   toAPIConditions(input.AutoEventFilter),
+		CustomEventFilter: toAPIConditions(input.CustomEventFilter),
+		Notes:             input.Notes,
 	}
 
 	if input.EventName != nil {

@@ -24,12 +24,13 @@ type TagInput struct {
 
 // TriggerInput represents input for creating a trigger.
 type TriggerInput struct {
-	Name            string      `json:"name"`
-	Type            string      `json:"type"`
-	Filter          []Condition `json:"filter,omitempty"`
-	AutoEventFilter []Condition `json:"autoEventFilter,omitempty"`
-	EventName       *Parameter  `json:"eventName,omitempty"`
-	Notes           string      `json:"notes,omitempty"`
+	Name              string      `json:"name"`
+	Type              string      `json:"type"`
+	Filter            []Condition `json:"filter,omitempty"`
+	AutoEventFilter   []Condition `json:"autoEventFilter,omitempty"`
+	CustomEventFilter []Condition `json:"customEventFilter,omitempty"`
+	EventName         *Parameter  `json:"eventName,omitempty"`
+	Notes             string      `json:"notes,omitempty"`
 }
 
 // Condition represents a filter condition for triggers.

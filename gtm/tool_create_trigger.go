@@ -9,15 +9,16 @@ import (
 
 // CreateTriggerInput is the input for create_trigger tool.
 type CreateTriggerInput struct {
-	AccountID           string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID         string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID         string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	Name                string `json:"name" jsonschema:"description:Trigger name"`
-	Type                string `json:"type" jsonschema:"description:Trigger type (e.g. pageview, customEvent, linkClick, formSubmission, timer)"`
-	FilterJSON          string `json:"filterJson,omitempty" jsonschema:"description:Filter conditions as JSON array for pageview triggers (optional)"`
-	AutoEventFilterJSON string `json:"autoEventFilterJson,omitempty" jsonschema:"description:Auto-event filter as JSON array for click/form triggers (optional)"`
-	EventNameJSON       string `json:"eventNameJson,omitempty" jsonschema:"description:Event name as JSON object {type, value} for customEvent triggers (optional)"`
-	Notes               string `json:"notes,omitempty" jsonschema:"description:Trigger notes (optional)"`
+	AccountID             string `json:"accountId" jsonschema:"description:The GTM account ID"`
+	ContainerID           string `json:"containerId" jsonschema:"description:The GTM container ID"`
+	WorkspaceID           string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	Name                  string `json:"name" jsonschema:"description:Trigger name"`
+	Type                  string `json:"type" jsonschema:"description:Trigger type (e.g. pageview, customEvent, linkClick, formSubmission, timer)"`
+	FilterJSON            string `json:"filterJson,omitempty" jsonschema:"description:Filter conditions as JSON array for pageview triggers (optional)"`
+	AutoEventFilterJSON   string `json:"autoEventFilterJson,omitempty" jsonschema:"description:Auto-event filter as JSON array for click/form triggers (optional)"`
+	CustomEventFilterJSON string `json:"customEventFilterJson,omitempty" jsonschema:"description:Custom event filter as JSON array for customEvent triggers. REQUIRED for customEvent type. Must contain exactly one condition matching the event name."`
+	EventNameJSON         string `json:"eventNameJson,omitempty" jsonschema:"description:Event name as JSON object {type, value} for timer triggers (optional)"`
+	Notes                 string `json:"notes,omitempty" jsonschema:"description:Trigger notes (optional)"`
 }
 
 // CreateTriggerOutput is the output for create_trigger tool.
@@ -60,6 +61,14 @@ func registerCreateTrigger(server *mcp.Server) {
 			}
 		}
 
+		// Parse custom event filter JSON if provided (required for customEvent type)
+		var customEventFilter []Condition
+		if input.CustomEventFilterJSON != "" {
+			if err := json.Unmarshal([]byte(input.CustomEventFilterJSON), &customEventFilter); err != nil {
+				return nil, CreateTriggerOutput{}, err
+			}
+		}
+
 		// Parse event name JSON if provided
 		var eventName *Parameter
 		if input.EventNameJSON != "" {
@@ -70,12 +79,13 @@ func registerCreateTrigger(server *mcp.Server) {
 		}
 
 		triggerInput := &TriggerInput{
-			Name:            input.Name,
-			Type:            input.Type,
-			Filter:          filter,
-			AutoEventFilter: autoEventFilter,
-			EventName:       eventName,
-			Notes:           input.Notes,
+			Name:              input.Name,
+			Type:              input.Type,
+			Filter:            filter,
+			AutoEventFilter:   autoEventFilter,
+			CustomEventFilter: customEventFilter,
+			EventName:         eventName,
+			Notes:             input.Notes,
 		}
 
 		trigger, err := client.CreateTrigger(ctx, input.AccountID, input.ContainerID, input.WorkspaceID, triggerInput)
