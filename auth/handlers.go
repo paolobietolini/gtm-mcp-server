@@ -437,25 +437,25 @@ func (s *Server) errorResponse(w http.ResponseWriter, errCode, errDesc string) {
 	http.Error(w, fmt.Sprintf("%s: %s", errCode, errDesc), http.StatusBadRequest)
 }
 
+// validRedirectPrefixes contains known MCP client redirect URI prefixes.
+var validRedirectPrefixes = []string{
+	// Claude
+	"https://claude.ai/api/mcp/auth_callback",
+	"https://claude.com/api/mcp/auth_callback",
+	// ChatGPT / OpenAI
+	"https://chatgpt.com/connector_platform_oauth_redirect",
+	"https://platform.openai.com/apps-manage/oauth",
+	// For local development
+	"http://localhost",
+	"http://127.0.0.1",
+}
+
 // isValidRedirectURI checks if the redirect URI is from a known MCP client.
 func isValidRedirectURI(uri string) bool {
-	validURIs := []string{
-		// Claude
-		"https://claude.ai/api/mcp/auth_callback",
-		"https://claude.com/api/mcp/auth_callback",
-		// ChatGPT / OpenAI
-		"https://chatgpt.com/connector_platform_oauth_redirect",
-		"https://platform.openai.com/apps-manage/oauth",
-		// For local development
-		"http://localhost",
-		"http://127.0.0.1",
-	}
-
-	for _, valid := range validURIs {
+	for _, valid := range validRedirectPrefixes {
 		if strings.HasPrefix(uri, valid) {
 			return true
 		}
 	}
-
 	return false
 }

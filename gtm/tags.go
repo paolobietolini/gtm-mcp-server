@@ -55,10 +55,12 @@ func (c *Client) SearchTags(ctx context.Context, accountID, containerID, workspa
 	query = strings.ToLower(query)
 	tagType = strings.ToLower(tagType)
 
-	var results []Tag
+	results := make([]Tag, 0, len(tags))
 	for _, t := range tags {
-		nameMatch := query == "" || strings.Contains(strings.ToLower(t.Name), query)
-		typeMatch := tagType == "" || strings.ToLower(t.Type) == tagType
+		nameLower := strings.ToLower(t.Name)
+		typeLower := strings.ToLower(t.Type)
+		nameMatch := query == "" || strings.Contains(nameLower, query)
+		typeMatch := tagType == "" || typeLower == tagType
 		if nameMatch && typeMatch {
 			results = append(results, t)
 		}
