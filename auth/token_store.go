@@ -37,6 +37,7 @@ type AuthState struct {
 	CodeVerifier string
 	RedirectURI  string
 	ClientID     string
+	Resource     string // RFC 9728: resource parameter for audience binding
 	CreatedAt    time.Time
 }
 

@@ -39,13 +39,14 @@ func (s *Server) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse OAuth parameters from Claude
+	// Parse OAuth parameters from client (Claude or ChatGPT)
 	clientID := r.URL.Query().Get("client_id")
 	redirectURI := r.URL.Query().Get("redirect_uri")
 	responseType := r.URL.Query().Get("response_type")
 	state := r.URL.Query().Get("state")
 	codeChallenge := r.URL.Query().Get("code_challenge")
 	codeChallengeMethod := r.URL.Query().Get("code_challenge_method")
+	resource := r.URL.Query().Get("resource") // RFC 9728: resource indicator
 
 	// Validate required parameters
 	if responseType != "code" {
@@ -107,6 +108,7 @@ func (s *Server) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 		CodeVerifier: codeChallenge, // Store the challenge, we'll verify later
 		RedirectURI:  redirectURI,
 		ClientID:     clientID,
+		Resource:     resource, // Store resource for audience binding
 		CreatedAt:    time.Now(),
 	}
 
@@ -203,6 +205,7 @@ func (s *Server) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 		CodeVerifier: authState.CodeVerifier,
 		RedirectURI:  authState.RedirectURI,
 		ClientID:     authState.ClientID,
+		Resource:     authState.Resource, // Preserve resource for token endpoint
 		CreatedAt:    time.Now(),
 	}
 
@@ -434,11 +437,15 @@ func (s *Server) errorResponse(w http.ResponseWriter, errCode, errDesc string) {
 	http.Error(w, fmt.Sprintf("%s: %s", errCode, errDesc), http.StatusBadRequest)
 }
 
-// isValidRedirectURI checks if the redirect URI is Claude's callback.
+// isValidRedirectURI checks if the redirect URI is from a known MCP client.
 func isValidRedirectURI(uri string) bool {
 	validURIs := []string{
+		// Claude
 		"https://claude.ai/api/mcp/auth_callback",
 		"https://claude.com/api/mcp/auth_callback",
+		// ChatGPT / OpenAI
+		"https://chatgpt.com/connector_platform_oauth_redirect",
+		"https://platform.openai.com/apps-manage/oauth",
 		// For local development
 		"http://localhost",
 		"http://127.0.0.1",

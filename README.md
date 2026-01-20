@@ -23,6 +23,13 @@ claude mcp add -t http gtm https://mcp.gtmeditor.com
 3. Enter the URL: `https://mcp.gtmeditor.com`
 4. Click **Add** and authorize with your Google account
 
+### ChatGPT (OpenAI Apps SDK)
+
+1. Go to the [OpenAI Platform](https://platform.openai.com/apps)
+2. Create a new App or add an MCP integration
+3. Enter the server URL: `https://mcp.gtmeditor.com`
+4. ChatGPT will automatically discover OAuth endpoints and prompt for Google authorization
+
 ### Run Locally with Docker
 
 1. Clone the repository:
@@ -62,6 +69,23 @@ claude mcp add -t http gtm http://localhost:8080
 
 On first use, you'll be prompted to authenticate with Google OAuth.
 
+### Google Cloud Console Setup (for self-hosting)
+
+If running your own instance, configure these redirect URIs in [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+
+```
+# Claude
+https://claude.ai/api/mcp/auth_callback
+https://claude.com/api/mcp/auth_callback
+
+# ChatGPT / OpenAI
+https://chatgpt.com/connector_platform_oauth_redirect
+https://platform.openai.com/apps-manage/oauth
+
+# Your server callback
+https://your-domain.com/oauth/callback
+```
+
 ## Available Tools
 
 ### Read Operations (Phase 3 - Complete)
@@ -95,7 +119,12 @@ On first use, you'll be prompted to authenticate with Google OAuth.
 
 ## Architecture
 
-A remote MCP server operating over HTTP/SSE (Server-Sent Events), enabling centralized management without local installation. OAuth 2.1 with PKCE secures access to Google Tag Manager APIs.
+A remote MCP server operating over HTTP/SSE (Server-Sent Events), compatible with both **Claude** and **ChatGPT**. OAuth 2.1 with PKCE secures access to Google Tag Manager APIs.
+
+Implements:
+- RFC 9728 (Protected Resource Metadata)
+- RFC 8414 (OAuth Authorization Server Metadata)
+- RFC 7591 (Dynamic Client Registration)
 
 ## Status
 
