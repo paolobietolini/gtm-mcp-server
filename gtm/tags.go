@@ -52,6 +52,11 @@ func (c *Client) SearchTags(ctx context.Context, accountID, containerID, workspa
 		return nil, err
 	}
 
+	// Return early if no tags to search
+	if len(tags) == 0 {
+		return []Tag{}, nil
+	}
+
 	query = strings.ToLower(query)
 	tagType = strings.ToLower(tagType)
 

@@ -32,9 +32,6 @@ type SearchTagsInput struct {
 	Query       string `json:"query,omitempty" jsonschema:"description:Search query for tag name (optional)"`
 	Type        string `json:"type,omitempty" jsonschema:"description:Filter by tag type (optional)"`
 }
-type SearchTagsOutput struct {
-	Tags []Tag `json:"tags"`
-}
 
 func registerListTags(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input ListTagsInput) (*mcp.CallToolResult, ListTagsOutput, error) {
@@ -79,18 +76,23 @@ func registerGetTag(server *mcp.Server) {
 }
 
 func registerSearchTags(server *mcp.Server) {
-	handler := func(ctx context.Context, req *mcp.CallToolRequest, input SearchTagsInput) (*mcp.CallToolResult, SearchTagsOutput, error) {
+	handler := func(ctx context.Context, req *mcp.CallToolRequest, input SearchTagsInput) (*mcp.CallToolResult, ListTagsOutput, error) {
 		client, err := getClient(ctx)
 		if err != nil {
-			return nil, SearchTagsOutput{}, err
+			return nil, ListTagsOutput{}, err
 		}
 
 		tags, err := client.SearchTags(ctx, input.AccountID, input.ContainerID, input.WorkspaceID, input.Query, input.Type)
 		if err != nil {
-			return nil, SearchTagsOutput{}, err
+			return nil, ListTagsOutput{}, err
 		}
 
-		return nil, SearchTagsOutput{Tags: tags}, nil
+		// Ensure we never return nil slice (MCP SDK validation requires array, not null)
+		if tags == nil {
+			tags = []Tag{}
+		}
+
+		return nil, ListTagsOutput{Tags: tags}, nil
 	}
 
 	mcp.AddTool(server, &mcp.Tool{
