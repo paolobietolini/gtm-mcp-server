@@ -108,7 +108,7 @@ func main() {
 
 		// MCP endpoint with REQUIRED auth middleware
 		// Returns 401 if no valid Bearer token - triggers Claude's OAuth flow
-		authMiddleware := auth.Middleware(tokenStore, logger, cfg.BaseURL)
+		authMiddleware := auth.Middleware(tokenStore, googleProvider, logger, cfg.BaseURL)
 		mux.Handle("/", authMiddleware(mcpHandler))
 
 		logger.Info("OAuth configured",

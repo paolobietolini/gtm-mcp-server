@@ -15,13 +15,13 @@ type Client struct {
 	Service *tagmanager.Service
 }
 
-// NewClient creates a GTM client from an OAuth2 token.
-func NewClient(ctx context.Context, token *oauth2.Token) (*Client, error) {
-	if token == nil {
-		return nil, fmt.Errorf("token is required")
+// NewClient creates a GTM client from an OAuth2 token source.
+// The token source should handle automatic refresh.
+func NewClient(ctx context.Context, tokenSource oauth2.TokenSource) (*Client, error) {
+	if tokenSource == nil {
+		return nil, fmt.Errorf("token source is required")
 	}
 
-	tokenSource := oauth2.StaticTokenSource(token)
 	service, err := tagmanager.NewService(ctx, option.WithTokenSource(tokenSource))
 	if err != nil {
 		return nil, fmt.Errorf("failed to create tagmanager service: %w", err)

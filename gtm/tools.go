@@ -17,7 +17,6 @@ func RegisterTools(server *mcp.Server) {
 	registerListWorkspaces(server)
 	registerListTags(server)
 	registerGetTag(server)
-	registerSearchTags(server)
 	registerListTriggers(server)
 	registerListVariables(server)
 	registerListFolders(server)
@@ -37,11 +36,23 @@ func RegisterTools(server *mcp.Server) {
 	registerPublishVersion(server)
 }
 
-// getClient creates a GTM client from the request context.
+// getClient creates a GTM client from the request context with auto-refreshing tokens.
 func getClient(ctx context.Context) (*Client, error) {
 	tokenInfo := auth.GetTokenInfo(ctx)
 	if tokenInfo == nil || tokenInfo.GoogleToken == nil {
 		return nil, fmt.Errorf("not authenticated - please authenticate with Google first")
 	}
-	return NewClient(ctx, tokenInfo.GoogleToken)
+
+	store := auth.GetTokenStore(ctx)
+	google := auth.GetGoogleProvider(ctx)
+
+	// Create auto-refreshing token source
+	var tokenSource = auth.NewAutoRefreshTokenSource(
+		store,
+		tokenInfo.AccessToken,
+		google.Config(),
+		tokenInfo.GoogleToken,
+	)
+
+	return NewClient(ctx, tokenSource)
 }

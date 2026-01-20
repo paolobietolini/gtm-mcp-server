@@ -233,32 +233,45 @@ func (s *MemoryTokenStore) DeleteClient(clientID string) error {
 }
 
 // cleanup periodically removes expired tokens and states.
+// Uses RLock to collect expired keys, then Lock only for deletion to minimize blocking.
 func (s *MemoryTokenStore) cleanup() {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
 	for range ticker.C {
-		s.mu.Lock()
-
 		now := time.Now()
 
-		// Clean expired tokens (keep if refresh token might still work)
+		// Collect expired keys under read lock
+		var expiredTokens []string
+		var expiredStates []string
+
+		s.mu.RLock()
 		for accessToken, info := range s.tokens {
-			// Remove if both access and refresh are expired (24h grace for refresh)
 			if now.After(info.ExpiresAt.Add(24 * time.Hour)) {
-				delete(s.refreshIndex, info.RefreshToken)
-				delete(s.tokens, accessToken)
+				expiredTokens = append(expiredTokens, accessToken)
 			}
 		}
-
-		// Clean expired states
 		for stateValue, state := range s.states {
 			if now.Sub(state.CreatedAt) > 10*time.Minute {
-				delete(s.states, stateValue)
+				expiredStates = append(expiredStates, stateValue)
 			}
 		}
+		s.mu.RUnlock()
 
-		s.mu.Unlock()
+		// Delete under write lock only if needed
+		if len(expiredTokens) > 0 || len(expiredStates) > 0 {
+			s.mu.Lock()
+			for _, accessToken := range expiredTokens {
+				if info, exists := s.tokens[accessToken]; exists {
+					delete(s.refreshIndex, info.RefreshToken)
+					delete(s.tokens, accessToken)
+				}
+			}
+			for _, stateValue := range expiredStates {
+				delete(s.states, stateValue)
+			}
+			s.mu.Unlock()
+		}
 	}
 }
 

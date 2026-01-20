@@ -3,7 +3,6 @@ package gtm
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	tagmanager "google.golang.org/api/tagmanager/v2"
 )
@@ -43,35 +42,6 @@ func (c *Client) GetTag(ctx context.Context, accountID, containerID, workspaceID
 
 	result := toTag(tag)
 	return &result, nil
-}
-
-// SearchTags searches tags by name or type.
-func (c *Client) SearchTags(ctx context.Context, accountID, containerID, workspaceID, query, tagType string) ([]Tag, error) {
-	tags, err := c.ListTags(ctx, accountID, containerID, workspaceID)
-	if err != nil {
-		return nil, err
-	}
-
-	// Return early if no tags to search
-	if len(tags) == 0 {
-		return []Tag{}, nil
-	}
-
-	query = strings.ToLower(query)
-	tagType = strings.ToLower(tagType)
-
-	results := make([]Tag, 0, len(tags))
-	for _, t := range tags {
-		nameLower := strings.ToLower(t.Name)
-		typeLower := strings.ToLower(t.Type)
-		nameMatch := query == "" || strings.Contains(nameLower, query)
-		typeMatch := tagType == "" || typeLower == tagType
-		if nameMatch && typeMatch {
-			results = append(results, t)
-		}
-	}
-
-	return results, nil
 }
 
 func toTags(tags []*tagmanager.Tag) []Tag {

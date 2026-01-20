@@ -19,10 +19,14 @@ const (
 	TokenInfoKey ContextKey = "token_info"
 	// GoogleTokenKey is the context key for the Google OAuth token.
 	GoogleTokenKey ContextKey = "google_token"
+	// TokenStoreKey is the context key for the token store.
+	TokenStoreKey ContextKey = "token_store"
+	// GoogleProviderKey is the context key for the Google OAuth provider.
+	GoogleProviderKey ContextKey = "google_provider"
 )
 
 // Middleware creates HTTP middleware that validates bearer tokens.
-func Middleware(store TokenStore, logger *slog.Logger, baseURL string) func(http.Handler) http.Handler {
+func Middleware(store TokenStore, google *GoogleProvider, logger *slog.Logger, baseURL string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Extract bearer token from Authorization header
@@ -51,9 +55,11 @@ func Middleware(store TokenStore, logger *slog.Logger, baseURL string) func(http
 				return
 			}
 
-			// Add token info to context
+			// Add token info and dependencies to context
 			ctx := context.WithValue(r.Context(), TokenInfoKey, tokenInfo)
 			ctx = context.WithValue(ctx, GoogleTokenKey, tokenInfo.GoogleToken)
+			ctx = context.WithValue(ctx, TokenStoreKey, store)
+			ctx = context.WithValue(ctx, GoogleProviderKey, google)
 
 			logger.Debug("authenticated request",
 				"client_id", tokenInfo.ClientID,
@@ -107,6 +113,22 @@ func GetTokenInfo(ctx context.Context) *TokenInfo {
 func GetGoogleToken(ctx context.Context) *oauth2.Token {
 	if token, ok := ctx.Value(GoogleTokenKey).(*oauth2.Token); ok {
 		return token
+	}
+	return nil
+}
+
+// GetTokenStore retrieves the TokenStore from context.
+func GetTokenStore(ctx context.Context) TokenStore {
+	if store, ok := ctx.Value(TokenStoreKey).(TokenStore); ok {
+		return store
+	}
+	return nil
+}
+
+// GetGoogleProvider retrieves the GoogleProvider from context.
+func GetGoogleProvider(ctx context.Context) *GoogleProvider {
+	if provider, ok := ctx.Value(GoogleProviderKey).(*GoogleProvider); ok {
+		return provider
 	}
 	return nil
 }
