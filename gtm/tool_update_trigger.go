@@ -1,0 +1,115 @@
+package gtm
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+)
+
+// UpdateTriggerInput is the input for update_trigger tool.
+type UpdateTriggerInput struct {
+	AccountID             string `json:"accountId" jsonschema:"description:The GTM account ID"`
+	ContainerID           string `json:"containerId" jsonschema:"description:The GTM container ID"`
+	WorkspaceID           string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	TriggerID             string `json:"triggerId" jsonschema:"description:The trigger ID to update"`
+	Name                  string `json:"name" jsonschema:"description:Trigger name"`
+	Type                  string `json:"type" jsonschema:"description:Trigger type (e.g. pageview, customEvent, linkClick, triggerGroup)"`
+	FilterJSON            string `json:"filterJson,omitempty" jsonschema:"description:Filter conditions as JSON array for pageview triggers (optional)"`
+	AutoEventFilterJSON   string `json:"autoEventFilterJson,omitempty" jsonschema:"description:Auto-event filter as JSON array for click/form triggers (optional)"`
+	CustomEventFilterJSON string `json:"customEventFilterJson,omitempty" jsonschema:"description:Custom event filter as JSON array for customEvent triggers (optional)"`
+	ParameterJSON         string `json:"parameterJson,omitempty" jsonschema:"description:Trigger parameters as JSON array. For triggerGroup type use: [{type: triggerReference, key: trigger, value: triggerId}] for each member trigger"`
+	Notes                 string `json:"notes,omitempty" jsonschema:"description:Trigger notes (optional)"`
+}
+
+// UpdateTriggerOutput is the output for update_trigger tool.
+type UpdateTriggerOutput struct {
+	Success bool           `json:"success"`
+	Trigger CreatedTrigger `json:"trigger"`
+	Message string         `json:"message"`
+}
+
+func registerUpdateTrigger(server *mcp.Server) {
+	handler := func(ctx context.Context, req *mcp.CallToolRequest, input UpdateTriggerInput) (*mcp.CallToolResult, UpdateTriggerOutput, error) {
+		// Validate workspace path
+		if err := ValidateWorkspacePath(input.AccountID, input.ContainerID, input.WorkspaceID); err != nil {
+			return nil, UpdateTriggerOutput{}, err
+		}
+
+		// Validate trigger ID
+		if input.TriggerID == "" {
+			return nil, UpdateTriggerOutput{}, fmt.Errorf("trigger ID is required")
+		}
+
+		// Validate trigger input
+		if err := ValidateTriggerInput(input.Name, input.Type); err != nil {
+			return nil, UpdateTriggerOutput{}, err
+		}
+
+		client, err := getClient(ctx)
+		if err != nil {
+			return nil, UpdateTriggerOutput{}, err
+		}
+
+		path := BuildTriggerPath(input.AccountID, input.ContainerID, input.WorkspaceID, input.TriggerID)
+
+		// Parse filter JSON if provided
+		var filter []Condition
+		if input.FilterJSON != "" {
+			if err := json.Unmarshal([]byte(input.FilterJSON), &filter); err != nil {
+				return nil, UpdateTriggerOutput{}, fmt.Errorf("invalid filterJson: %w", err)
+			}
+		}
+
+		// Parse auto-event filter JSON if provided
+		var autoEventFilter []Condition
+		if input.AutoEventFilterJSON != "" {
+			if err := json.Unmarshal([]byte(input.AutoEventFilterJSON), &autoEventFilter); err != nil {
+				return nil, UpdateTriggerOutput{}, fmt.Errorf("invalid autoEventFilterJson: %w", err)
+			}
+		}
+
+		// Parse custom event filter JSON if provided
+		var customEventFilter []Condition
+		if input.CustomEventFilterJSON != "" {
+			if err := json.Unmarshal([]byte(input.CustomEventFilterJSON), &customEventFilter); err != nil {
+				return nil, UpdateTriggerOutput{}, fmt.Errorf("invalid customEventFilterJson: %w", err)
+			}
+		}
+
+		// Parse parameter JSON if provided (for trigger groups)
+		var params []Parameter
+		if input.ParameterJSON != "" {
+			if err := json.Unmarshal([]byte(input.ParameterJSON), &params); err != nil {
+				return nil, UpdateTriggerOutput{}, fmt.Errorf("invalid parameterJson: %w", err)
+			}
+		}
+
+		triggerInput := &TriggerInput{
+			Name:              input.Name,
+			Type:              input.Type,
+			Filter:            filter,
+			AutoEventFilter:   autoEventFilter,
+			CustomEventFilter: customEventFilter,
+			Parameter:         params,
+			Notes:             input.Notes,
+		}
+
+		trigger, err := client.UpdateTrigger(ctx, path, triggerInput)
+		if err != nil {
+			return nil, UpdateTriggerOutput{}, err
+		}
+
+		return nil, UpdateTriggerOutput{
+			Success: true,
+			Trigger: *trigger,
+			Message: "Trigger updated successfully",
+		}, nil
+	}
+
+	mcp.AddTool(server, &mcp.Tool{
+		Name:        "update_trigger",
+		Description: "Update an existing trigger. For trigger groups, use parameterJson to set member triggers with format: [{\"type\": \"triggerReference\", \"key\": \"trigger\", \"value\": \"<triggerId>\"}]",
+	}, handler)
+}

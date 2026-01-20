@@ -87,6 +87,7 @@ func (c *Client) CreateTrigger(ctx context.Context, accountID, containerID, work
 		Filter:            toAPIConditions(input.Filter),
 		AutoEventFilter:   toAPIConditions(input.AutoEventFilter),
 		CustomEventFilter: toAPIConditions(input.CustomEventFilter),
+		Parameter:         toAPIParams(input.Parameter),
 		Notes:             input.Notes,
 	}
 
@@ -95,6 +96,44 @@ func (c *Client) CreateTrigger(ctx context.Context, accountID, containerID, work
 	}
 
 	result, err := c.Service.Accounts.Containers.Workspaces.Triggers.Create(parent, trigger).Context(ctx).Do()
+	if err != nil {
+		return nil, mapGoogleError(err)
+	}
+
+	return &CreatedTrigger{
+		TriggerID:   result.TriggerId,
+		Name:        result.Name,
+		Type:        result.Type,
+		Path:        result.Path,
+		Fingerprint: result.Fingerprint,
+	}, nil
+}
+
+// UpdateTrigger updates an existing trigger. It fetches the current trigger first to get the fingerprint.
+func (c *Client) UpdateTrigger(ctx context.Context, path string, input *TriggerInput) (*CreatedTrigger, error) {
+	// Get current trigger for fingerprint
+	current, err := c.Service.Accounts.Containers.Workspaces.Triggers.Get(path).Context(ctx).Do()
+	if err != nil {
+		return nil, mapGoogleError(err)
+	}
+
+	// Build updated trigger with fingerprint
+	trigger := &tagmanager.Trigger{
+		Name:              input.Name,
+		Type:              input.Type,
+		Filter:            toAPIConditions(input.Filter),
+		AutoEventFilter:   toAPIConditions(input.AutoEventFilter),
+		CustomEventFilter: toAPIConditions(input.CustomEventFilter),
+		Parameter:         toAPIParams(input.Parameter),
+		Notes:             input.Notes,
+		Fingerprint:       current.Fingerprint,
+	}
+
+	if input.EventName != nil {
+		trigger.EventName = toAPIParam(input.EventName)
+	}
+
+	result, err := c.Service.Accounts.Containers.Workspaces.Triggers.Update(path, trigger).Context(ctx).Do()
 	if err != nil {
 		return nil, mapGoogleError(err)
 	}
@@ -180,4 +219,10 @@ func toAPIConditions(conditions []Condition) []*tagmanager.Condition {
 func BuildTagPath(accountID, containerID, workspaceID, tagID string) string {
 	return fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/tags/%s",
 		accountID, containerID, workspaceID, tagID)
+}
+
+// BuildTriggerPath constructs a trigger path from IDs.
+func BuildTriggerPath(accountID, containerID, workspaceID, triggerID string) string {
+	return fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/triggers/%s",
+		accountID, containerID, workspaceID, triggerID)
 }

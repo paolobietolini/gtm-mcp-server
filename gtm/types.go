@@ -22,7 +22,7 @@ type TagInput struct {
 	TagFiringOption    string      `json:"tagFiringOption,omitempty"`
 }
 
-// TriggerInput represents input for creating a trigger.
+// TriggerInput represents input for creating/updating a trigger.
 type TriggerInput struct {
 	Name              string      `json:"name"`
 	Type              string      `json:"type"`
@@ -30,6 +30,7 @@ type TriggerInput struct {
 	AutoEventFilter   []Condition `json:"autoEventFilter,omitempty"`
 	CustomEventFilter []Condition `json:"customEventFilter,omitempty"`
 	EventName         *Parameter  `json:"eventName,omitempty"`
+	Parameter         []Parameter `json:"parameter,omitempty"` // For trigger groups: member trigger references
 	Notes             string      `json:"notes,omitempty"`
 }
 
