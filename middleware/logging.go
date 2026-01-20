@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"time"
 
@@ -29,12 +30,15 @@ func NewLoggingMiddleware(logger *slog.Logger) mcp.Middleware {
 			duration := time.Since(start)
 
 			if err != nil {
-				logger.Error("mcp request failed",
-					"method", method,
-					"session_id", sessionID,
-					"duration_ms", duration.Milliseconds(),
-					"error", err.Error(),
-				)
+				// Context cancellation is not an error - don't log when client disconnects
+				if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
+					logger.Error("mcp request failed",
+						"method", method,
+						"session_id", sessionID,
+						"duration_ms", duration.Milliseconds(),
+						"error", err.Error(),
+					)
+				}
 			} else {
 				logger.Debug("mcp request completed",
 					"method", method,
