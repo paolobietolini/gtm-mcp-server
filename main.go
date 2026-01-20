@@ -88,12 +88,9 @@ func main() {
 	// Check if OAuth is configured
 	var authServer *auth.Server
 	var tokenStore auth.TokenStore
+	oauthConfigured := cfg.ValidateAuth() == nil
 
-	if err := cfg.ValidateAuth(); err != nil {
-		logger.Warn("OAuth not configured, running without authentication", "error", err)
-		// MCP endpoint without auth
-		mux.Handle("/", mcpHandler)
-	} else {
+	if oauthConfigured {
 		// Set up OAuth
 		tokenStore = auth.NewMemoryTokenStore()
 		googleProvider := auth.NewGoogleProvider(
@@ -122,6 +119,25 @@ func main() {
 			"protected_resource_metadata", cfg.BaseURL+"/.well-known/oauth-protected-resource",
 			"authorization_server_metadata", cfg.BaseURL+"/.well-known/oauth-authorization-server",
 		)
+	} else {
+		logger.Warn("OAuth not configured, running without authentication", "error", cfg.ValidateAuth())
+
+		// Register OAuth endpoints that return proper errors
+		oauthNotConfiguredHandler := func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(map[string]string{
+				"error":             "server_error",
+				"error_description": "OAuth is not configured on this server. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and JWT_SECRET environment variables.",
+			})
+		}
+		mux.HandleFunc("GET /authorize", oauthNotConfiguredHandler)
+		mux.HandleFunc("GET /oauth/callback", oauthNotConfiguredHandler)
+		mux.HandleFunc("POST /token", oauthNotConfiguredHandler)
+		mux.HandleFunc("POST /register", oauthNotConfiguredHandler)
+
+		// MCP endpoint without auth
+		mux.Handle("/", mcpHandler)
 	}
 
 	// Create HTTP server

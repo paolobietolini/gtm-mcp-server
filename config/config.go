@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 // Config holds all configuration for the GTM MCP Server.
@@ -25,7 +27,13 @@ type Config struct {
 }
 
 // Load reads configuration from environment variables.
+// It first attempts to load from .env file if present, then .env.local for overrides.
 func Load() (*Config, error) {
+	// Load .env file if it exists (ignore error if not found)
+	_ = godotenv.Load()
+	// Load .env.local for local development overrides (takes precedence)
+	_ = godotenv.Overload(".env.local")
+
 	cfg := &Config{
 		Port:              getEnvInt("PORT", 8081),
 		BaseURL:           getEnv("BASE_URL", "http://localhost:8081"),
