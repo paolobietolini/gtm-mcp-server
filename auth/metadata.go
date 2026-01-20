@@ -25,10 +25,7 @@ func NewOAuthMetadata(baseURL string) *OAuthMetadata {
 		AuthorizationEndpoint: baseURL + "/authorize",
 		TokenEndpoint:         baseURL + "/token",
 		RegistrationEndpoint:  baseURL + "/register",
-		ScopesSupported: []string{
-			"https://www.googleapis.com/auth/tagmanager.edit.containers",
-			"https://www.googleapis.com/auth/tagmanager.readonly",
-		},
+		ScopesSupported: GoogleScopes,
 		ResponseTypesSupported:            []string{"code"},
 		GrantTypesSupported:               []string{"authorization_code", "refresh_token"},
 		TokenEndpointAuthMethodsSupported: []string{"client_secret_post", "none"},

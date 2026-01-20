@@ -16,6 +16,8 @@ type GoogleProvider struct {
 // GoogleScopes defines the scopes needed for GTM API access.
 var GoogleScopes = []string{
 	"https://www.googleapis.com/auth/tagmanager.edit.containers",
+	"https://www.googleapis.com/auth/tagmanager.edit.containerversions",
+	"https://www.googleapis.com/auth/tagmanager.publish",
 }
 
 // NewGoogleProvider creates a new Google OAuth provider.
@@ -72,4 +74,47 @@ func (p *GoogleProvider) Client(ctx context.Context, token *oauth2.Token) *oauth
 // Config returns the underlying oauth2.Config.
 func (p *GoogleProvider) Config() *oauth2.Config {
 	return p.config
+}
+
+// AutoRefreshTokenSource wraps oauth2.Token with automatic refresh and store updates.
+type AutoRefreshTokenSource struct {
+	store       TokenStore
+	accessToken string // Our token (to identify the record in store)
+	config      *oauth2.Config
+	current     *oauth2.Token
+}
+
+// NewAutoRefreshTokenSource creates a token source that auto-refreshes and updates the store.
+func NewAutoRefreshTokenSource(store TokenStore, accessToken string, config *oauth2.Config, token *oauth2.Token) *AutoRefreshTokenSource {
+	return &AutoRefreshTokenSource{
+		store:       store,
+		accessToken: accessToken,
+		config:      config,
+		current:     token,
+	}
+}
+
+// Token returns a valid token, refreshing if necessary.
+func (s *AutoRefreshTokenSource) Token() (*oauth2.Token, error) {
+	// If token is still valid, return it
+	if s.current.Valid() {
+		return s.current, nil
+	}
+
+	// Token expired or about to expire, refresh it
+	tokenSource := s.config.TokenSource(context.Background(), s.current)
+	newToken, err := tokenSource.Token()
+	if err != nil {
+		return nil, fmt.Errorf("failed to refresh Google token: %w", err)
+	}
+
+	// Update our current token
+	s.current = newToken
+
+	// Update in store (best effort - don't fail if store update fails)
+	if s.store != nil && s.accessToken != "" {
+		_ = s.store.UpdateGoogleToken(s.accessToken, newToken)
+	}
+
+	return newToken, nil
 }
