@@ -11,6 +11,7 @@ import (
 
 // RegisterTools adds all GTM tools to the MCP server.
 func RegisterTools(server *mcp.Server) {
+	// Read operations
 	registerListAccounts(server)
 	registerListContainers(server)
 	registerListWorkspaces(server)
@@ -19,6 +20,17 @@ func RegisterTools(server *mcp.Server) {
 	registerSearchTags(server)
 	registerListTriggers(server)
 	registerListVariables(server)
+
+	// Write operations
+	registerCreateTag(server)
+	registerUpdateTag(server)
+	registerDeleteTag(server)
+	registerCreateTrigger(server)
+	registerCreateVariable(server)
+
+	// Version operations
+	registerCreateVersion(server)
+	registerPublishVersion(server)
 }
 
 // getClient creates a GTM client from the request context.

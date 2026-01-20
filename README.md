@@ -19,7 +19,7 @@ claude mcp add -t http gtm https://mcp.gtmeditor.com
 ### Claude Web (claude.ai)
 
 1. Go to [claude.ai](https://claude.ai) and open **Settings**
-2. Navigate to **Integrations** > **Add Integration**
+2. Navigate to **Settings** > **Connectors* > **Add Custom Connector**
 3. Enter the URL: `https://mcp.gtmeditor.com`
 4. Click **Add** and authorize with your Google account
 
@@ -88,7 +88,7 @@ https://your-domain.com/oauth/callback
 
 ## Available Tools
 
-### Read Operations (Phase 3 - Complete)
+### Read Operations
 
 | Tool | Description |
 |------|-------------|
@@ -100,6 +100,23 @@ https://your-domain.com/oauth/callback
 | `search_tags` | Search tags by name or type |
 | `list_triggers` | List all triggers in a workspace |
 | `list_variables` | List all variables in a workspace |
+
+### Write Operations
+
+| Tool | Description |
+|------|-------------|
+| `create_tag` | Create a new tag in a workspace |
+| `update_tag` | Update an existing tag (handles fingerprint automatically) |
+| `delete_tag` | Delete a tag (requires `confirm: true`) |
+| `create_trigger` | Create a new trigger |
+| `create_variable` | Create a new variable |
+
+### Version Operations
+
+| Tool | Description |
+|------|-------------|
+| `create_version` | Create a container version from workspace changes |
+| `publish_version` | Publish a version to make it live (requires `confirm: true`) |
 
 ### Utility Tools
 
@@ -113,7 +130,7 @@ https://your-domain.com/oauth/callback
 - [x] **Phase 1:** HTTP Transport & MCP Foundation
 - [x] **Phase 2:** OAuth 2.1 Authentication (Google OAuth + PKCE)
 - [x] **Phase 3:** GTM API Read Operations
-- [ ] **Phase 4:** GTM API Write Operations (create/update/delete)
+- [x] **Phase 4:** GTM API Write Operations (create/update/delete)
 - [ ] **Phase 5:** Resources & Prompts (audit templates, tracking plans)
 - [ ] **Phase 6:** Production Hardening (rate limiting, metrics)
 
