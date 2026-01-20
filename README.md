@@ -10,10 +10,54 @@ To provide better context to your LLM, I recommend having it read the documents 
 
 ## Quick Start
 
-Add the server to Claude Code:
+### Claude Code (CLI)
 
 ```bash
 claude mcp add -t http gtm https://mcp.gtmeditor.com
+```
+
+### Claude Web (claude.ai)
+
+1. Go to [claude.ai](https://claude.ai) and open **Settings**
+2. Navigate to **Integrations** > **Add Integration**
+3. Enter the URL: `https://mcp.gtmeditor.com`
+4. Click **Add** and authorize with your Google account
+
+### Run Locally with Docker
+
+1. Clone the repository:
+```bash
+git clone https://github.com/paolobietolini/gtm-mcp-server.git
+cd gtm-mcp-server
+```
+
+2. Create a `.env` file with your Google OAuth credentials:
+```bash
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+JWT_SECRET=$(openssl rand -base64 32)
+BASE_URL=http://localhost:8080
+```
+
+3. Create a `docker-compose.yml`:
+```yaml
+services:
+  gtm-mcp:
+    build: .
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+```
+
+4. Start the server:
+```bash
+docker compose up -d
+```
+
+5. Add to Claude Code:
+```bash
+claude mcp add -t http gtm http://localhost:8080
 ```
 
 On first use, you'll be prompted to authenticate with Google OAuth.
