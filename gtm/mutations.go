@@ -109,6 +109,12 @@ func (c *Client) CreateTrigger(ctx context.Context, accountID, containerID, work
 	}, nil
 }
 
+// DeleteTrigger deletes a trigger from the workspace.
+func (c *Client) DeleteTrigger(ctx context.Context, path string) error {
+	err := c.Service.Accounts.Containers.Workspaces.Triggers.Delete(path).Context(ctx).Do()
+	return mapGoogleError(err)
+}
+
 // UpdateTrigger updates an existing trigger. It fetches the current trigger first to get the fingerprint.
 func (c *Client) UpdateTrigger(ctx context.Context, path string, input *TriggerInput) (*CreatedTrigger, error) {
 	// Get current trigger for fingerprint
