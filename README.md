@@ -4,7 +4,7 @@
 
 Create tags, audit configurations, generate tracking plans, and publish changes—all through natural conversation with Claude or ChatGPT.
 
-**Production URL:** `https://mcp.gtmeditor.com`
+**URL:** `https://mcp.gtmeditor.com`
 
 ---
 
@@ -269,7 +269,7 @@ For best results, give your AI assistant more GTM context:
 
 **Paolo Bietolini**
 
-mcp at paolobietolini dot com
+mcp@paolobietolini.com
 
 ---
 
