@@ -269,7 +269,7 @@ For best results, give your AI assistant more GTM context:
 
 **Paolo Bietolini**
 
-mcp@paolobietolini.com
+mcp at paolobietolini dot com
 
 ---
 

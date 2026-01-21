@@ -4,6 +4,8 @@ go-sdk-main/
 .env
 .env.deploy
 !README.md
+.env.local
+.*/
 
 # Binary
 gtm-mcp-server
@@ -16,5 +18,3 @@ docker-compose.yml
 # Swap files
 *.swp
 *.swo
-
-.env.local
