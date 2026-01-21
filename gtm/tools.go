@@ -38,6 +38,12 @@ func RegisterTools(server *mcp.Server) {
 	// Templates (help LLMs with correct parameter formats)
 	registerGetTagTemplates(server)
 	registerGetTriggerTemplates(server)
+
+	// Resources (URI-based read access)
+	RegisterResources(server)
+
+	// Prompts (template workflows)
+	RegisterPrompts(server)
 }
 
 // getClient creates a GTM client from the request context with auto-refreshing tokens.
