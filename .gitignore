@@ -4,6 +4,7 @@ go-sdk-main/
 .env
 .env.deploy
 !README.md
+!CLAUDE.md
 
 # Binary
 gtm-mcp-server

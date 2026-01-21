@@ -1,164 +1,278 @@
-# Google Tag Manager MCP Server
+# GTM MCP Server
 
-An MCP server for Google Tag Manager that simplifies and accelerates common operations such as tag creation, auditing, container management, and publishing.
+**Let AI manage your Google Tag Manager containers.**
+
+Create tags, audit configurations, generate tracking plans, and publish changes—all through natural conversation with Claude or ChatGPT.
 
 **Production URL:** `https://mcp.gtmeditor.com`
 
-To provide better context to your LLM, I recommend having it read the documents in this [repository](https://github.com/paolobietolini/gtm-api-for-llms) or adding the [GTM API skill](https://github.com/paolobietolini/gtm-api-for-llms/tree/main/skills/gtm-api).
+---
+
+## What Can You Do?
+
+Ask your AI assistant to:
+
+- *"List all my GTM containers"*
+- *"Create a GA4 event tag for form submissions"*
+- *"Audit this container for issues and duplicates"*
+- *"Generate a tracking plan document for the marketing team"*
+- *"Set up ecommerce tracking for purchases"*
+- *"Publish the changes we just made"*
+
+No more clicking through the GTM interface. No more copy-pasting configurations. Just describe what you need.
 
 ---
 
 ## Quick Start
 
-### Claude Code (CLI)
+### Claude (Web & Desktop)
 
+**Claude.ai:**
+1. Go to **Settings** → **Connectors** → **Add Custom Connector**
+2. Enter: `https://mcp.gtmeditor.com`
+3. Click **Add** and sign in with Google
+
+**Claude Code (CLI):**
 ```bash
 claude mcp add -t http gtm https://mcp.gtmeditor.com
 ```
 
-### Claude Web (claude.ai)
+### ChatGPT
 
-1. Go to [claude.ai](https://claude.ai) and open **Settings**
-2. Navigate to **Settings** > **Connectors* > **Add Custom Connector**
-3. Enter the URL: `https://mcp.gtmeditor.com`
-4. Click **Add** and authorize with your Google account
+1. Go to [OpenAI Apps Platform](https://platform.openai.com/apps)
+2. Add an MCP integration with URL: `https://mcp.gtmeditor.com`
+3. Authorize with your Google account
 
-### ChatGPT (OpenAI Apps SDK)
+---
 
-1. Go to the [OpenAI Platform](https://platform.openai.com/apps)
-2. Create a new App or add an MCP integration
-3. Enter the server URL: `https://mcp.gtmeditor.com`
-4. ChatGPT will automatically discover OAuth endpoints and prompt for Google authorization
+## Features
 
-### Run Locally with Docker
+### Tag Management
+Create and modify any GTM tag type:
+- **GA4 Configuration & Events** — Set up Google Analytics 4 with proper measurement IDs
+- **Ecommerce Tracking** — Purchase, add-to-cart, view-item events
+- **Custom HTML** — Inject scripts, pixels, and custom code
+- **Custom Image** — Tracking pixels with cache busting
 
-1. Clone the repository:
+### Trigger Management
+Build triggers for any scenario:
+- Page views (all pages or specific URLs)
+- Custom dataLayer events
+- Click tracking
+- Form submissions
+- Timer-based triggers
+- Trigger groups for complex conditions
+
+### Container Operations
+- Browse accounts, containers, and workspaces
+- Create versions from workspace changes
+- Publish versions to go live
+- Organize with folders
+
+### AI-Powered Workflows
+
+**Container Audit**
+*"Audit my container for issues"* — Analyzes your workspace for:
+- Naming inconsistencies
+- Duplicate tags
+- Orphaned triggers
+- Security concerns
+- Best practice violations
+
+**Tracking Plan Generation**
+*"Generate a tracking plan"* — Creates markdown documentation of:
+- All events and their triggers
+- Data layer requirements
+- Variable definitions
+- Implementation notes
+
+**GA4 Setup Recommendations**
+*"Help me set up GA4 for ecommerce"* — Recommends:
+- Which tags to create
+- Trigger configurations
+- Required variables
+- Data layer implementation code
+
+---
+
+## Use Cases
+
+### For Digital Marketers
+- Quickly add new campaign tracking tags
+- Set up event tracking without developer help
+- Audit containers before campaigns launch
+- Document tracking for stakeholders
+
+### For Data Analysts
+- Review container configurations programmatically
+- Generate tracking documentation automatically
+- Ensure consistent naming conventions
+- Validate ecommerce implementations
+
+### For Agencies
+- Manage multiple client containers efficiently
+- Standardize tracking implementations
+- Speed up QA and auditing
+- Reduce configuration errors
+
+---
+
+## How It Works
+
+The GTM MCP Server connects AI assistants to the Google Tag Manager API using the [Model Context Protocol](https://modelcontextprotocol.io). When you ask Claude or ChatGPT to manage your GTM, it:
+
+1. **Authenticates** with your Google account (OAuth 2.1)
+2. **Reads** your container configurations
+3. **Executes** the changes you request
+4. **Confirms** before destructive operations
+
+Your credentials are never stored—the server uses token-based authentication that you can revoke anytime from your Google account.
+
+---
+
+## Safety Features
+
+- **Confirmation required** for deletions and publishing
+- **Workspace-only changes** — nothing goes live until you publish
+- **Version control** — all changes create a version first
+- **Audit logging** — track what was changed
+
+---
+
+## Self-Hosting
+
+Want to run your own instance?
+
+### Docker Setup
+
 ```bash
 git clone https://github.com/paolobietolini/gtm-mcp-server.git
 cd gtm-mcp-server
-```
 
-2. Create a `.env` file with your Google OAuth credentials:
-```bash
+# Create .env file
+cat > .env << 'EOF'
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 JWT_SECRET=$(openssl rand -base64 32)
 BASE_URL=http://localhost:8080
-```
+EOF
 
-3. Create a `docker-compose.yml`:
-```yaml
-services:
-  gtm-mcp:
-    build: .
-    ports:
-      - "8080:8080"
-    env_file:
-      - .env
-```
-
-4. Start the server:
-```bash
+# Start the server
 docker compose up -d
-```
 
-5. Add to Claude Code:
-```bash
+# Add to Claude
 claude mcp add -t http gtm http://localhost:8080
 ```
 
-On first use, you'll be prompted to authenticate with Google OAuth.
+### Google Cloud Setup
 
-### Google Cloud Console Setup (for self-hosting)
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable the **Tag Manager API**
+3. Create **OAuth 2.0 credentials** (Web application)
+4. Add redirect URIs:
+   ```
+   https://claude.ai/api/mcp/auth_callback
+   https://claude.com/api/mcp/auth_callback
+   https://chatgpt.com/connector_platform_oauth_redirect
+   https://your-domain.com/oauth/callback
+   ```
 
-If running your own instance, configure these redirect URIs in [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
-
-```
-# Claude
-https://claude.ai/api/mcp/auth_callback
-https://claude.com/api/mcp/auth_callback
-
-# ChatGPT / OpenAI
-https://chatgpt.com/connector_platform_oauth_redirect
-https://platform.openai.com/apps-manage/oauth
-
-# Your server callback
-https://your-domain.com/oauth/callback
-```
+---
 
 ## Available Tools
 
 ### Read Operations
-
 | Tool | Description |
 |------|-------------|
-| `list_accounts` | List all GTM accounts accessible to the user |
+| `list_accounts` | List all GTM accounts |
 | `list_containers` | List containers in an account |
 | `list_workspaces` | List workspaces in a container |
 | `list_tags` | List all tags in a workspace |
-| `get_tag` | Get a specific tag by ID |
-| `search_tags` | Search tags by name or type |
-| `list_triggers` | List all triggers in a workspace |
-| `list_variables` | List all variables in a workspace |
-| `list_folders` | List all folders in a workspace |
-| `get_folder_entities` | Get tags, triggers, and variables in a folder |
+| `get_tag` | Get tag details by ID |
+| `list_triggers` | List all triggers |
+| `list_variables` | List all variables |
+| `list_folders` | List folders in a workspace |
 
 ### Write Operations
-
 | Tool | Description |
 |------|-------------|
-| `create_tag` | Create a new tag in a workspace |
-| `update_tag` | Update an existing tag (handles fingerprint automatically) |
-| `delete_tag` | Delete a tag (requires `confirm: true`) |
-| `create_trigger` | Create a new trigger (supports trigger groups, custom events, etc.) |
-| `update_trigger` | Update an existing trigger (handles fingerprint automatically) |
-| `delete_trigger` | Delete a trigger (requires `confirm: true`) |
+| `create_tag` | Create a new tag |
+| `update_tag` | Modify an existing tag |
+| `delete_tag` | Remove a tag (requires confirmation) |
+| `create_trigger` | Create a new trigger |
+| `update_trigger` | Modify an existing trigger |
+| `delete_trigger` | Remove a trigger (requires confirmation) |
 | `create_variable` | Create a new variable |
 
-### Version Operations
-
+### Publishing
 | Tool | Description |
 |------|-------------|
-| `create_version` | Create a container version from workspace changes |
-| `publish_version` | Publish a version to make it live (requires `confirm: true`) |
+| `create_version` | Create a version from workspace changes |
+| `publish_version` | Publish a version (requires confirmation) |
 
-### Utility Tools
-
+### Templates
 | Tool | Description |
 |------|-------------|
-| `ping` | Test connectivity to the server |
-| `auth_status` | Check authentication status |
+| `get_tag_templates` | Get GA4/HTML tag parameter examples |
+| `get_trigger_templates` | Get trigger configuration examples |
 
-## Roadmap
+---
 
-- [x] **Phase 1:** HTTP Transport & MCP Foundation
-- [x] **Phase 2:** OAuth 2.1 Authentication (Google OAuth + PKCE)
-- [x] **Phase 3:** GTM API Read Operations
-- [x] **Phase 4:** GTM API Write Operations (create/update/delete)
-- [ ] **Phase 5:** Resources & Prompts (audit templates, tracking plans)
-- [ ] **Phase 6:** Production Hardening (rate limiting, metrics)
+## Resources & Prompts
+
+### Resources (URI-based access)
+Access GTM data via structured URIs:
+```
+gtm://accounts
+gtm://accounts/{id}/containers
+gtm://accounts/{id}/containers/{id}/workspaces
+gtm://accounts/.../workspaces/{id}/tags
+gtm://accounts/.../workspaces/{id}/triggers
+gtm://accounts/.../workspaces/{id}/variables
+```
+
+### Prompts (Workflow templates)
+| Prompt | Description |
+|--------|-------------|
+| `audit_container` | Comprehensive container analysis |
+| `generate_tracking_plan` | Markdown documentation generator |
+| `suggest_ga4_setup` | GA4 implementation recommendations |
+
+---
+
+## Better AI Context
+
+For best results, give your AI assistant more GTM context:
+
+- **GTM API Skill:** Add the [GTM API skill](https://github.com/paolobietolini/gtm-api-for-llms/tree/main/skills/gtm-api) to Claude
+- **Documentation:** Have the AI read the [GTM API docs](https://github.com/paolobietolini/gtm-api-for-llms)
+
+---
 
 ## Architecture
 
-A remote MCP server operating over HTTP/SSE (Server-Sent Events), compatible with both **Claude** and **ChatGPT**. OAuth 2.1 with PKCE secures access to Google Tag Manager APIs.
+- **Protocol:** Model Context Protocol (MCP) over HTTP
+- **Authentication:** OAuth 2.1 with PKCE
+- **Standards:** RFC 8414, RFC 7591, RFC 9728
 
-Implements:
-- RFC 9728 (Protected Resource Metadata)
-- RFC 8414 (OAuth Authorization Server Metadata)
-- RFC 7591 (Dynamic Client Registration)
+---
 
-## Status
+## Links
 
-Started January 2026. Currently in active development.
+- [GitHub Repository](https://github.com/paolobietolini/gtm-mcp-server)
+- [GTM API Reference](https://github.com/paolobietolini/gtm-api-for-llms)
+- [MCP Specification](https://modelcontextprotocol.io)
 
-[Watch](https://github.com/paolobietolini/gtm-mcp-server) for updates or open [Pull Requests](https://github.com/paolobietolini/gtm-mcp-server/pulls) to contribute.
+---
 
 ## Author
 
-Paolo Bietolini
+**Paolo Bietolini**
 
-<mcp at paolobietolini dot com>
+mcp@paolobietolini.com
+
+---
 
 ## License
 
-[BSD-3](https://github.com/paolobietolini/gtm-mcp-server/blob/main/LICENSE)
+[BSD-3-Clause](LICENSE)
