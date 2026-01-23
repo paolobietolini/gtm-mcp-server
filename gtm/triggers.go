@@ -9,12 +9,15 @@ import (
 
 // Trigger is a simplified representation of a GTM trigger.
 type Trigger struct {
-	TriggerID      string `json:"triggerId"`
-	Name           string `json:"name"`
-	Type           string `json:"type"`
-	Path           string `json:"path"`
-	ParentFolderID string `json:"parentFolderId,omitempty"`
-	Notes          string `json:"notes,omitempty"`
+	TriggerID         string `json:"triggerId"`
+	Name              string `json:"name"`
+	Type              string `json:"type"`
+	Path              string `json:"path"`
+	ParentFolderID    string `json:"parentFolderId,omitempty"`
+	Notes             string `json:"notes,omitempty"`
+	Filter            any    `json:"filter,omitempty"`            // For pageview triggers
+	AutoEventFilter   any    `json:"autoEventFilter,omitempty"`   // For click/form triggers
+	CustomEventFilter any    `json:"customEventFilter,omitempty"` // For customEvent triggers
 	// Parameter contains trigger configuration. For triggerGroup type, includes member trigger IDs.
 	// Using any to avoid recursive type cycle in schema generation.
 	Parameter any `json:"parameter,omitempty"`
@@ -42,6 +45,16 @@ func toTriggers(triggers []*tagmanager.Trigger) []Trigger {
 			Path:           t.Path,
 			ParentFolderID: t.ParentFolderId,
 			Notes:          t.Notes,
+		}
+		// Include filter fields when present
+		if len(t.Filter) > 0 {
+			trigger.Filter = t.Filter
+		}
+		if len(t.AutoEventFilter) > 0 {
+			trigger.AutoEventFilter = t.AutoEventFilter
+		}
+		if len(t.CustomEventFilter) > 0 {
+			trigger.CustomEventFilter = t.CustomEventFilter
 		}
 		// Include parameters for triggerGroup type or when parameters exist
 		if len(t.Parameter) > 0 {
