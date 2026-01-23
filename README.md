@@ -116,23 +116,38 @@ Build triggers for any scenario:
 
 ## Use Cases
 
-### For Digital Marketers
-- Quickly add new campaign tracking tags
-- Set up event tracking without developer help
-- Audit containers before campaigns launch
-- Document tracking for stakeholders
+### Build Complete Tracking Setups
+Ask AI to create a full GA4 ecommerce implementation from scratch:
+- *"Set up GA4 ecommerce tracking for my store"*
+- Creates 12+ tags (configuration + all ecommerce events)
+- Creates matching triggers for each dataLayer event
+- Creates data layer variables for items, currency, value, transaction_id
+- Follows Google's recommended event naming and parameters
 
-### For Data Analysts
-- Review container configurations programmatically
-- Generate tracking documentation automatically
-- Ensure consistent naming conventions
-- Validate ecommerce implementations
+### Implement Consent Management
+Integrate privacy tools like OneTrust with your tracking:
+- *"Make GA4 fire only when analytics consent is granted"*
+- Creates consent-checking variables
+- Sets up conditional triggers
+- Updates existing tags to respect user choices
+
+### Bulk Operations & Renaming
+Manage containers at scale:
+- *"Add 'ecom -' prefix to all ecommerce triggers"*
+- *"Update all tags to use a measurement ID variable"*
+- Rename, update, or organize dozens of items through conversation
+
+### Custom Variables & Logic
+Create sophisticated tracking logic:
+- *"Create a variable that returns the local timestamp"*
+- *"Add a custom parameter to the purchase tag"*
+- Custom JavaScript variables, data layer mappings, and more
 
 ### For Agencies
-- Manage multiple client containers efficiently
-- Standardize tracking implementations
-- Speed up QA and auditing
-- Reduce configuration errors
+- Manage multiple client containers (7+ accounts shown in demo)
+- Standardize implementations across clients
+- Rapid setup for new projects
+- Version and publish changes safely
 
 ---
 
@@ -211,11 +226,19 @@ claude mcp add -t http gtm http://localhost:8080
 | `list_triggers` | List all triggers |
 | `list_variables` | List all variables |
 | `list_folders` | List folders in a workspace |
+| `get_folder_entities` | Get tags/triggers/variables in a folder |
+
+### Utility
+| Tool | Description |
+|------|-------------|
+| `ping` | Test server connectivity |
+| `auth_status` | Check authentication status |
 
 ### Write Operations
 | Tool | Description |
 |------|-------------|
 | `create_container` | Create a new container in an account |
+| `delete_container` | Remove a container (requires confirmation) |
 | `create_workspace` | Create a new workspace in a container |
 | `create_tag` | Create a new tag |
 | `update_tag` | Modify an existing tag |
@@ -237,6 +260,7 @@ claude mcp add -t http gtm http://localhost:8080
 |------|-------------|
 | `get_tag_templates` | Get GA4/HTML tag parameter examples |
 | `get_trigger_templates` | Get trigger configuration examples |
+| `list_templates` | List custom templates in a workspace |
 
 ---
 
