@@ -196,6 +196,8 @@ claude mcp add -t http gtm http://localhost:8080
 ### Write Operations
 | Tool | Description |
 |------|-------------|
+| `create_container` | Create a new container in an account |
+| `create_workspace` | Create a new workspace in a container |
 | `create_tag` | Create a new tag |
 | `update_tag` | Modify an existing tag |
 | `delete_tag` | Remove a tag (requires confirmation) |
@@ -203,6 +205,7 @@ claude mcp add -t http gtm http://localhost:8080
 | `update_trigger` | Modify an existing trigger |
 | `delete_trigger` | Remove a trigger (requires confirmation) |
 | `create_variable` | Create a new variable |
+| `delete_variable` | Remove a variable (requires confirmation) |
 
 ### Publishing
 | Tool | Description |
