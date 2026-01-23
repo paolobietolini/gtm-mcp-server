@@ -33,6 +33,7 @@ func RegisterTools(server *mcp.Server) {
 	registerCreateVariable(server)
 	registerDeleteVariable(server)
 	registerCreateContainer(server)
+	registerDeleteContainer(server)
 	registerCreateWorkspace(server)
 
 	// Version operations

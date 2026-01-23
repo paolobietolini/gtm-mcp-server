@@ -41,3 +41,8 @@ func toContainers(containers []*tagmanager.Container) []Container {
 	}
 	return result
 }
+
+// DeleteContainer deletes a container by path.
+func (c *Client) DeleteContainer(ctx context.Context, path string) error {
+	return c.Service.Accounts.Containers.Delete(path).Context(ctx).Do()
+}

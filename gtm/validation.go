@@ -74,3 +74,19 @@ func BuildWorkspacePath(accountID, containerID, workspaceID string) string {
 	return fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s",
 		accountID, containerID, workspaceID)
 }
+
+// ValidateContainerPath validates container path components.
+func ValidateContainerPath(accountID, containerID string) error {
+	if strings.TrimSpace(accountID) == "" {
+		return fmt.Errorf("account ID is required")
+	}
+	if strings.TrimSpace(containerID) == "" {
+		return fmt.Errorf("container ID is required")
+	}
+	return nil
+}
+
+// BuildContainerPath constructs a container path from IDs.
+func BuildContainerPath(accountID, containerID string) string {
+	return fmt.Sprintf("accounts/%s/containers/%s", accountID, containerID)
+}
