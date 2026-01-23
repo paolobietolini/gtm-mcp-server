@@ -124,11 +124,13 @@ func GetTagTemplates() []TagTemplate {
 
 // TriggerTemplate provides example structures for creating triggers.
 type TriggerTemplate struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Type        string `json:"type"`
-	FilterJSON  string `json:"filterJson,omitempty"`
-	Notes       string `json:"notes"`
+	Name                  string `json:"name"`
+	Description           string `json:"description"`
+	Type                  string `json:"type"`
+	FilterJSON            string `json:"filterJson,omitempty"`
+	AutoEventFilterJSON   string `json:"autoEventFilterJson,omitempty"`
+	CustomEventFilterJSON string `json:"customEventFilterJson,omitempty"`
+	Notes                 string `json:"notes"`
 }
 
 // GetTriggerTemplates returns example structures for common trigger types.
@@ -156,25 +158,37 @@ func GetTriggerTemplates() []TriggerTemplate {
 			Name:        "Custom Event",
 			Description: "Fires on a dataLayer custom event",
 			Type:        "customEvent",
-			FilterJSON: `[
+			CustomEventFilterJSON: `[
   {"type": "equals", "parameter": [
     {"type": "template", "key": "arg0", "value": "{{_event}}"},
     {"type": "template", "key": "arg1", "value": "purchase"}
   ]}
 ]`,
-			Notes: "For customEvent triggers, use customEventFilterJson with the event name. The {{_event}} variable matches the dataLayer event name.",
+			Notes: "For customEvent triggers, use customEventFilterJson (not filterJson). The {{_event}} variable matches the dataLayer event name.",
 		},
 		{
 			Name:        "Click - All Elements",
 			Description: "Fires on all element clicks",
 			Type:        "linkClick",
-			Notes:       "Use linkClick for click triggers. Add autoEventFilterJson to filter by click element properties.",
+			AutoEventFilterJSON: `[
+  {"type": "contains", "parameter": [
+    {"type": "template", "key": "arg0", "value": "{{Click Classes}}"},
+    {"type": "template", "key": "arg1", "value": "cta-button"}
+  ]}
+]`,
+			Notes: "Use linkClick for click triggers. Use autoEventFilterJson to filter by click element properties (Click Classes, Click ID, Click URL, etc.).",
 		},
 		{
 			Name:        "Form Submission",
 			Description: "Fires on form submissions",
 			Type:        "formSubmission",
-			Notes:       "Use formSubmission type. Add autoEventFilterJson to filter by form properties.",
+			AutoEventFilterJSON: `[
+  {"type": "equals", "parameter": [
+    {"type": "template", "key": "arg0", "value": "{{Form ID}}"},
+    {"type": "template", "key": "arg1", "value": "contact-form"}
+  ]}
+]`,
+			Notes: "Use formSubmission type. Use autoEventFilterJson to filter by form properties (Form ID, Form Classes, Form URL, etc.).",
 		},
 	}
 }
