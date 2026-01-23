@@ -31,6 +31,7 @@ func RegisterTools(server *mcp.Server) {
 	registerDeleteTrigger(server)
 	registerCreateVariable(server)
 	registerDeleteVariable(server)
+	registerCreateContainer(server)
 
 	// Version operations
 	registerCreateVersion(server)
