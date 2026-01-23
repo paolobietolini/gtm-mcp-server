@@ -8,6 +8,25 @@ Create tags, audit configurations, generate tracking plans, and publish changesâ
 
 ---
 
+## Table of Contents
+
+- [What Can You Do?](#what-can-you-do)
+- [Quick Start](#quick-start)
+- [Features](#features)
+- [Use Cases](#use-cases)
+- [How It Works](#how-it-works)
+- [Safety Features](#safety-features)
+- [Self-Hosting](#self-hosting)
+- [Available Tools](#available-tools)
+- [Resources & Prompts](#resources--prompts)
+- [Better AI Context](#better-ai-context)
+- [Architecture](#architecture)
+- [Links](#links)
+- [Author](#author)
+- [License](#license)
+
+---
+
 ## What Can You Do?
 
 Ask your AI assistant to:
