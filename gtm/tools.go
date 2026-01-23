@@ -21,6 +21,7 @@ func RegisterTools(server *mcp.Server) {
 	registerListVariables(server)
 	registerListFolders(server)
 	registerGetFolderEntities(server)
+	registerListTemplates(server)
 
 	// Write operations
 	registerCreateTag(server)
