@@ -178,6 +178,12 @@ func (c *Client) CreateVariable(ctx context.Context, accountID, containerID, wor
 	}, nil
 }
 
+// DeleteVariable deletes a variable from the workspace.
+func (c *Client) DeleteVariable(ctx context.Context, path string) error {
+	err := c.Service.Accounts.Containers.Workspaces.Variables.Delete(path).Context(ctx).Do()
+	return mapGoogleError(err)
+}
+
 func toAPIParams(params []Parameter) []*tagmanager.Parameter {
 	if len(params) == 0 {
 		return nil
@@ -231,4 +237,10 @@ func BuildTagPath(accountID, containerID, workspaceID, tagID string) string {
 func BuildTriggerPath(accountID, containerID, workspaceID, triggerID string) string {
 	return fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/triggers/%s",
 		accountID, containerID, workspaceID, triggerID)
+}
+
+// BuildVariablePath constructs a variable path from IDs.
+func BuildVariablePath(accountID, containerID, workspaceID, variableID string) string {
+	return fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/variables/%s",
+		accountID, containerID, workspaceID, variableID)
 }

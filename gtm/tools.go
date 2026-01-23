@@ -30,6 +30,7 @@ func RegisterTools(server *mcp.Server) {
 	registerUpdateTrigger(server)
 	registerDeleteTrigger(server)
 	registerCreateVariable(server)
+	registerDeleteVariable(server)
 
 	// Version operations
 	registerCreateVersion(server)
