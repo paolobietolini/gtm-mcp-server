@@ -40,6 +40,15 @@ func RegisterPrompts(server *mcp.Server) {
 			{Name: "goals", Description: "Description of tracking goals (e.g., 'ecommerce purchase tracking, form submissions, button clicks')", Required: true},
 		},
 	}, handleSuggestGA4SetupPrompt)
+
+	// Find gallery template prompt - guides LLM to discover templates
+	server.AddPrompt(&mcp.Prompt{
+		Name:        "find_gallery_template",
+		Description: "Guide to find and import a Community Template Gallery template by name",
+		Arguments: []*mcp.PromptArgument{
+			{Name: "templateName", Description: "The name of the template to find (e.g., 'iubenda', 'cookiebot', 'facebook pixel')", Required: true},
+		},
+	}, handleFindGalleryTemplatePrompt)
 }
 
 func handleAuditContainerPrompt(ctx context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
@@ -311,6 +320,60 @@ Please provide:
    - Expected GA4 events and parameters
 
 Please be specific about the GTM configuration - use the exact parameter formats shown in the templates.`, goals, string(templatesJSON)),
+				},
+			},
+		},
+	}, nil
+}
+
+func handleFindGalleryTemplatePrompt(ctx context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
+	templateName := req.Params.Arguments["templateName"]
+
+	if templateName == "" {
+		return nil, fmt.Errorf("templateName is required")
+	}
+
+	return &mcp.GetPromptResult{
+		Description: "Find and import a Community Template Gallery template",
+		Messages: []*mcp.PromptMessage{
+			{
+				Role: "user",
+				Content: &mcp.TextContent{
+					Text: fmt.Sprintf(`I need to find and import the "%s" template from the GTM Community Template Gallery.
+
+**How to find a Community Template:**
+
+1. **Search the web** for: "%s GTM community template github"
+   - Community templates are hosted on GitHub
+   - Look for results from github.com
+
+2. **Extract the repository info** from the GitHub URL:
+   - URL format: github.com/{owner}/{repository}
+   - Example: github.com/iubenda/gtm-cookie-solution
+     - galleryOwner: "iubenda"
+     - galleryRepository: "gtm-cookie-solution"
+
+3. **Browse the Gallery directly** (optional):
+   - Visit: https://tagmanager.google.com/gallery/#/?filter=%s
+   - Click on the template to see details
+
+**Common templates for reference:**
+
+| Template | galleryOwner | galleryRepository |
+|----------|--------------|-------------------|
+| iubenda Cookie Solution | iubenda | gtm-cookie-solution |
+| Cookiebot | nicktue-gtm-templates | cookiebot-gtm |
+| Facebook Pixel | nicktue-gtm-templates | facebook-pixel |
+
+**Once you have the owner and repository:**
+
+Use the import_gallery_template tool:
+- galleryOwner: [owner from GitHub]
+- galleryRepository: [repository from GitHub]
+
+The tool will return the template type (cvt_{containerId}_{templateId}) to use when creating tags.
+
+Please search for the "%s" template and provide the galleryOwner and galleryRepository values.`, templateName, templateName, templateName, templateName),
 				},
 			},
 		},
