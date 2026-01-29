@@ -88,6 +88,14 @@ Build triggers for any scenario:
 - Publish versions to go live
 - Organize with folders
 
+### Community Template Gallery
+Import templates from Google's Community Template Gallery:
+- *"Import the iubenda cookie consent template"*
+- *"Add Cookiebot to my container"*
+- *"Set up Facebook Pixel using the gallery template"*
+
+The AI will search for the template, find the GitHub repository, and import it automatically.
+
 ### AI-Powered Workflows
 
 **Container Audit**
@@ -261,6 +269,7 @@ claude mcp add -t http gtm http://localhost:8080
 | `get_tag_templates` | Get GA4/HTML tag parameter examples |
 | `get_trigger_templates` | Get trigger configuration examples |
 | `list_templates` | List custom templates in a workspace |
+| `import_gallery_template` | Import a template from the Community Gallery |
 
 ---
 
@@ -283,6 +292,7 @@ gtm://accounts/.../workspaces/{id}/variables
 | `audit_container` | Comprehensive container analysis |
 | `generate_tracking_plan` | Markdown documentation generator |
 | `suggest_ga4_setup` | GA4 implementation recommendations |
+| `find_gallery_template` | Guide to find and import Community Gallery templates |
 
 ---
 
