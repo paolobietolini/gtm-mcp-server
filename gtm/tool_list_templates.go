@@ -30,9 +30,10 @@ type TemplateInfo struct {
 
 // GalleryReferenceInfo contains gallery template info.
 type GalleryReferenceInfo struct {
-	Owner      string `json:"owner"`
-	Repository string `json:"repository"`
-	Version    string `json:"version,omitempty"`
+	Owner             string `json:"owner"`
+	Repository        string `json:"repository"`
+	Version           string `json:"version,omitempty"`
+	GalleryTemplateId string `json:"galleryTemplateId,omitempty"`
 }
 
 func registerListTemplates(server *mcp.Server) {
@@ -70,9 +71,10 @@ func registerListTemplates(server *mcp.Server) {
 				}
 				if t.GalleryReference != nil {
 					info.GalleryReference = &GalleryReferenceInfo{
-						Owner:      t.GalleryReference.Owner,
-						Repository: t.GalleryReference.Repository,
-						Version:    t.GalleryReference.Version,
+						Owner:             t.GalleryReference.Owner,
+						Repository:        t.GalleryReference.Repository,
+						Version:           t.GalleryReference.Version,
+						GalleryTemplateId: t.GalleryReference.GalleryTemplateId,
 					}
 				}
 				templates = append(templates, info)

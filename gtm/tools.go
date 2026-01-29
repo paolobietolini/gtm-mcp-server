@@ -40,6 +40,9 @@ func RegisterTools(server *mcp.Server) {
 	registerCreateVersion(server)
 	registerPublishVersion(server)
 
+	// Template operations
+	registerImportGalleryTemplate(server)
+
 	// Templates (help LLMs with correct parameter formats)
 	registerGetTagTemplates(server)
 	registerGetTriggerTemplates(server)
