@@ -23,7 +23,7 @@ type ListTemplatesOutput struct {
 type TemplateInfo struct {
 	TemplateID       string                `json:"templateId"`
 	Name             string                `json:"name"`
-	Type             string                `json:"type"` // cvt_{containerId}_{templateId}
+	Type             string                `json:"type"` // cvt_{galleryTemplateId} for gallery templates
 	GalleryReference *GalleryReferenceInfo `json:"galleryReference,omitempty"`
 	TagManagerUrl    string                `json:"tagManagerUrl,omitempty"`
 }
@@ -66,16 +66,20 @@ func registerListTemplates(server *mcp.Server) {
 				info := TemplateInfo{
 					TemplateID:    t.TemplateId,
 					Name:          t.Name,
-					Type:          fmt.Sprintf("cvt_%s_%s", input.ContainerID, t.TemplateId),
 					TagManagerUrl: t.TagManagerUrl,
 				}
-				if t.GalleryReference != nil {
+				// For gallery templates, use cvt_{galleryTemplateId}
+				// For custom templates, use cvt_{containerId}_{templateId}
+				if t.GalleryReference != nil && t.GalleryReference.GalleryTemplateId != "" {
+					info.Type = fmt.Sprintf("cvt_%s", t.GalleryReference.GalleryTemplateId)
 					info.GalleryReference = &GalleryReferenceInfo{
 						Owner:             t.GalleryReference.Owner,
 						Repository:        t.GalleryReference.Repository,
 						Version:           t.GalleryReference.Version,
 						GalleryTemplateId: t.GalleryReference.GalleryTemplateId,
 					}
+				} else {
+					info.Type = fmt.Sprintf("cvt_%s_%s", input.ContainerID, t.TemplateId)
 				}
 				templates = append(templates, info)
 			}
@@ -88,6 +92,6 @@ func registerListTemplates(server *mcp.Server) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "list_templates",
-		Description: "List all GTM Custom Templates in a workspace. Returns template IDs and their type strings (cvt_{containerId}_{templateId}) for use in variables/tags.",
+		Description: "List all GTM Custom Templates in a workspace. Returns template IDs and their type strings (cvt_{galleryTemplateId} for gallery templates) for use when creating tags.",
 	}, handler)
 }

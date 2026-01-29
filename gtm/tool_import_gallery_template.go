@@ -67,17 +67,21 @@ func registerImportGalleryTemplate(server *mcp.Server) {
 		result := TemplateInfo{
 			TemplateID:    template.TemplateId,
 			Name:          template.Name,
-			Type:          fmt.Sprintf("cvt_%s_%s", input.ContainerID, template.TemplateId),
 			TagManagerUrl: template.TagManagerUrl,
 		}
 
-		if template.GalleryReference != nil {
+		// For gallery templates, use cvt_{galleryTemplateId}
+		if template.GalleryReference != nil && template.GalleryReference.GalleryTemplateId != "" {
+			result.Type = fmt.Sprintf("cvt_%s", template.GalleryReference.GalleryTemplateId)
 			result.GalleryReference = &GalleryReferenceInfo{
 				Owner:             template.GalleryReference.Owner,
 				Repository:        template.GalleryReference.Repository,
 				Version:           template.GalleryReference.Version,
 				GalleryTemplateId: template.GalleryReference.GalleryTemplateId,
 			}
+		} else {
+			// Fallback for non-gallery templates
+			result.Type = fmt.Sprintf("cvt_%s_%s", input.ContainerID, template.TemplateId)
 		}
 
 		return nil, ImportGalleryTemplateOutput{
