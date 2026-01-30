@@ -1,5 +1,5 @@
-# Build stage
-FROM golang:1.24-alpine AS builder
+# Build stage (using Google mirror to avoid Docker Hub rate limits)
+FROM mirror.gcr.io/library/golang:1.25-alpine AS builder
 
 WORKDIR /app
 
@@ -16,8 +16,8 @@ COPY . .
 # Build the binary
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o gtm-mcp-server .
 
-# Runtime stage
-FROM alpine:3.19
+# Runtime stage (using Google mirror)
+FROM mirror.gcr.io/library/alpine:3.21
 
 WORKDIR /app
 
