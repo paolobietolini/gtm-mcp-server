@@ -22,6 +22,8 @@ func RegisterTools(server *mcp.Server) {
 	registerListFolders(server)
 	registerGetFolderEntities(server)
 	registerListTemplates(server)
+	registerGetTemplate(server)
+	registerListVersions(server)
 
 	// Write operations
 	registerCreateTag(server)
@@ -42,6 +44,9 @@ func RegisterTools(server *mcp.Server) {
 
 	// Template operations
 	registerImportGalleryTemplate(server)
+	registerCreateTemplate(server)
+	registerUpdateTemplate(server)
+	registerDeleteTemplate(server)
 
 	// Templates (help LLMs with correct parameter formats)
 	registerGetTagTemplates(server)
