@@ -14,7 +14,7 @@ type UpdateTemplateInput struct {
 	ContainerID  string `json:"containerId" jsonschema:"description:The GTM container ID"`
 	WorkspaceID  string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
 	TemplateID   string `json:"templateId" jsonschema:"description:The template ID to update"`
-	Name         string `json:"name,omitempty" jsonschema:"description:New template display name (optional)"`
+	Name         string `json:"name,omitempty" jsonschema:"description:Internal template name (optional). Note: This is NOT the visible display name. The visible name comes from the displayName field inside the ___INFO___ section of templateData."`
 	TemplateData string `json:"templateData,omitempty" jsonschema:"description:New template code in .tpl format (optional)"`
 }
 
@@ -103,6 +103,6 @@ func registerUpdateTemplate(server *mcp.Server) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "update_template",
-		Description: "Update an existing custom template. Automatically handles fingerprint for concurrency control. Note: Updating gallery templates may break the link to the gallery.",
+		Description: "Update an existing custom template. Automatically handles fingerprint for concurrency control. Note: Updating gallery templates may break the link to the gallery. IMPORTANT: To change the visible template name, update the 'displayName' field inside the ___INFO___ section of templateData - the 'name' parameter is only an internal identifier.",
 	}, handler)
 }
