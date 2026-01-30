@@ -260,6 +260,7 @@ claude mcp add -t http gtm http://localhost:8080
 ### Publishing
 | Tool | Description |
 |------|-------------|
+| `list_versions` | List all container versions with tag/trigger/variable counts |
 | `create_version` | Create a version from workspace changes |
 | `publish_version` | Publish a version (requires confirmation) |
 
@@ -269,6 +270,10 @@ claude mcp add -t http gtm http://localhost:8080
 | `get_tag_templates` | Get GA4/HTML tag parameter examples |
 | `get_trigger_templates` | Get trigger configuration examples |
 | `list_templates` | List custom templates in a workspace |
+| `get_template` | Get template details including template code |
+| `create_template` | Create a custom template from .tpl code |
+| `update_template` | Modify an existing template |
+| `delete_template` | Remove a template (requires confirmation) |
 | `import_gallery_template` | Import a template from the Community Gallery |
 
 ---
