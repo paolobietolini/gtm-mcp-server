@@ -10,7 +10,7 @@
 
 **Let AI manage your Google Tag Manager containers.**
 
-Create tags, audit configurations, generate tracking plans, and publish changes—all through natural conversation with Claude or ChatGPT.
+Create tags, audit configurations, generate tracking plans, and publish changes, all through natural conversation with Claude or ChatGPT.
 
 **URL:** `https://mcp.gtmeditor.com`
 
