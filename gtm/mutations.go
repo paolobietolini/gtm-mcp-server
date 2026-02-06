@@ -249,9 +249,17 @@ func toAPIConditions(conditions []Condition) []*tagmanager.Condition {
 	}
 	result := make([]*tagmanager.Condition, len(conditions))
 	for i, c := range conditions {
+		params := toAPIParams(c.Parameter)
+		if c.Negate {
+			params = append(params, &tagmanager.Parameter{
+				Type:  "boolean",
+				Key:   "negate",
+				Value: "true",
+			})
+		}
 		result[i] = &tagmanager.Condition{
 			Type:      c.Type,
-			Parameter: toAPIParams(c.Parameter),
+			Parameter: params,
 		}
 	}
 	return result
