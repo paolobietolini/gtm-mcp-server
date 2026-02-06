@@ -32,8 +32,8 @@ func registerDeleteTrigger(server *mcp.Server) {
 			}, nil
 		}
 
-		// Validate workspace path
-		if err := ValidateWorkspacePath(input.AccountID, input.ContainerID, input.WorkspaceID); err != nil {
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		if err != nil {
 			return nil, DeleteTriggerOutput{}, err
 		}
 
@@ -42,14 +42,9 @@ func registerDeleteTrigger(server *mcp.Server) {
 			return nil, DeleteTriggerOutput{}, fmt.Errorf("trigger ID is required")
 		}
 
-		client, err := getClient(ctx)
-		if err != nil {
-			return nil, DeleteTriggerOutput{}, err
-		}
+		path := BuildTriggerPath(wc.AccountID, wc.ContainerID, wc.WorkspaceID, input.TriggerID)
 
-		path := BuildTriggerPath(input.AccountID, input.ContainerID, input.WorkspaceID, input.TriggerID)
-
-		if err := client.DeleteTrigger(ctx, path); err != nil {
+		if err := wc.Client.DeleteTrigger(ctx, path); err != nil {
 			return nil, DeleteTriggerOutput{}, err
 		}
 

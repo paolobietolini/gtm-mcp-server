@@ -34,29 +34,22 @@ type CreatedWorkspace struct {
 
 func registerCreateWorkspace(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input CreateWorkspaceInput) (*mcp.CallToolResult, CreateWorkspaceOutput, error) {
-		// Validate required fields
-		if input.AccountID == "" {
-			return nil, CreateWorkspaceOutput{}, fmt.Errorf("accountId is required")
-		}
-		if input.ContainerID == "" {
-			return nil, CreateWorkspaceOutput{}, fmt.Errorf("containerId is required")
-		}
-		if input.Name == "" {
-			return nil, CreateWorkspaceOutput{}, fmt.Errorf("name is required")
-		}
-
-		client, err := getClient(ctx)
+		cc, err := resolveContainer(ctx, input.AccountID, input.ContainerID)
 		if err != nil {
 			return nil, CreateWorkspaceOutput{}, err
 		}
 
-		parent := fmt.Sprintf("accounts/%s/containers/%s", input.AccountID, input.ContainerID)
+		if input.Name == "" {
+			return nil, CreateWorkspaceOutput{}, fmt.Errorf("name is required")
+		}
+
+		parent := cc.ContainerPath()
 		workspace := &tagmanager.Workspace{
 			Name:        input.Name,
 			Description: input.Description,
 		}
 
-		created, err := client.Service.Accounts.Containers.Workspaces.Create(parent, workspace).Context(ctx).Do()
+		created, err := cc.Client.Service.Accounts.Containers.Workspaces.Create(parent, workspace).Context(ctx).Do()
 		if err != nil {
 			return nil, CreateWorkspaceOutput{}, mapGoogleError(err)
 		}

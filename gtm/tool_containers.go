@@ -15,7 +15,7 @@ type ListContainersOutput struct {
 
 func registerListContainers(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input ListContainersInput) (*mcp.CallToolResult, ListContainersOutput, error) {
-		client, err := getClient(ctx)
+		client, err := resolveAccount(ctx, input.AccountID)
 		if err != nil {
 			return nil, ListContainersOutput{}, err
 		}

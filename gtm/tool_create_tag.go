@@ -30,18 +30,13 @@ type CreateTagOutput struct {
 
 func registerCreateTag(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input CreateTagInput) (*mcp.CallToolResult, CreateTagOutput, error) {
-		// Validate workspace path
-		if err := ValidateWorkspacePath(input.AccountID, input.ContainerID, input.WorkspaceID); err != nil {
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		if err != nil {
 			return nil, CreateTagOutput{}, err
 		}
 
 		// Validate tag input
 		if err := ValidateTagInput(input.Name, input.Type, input.FiringTriggerIDs); err != nil {
-			return nil, CreateTagOutput{}, err
-		}
-
-		client, err := getClient(ctx)
-		if err != nil {
 			return nil, CreateTagOutput{}, err
 		}
 
@@ -63,7 +58,7 @@ func registerCreateTag(server *mcp.Server) {
 			Paused:            input.Paused,
 		}
 
-		tag, err := client.CreateTag(ctx, input.AccountID, input.ContainerID, input.WorkspaceID, tagInput)
+		tag, err := wc.Client.CreateTag(ctx, wc.AccountID, wc.ContainerID, wc.WorkspaceID, tagInput)
 		if err != nil {
 			return nil, CreateTagOutput{}, err
 		}

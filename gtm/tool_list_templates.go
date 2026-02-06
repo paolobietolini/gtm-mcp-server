@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	tagmanager "google.golang.org/api/tagmanager/v2"
 )
 
 // ListTemplatesInput is the input for list_templates tool.
@@ -38,24 +39,15 @@ type GalleryReferenceInfo struct {
 
 func registerListTemplates(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input ListTemplatesInput) (*mcp.CallToolResult, ListTemplatesOutput, error) {
-		// Validate required fields
-		if input.AccountID == "" {
-			return nil, ListTemplatesOutput{}, fmt.Errorf("accountId is required")
-		}
-		if input.ContainerID == "" {
-			return nil, ListTemplatesOutput{}, fmt.Errorf("containerId is required")
-		}
-		if input.WorkspaceID == "" {
-			return nil, ListTemplatesOutput{}, fmt.Errorf("workspaceId is required")
-		}
-
-		client, err := getClient(ctx)
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
 		if err != nil {
 			return nil, ListTemplatesOutput{}, err
 		}
 
-		parent := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s", input.AccountID, input.ContainerID, input.WorkspaceID)
-		resp, err := client.Service.Accounts.Containers.Workspaces.Templates.List(parent).Context(ctx).Do()
+		parent := wc.WorkspacePath()
+		resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListTemplatesResponse, error) {
+			return wc.Client.Service.Accounts.Containers.Workspaces.Templates.List(parent).Context(ctx).Do()
+		})
 		if err != nil {
 			return nil, ListTemplatesOutput{}, mapGoogleError(err)
 		}
@@ -79,7 +71,7 @@ func registerListTemplates(server *mcp.Server) {
 						GalleryTemplateId: t.GalleryReference.GalleryTemplateId,
 					}
 				} else {
-					info.Type = fmt.Sprintf("cvt_%s_%s", input.ContainerID, t.TemplateId)
+					info.Type = fmt.Sprintf("cvt_%s_%s", wc.ContainerID, t.TemplateId)
 				}
 				templates = append(templates, info)
 			}

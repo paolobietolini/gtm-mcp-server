@@ -32,16 +32,11 @@ type UpdateTemplateOutput struct {
 
 func registerUpdateTemplate(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input UpdateTemplateInput) (*mcp.CallToolResult, UpdateTemplateOutput, error) {
-		// Validate required fields
-		if input.AccountID == "" {
-			return nil, UpdateTemplateOutput{}, fmt.Errorf("accountId is required")
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		if err != nil {
+			return nil, UpdateTemplateOutput{}, err
 		}
-		if input.ContainerID == "" {
-			return nil, UpdateTemplateOutput{}, fmt.Errorf("containerId is required")
-		}
-		if input.WorkspaceID == "" {
-			return nil, UpdateTemplateOutput{}, fmt.Errorf("workspaceId is required")
-		}
+
 		if input.TemplateID == "" {
 			return nil, UpdateTemplateOutput{}, fmt.Errorf("templateId is required")
 		}
@@ -49,16 +44,10 @@ func registerUpdateTemplate(server *mcp.Server) {
 			return nil, UpdateTemplateOutput{}, fmt.Errorf("at least one of name or templateData must be provided")
 		}
 
-		client, err := getClient(ctx)
-		if err != nil {
-			return nil, UpdateTemplateOutput{}, err
-		}
-
-		path := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/templates/%s",
-			input.AccountID, input.ContainerID, input.WorkspaceID, input.TemplateID)
+		path := fmt.Sprintf("%s/templates/%s", wc.WorkspacePath(), input.TemplateID)
 
 		// Get current template to get fingerprint and current values
-		current, err := client.Service.Accounts.Containers.Workspaces.Templates.Get(path).Context(ctx).Do()
+		current, err := wc.Client.Service.Accounts.Containers.Workspaces.Templates.Get(path).Context(ctx).Do()
 		if err != nil {
 			return nil, UpdateTemplateOutput{}, mapGoogleError(err)
 		}
@@ -78,13 +67,13 @@ func registerUpdateTemplate(server *mcp.Server) {
 			template.TemplateData = input.TemplateData
 		}
 
-		updated, err := client.Service.Accounts.Containers.Workspaces.Templates.Update(path, template).Context(ctx).Do()
+		updated, err := wc.Client.Service.Accounts.Containers.Workspaces.Templates.Update(path, template).Context(ctx).Do()
 		if err != nil {
 			return nil, UpdateTemplateOutput{}, mapGoogleError(err)
 		}
 
 		// Determine type
-		templateType := fmt.Sprintf("cvt_%s_%s", input.ContainerID, updated.TemplateId)
+		templateType := fmt.Sprintf("cvt_%s_%s", wc.ContainerID, updated.TemplateId)
 		if updated.GalleryReference != nil && updated.GalleryReference.GalleryTemplateId != "" {
 			templateType = fmt.Sprintf("cvt_%s", updated.GalleryReference.GalleryTemplateId)
 		}

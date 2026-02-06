@@ -32,8 +32,8 @@ type UpdateTagOutput struct {
 
 func registerUpdateTag(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input UpdateTagInput) (*mcp.CallToolResult, UpdateTagOutput, error) {
-		// Validate workspace path
-		if err := ValidateWorkspacePath(input.AccountID, input.ContainerID, input.WorkspaceID); err != nil {
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		if err != nil {
 			return nil, UpdateTagOutput{}, err
 		}
 
@@ -47,12 +47,7 @@ func registerUpdateTag(server *mcp.Server) {
 			return nil, UpdateTagOutput{}, err
 		}
 
-		client, err := getClient(ctx)
-		if err != nil {
-			return nil, UpdateTagOutput{}, err
-		}
-
-		path := BuildTagPath(input.AccountID, input.ContainerID, input.WorkspaceID, input.TagID)
+		path := BuildTagPath(wc.AccountID, wc.ContainerID, wc.WorkspaceID, input.TagID)
 
 		// Parse parameters JSON if provided
 		var params []Parameter
@@ -72,7 +67,7 @@ func registerUpdateTag(server *mcp.Server) {
 			Paused:            input.Paused,
 		}
 
-		tag, err := client.UpdateTag(ctx, path, tagInput)
+		tag, err := wc.Client.UpdateTag(ctx, path, tagInput)
 		if err != nil {
 			return nil, UpdateTagOutput{}, err
 		}

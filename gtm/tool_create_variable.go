@@ -27,18 +27,13 @@ type CreateVariableOutput struct {
 
 func registerCreateVariable(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input CreateVariableInput) (*mcp.CallToolResult, CreateVariableOutput, error) {
-		// Validate workspace path
-		if err := ValidateWorkspacePath(input.AccountID, input.ContainerID, input.WorkspaceID); err != nil {
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		if err != nil {
 			return nil, CreateVariableOutput{}, err
 		}
 
 		// Validate variable input
 		if err := ValidateVariableInput(input.Name, input.Type); err != nil {
-			return nil, CreateVariableOutput{}, err
-		}
-
-		client, err := getClient(ctx)
-		if err != nil {
 			return nil, CreateVariableOutput{}, err
 		}
 
@@ -57,7 +52,7 @@ func registerCreateVariable(server *mcp.Server) {
 			Notes:     input.Notes,
 		}
 
-		variable, err := client.CreateVariable(ctx, input.AccountID, input.ContainerID, input.WorkspaceID, variableInput)
+		variable, err := wc.Client.CreateVariable(ctx, wc.AccountID, wc.ContainerID, wc.WorkspaceID, variableInput)
 		if err != nil {
 			return nil, CreateVariableOutput{}, err
 		}

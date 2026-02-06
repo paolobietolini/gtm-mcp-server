@@ -9,12 +9,12 @@ import (
 
 // ImportGalleryTemplateInput is the input for import_gallery_template tool.
 type ImportGalleryTemplateInput struct {
-	AccountID     string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID   string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID   string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	GalleryOwner  string `json:"galleryOwner" jsonschema:"description:Owner of the Gallery template (e.g. 'iubenda' or 'GoogleAnalytics')"`
-	GalleryRepo   string `json:"galleryRepository" jsonschema:"description:Repository of the Gallery template (e.g. 'gtm-cookie-solution')"`
-	GallerySha    string `json:"gallerySha,omitempty" jsonschema:"description:SHA version of the Gallery template. Defaults to latest if not provided"`
+	AccountID    string `json:"accountId" jsonschema:"description:The GTM account ID"`
+	ContainerID  string `json:"containerId" jsonschema:"description:The GTM container ID"`
+	WorkspaceID  string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	GalleryOwner string `json:"galleryOwner" jsonschema:"description:Owner of the Gallery template (e.g. 'iubenda' or 'GoogleAnalytics')"`
+	GalleryRepo  string `json:"galleryRepository" jsonschema:"description:Repository of the Gallery template (e.g. 'gtm-cookie-solution')"`
+	GallerySha   string `json:"gallerySha,omitempty" jsonschema:"description:SHA version of the Gallery template. Defaults to latest if not provided"`
 }
 
 // ImportGalleryTemplateOutput is the output for import_gallery_template tool.
@@ -26,16 +26,11 @@ type ImportGalleryTemplateOutput struct {
 
 func registerImportGalleryTemplate(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input ImportGalleryTemplateInput) (*mcp.CallToolResult, ImportGalleryTemplateOutput, error) {
-		// Validate required fields
-		if input.AccountID == "" {
-			return nil, ImportGalleryTemplateOutput{}, fmt.Errorf("accountId is required")
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		if err != nil {
+			return nil, ImportGalleryTemplateOutput{}, err
 		}
-		if input.ContainerID == "" {
-			return nil, ImportGalleryTemplateOutput{}, fmt.Errorf("containerId is required")
-		}
-		if input.WorkspaceID == "" {
-			return nil, ImportGalleryTemplateOutput{}, fmt.Errorf("workspaceId is required")
-		}
+
 		if input.GalleryOwner == "" {
 			return nil, ImportGalleryTemplateOutput{}, fmt.Errorf("galleryOwner is required")
 		}
@@ -43,14 +38,9 @@ func registerImportGalleryTemplate(server *mcp.Server) {
 			return nil, ImportGalleryTemplateOutput{}, fmt.Errorf("galleryRepository is required")
 		}
 
-		client, err := getClient(ctx)
-		if err != nil {
-			return nil, ImportGalleryTemplateOutput{}, err
-		}
+		parent := wc.WorkspacePath()
 
-		parent := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s", input.AccountID, input.ContainerID, input.WorkspaceID)
-
-		call := client.Service.Accounts.Containers.Workspaces.Templates.ImportFromGallery(parent).
+		call := wc.Client.Service.Accounts.Containers.Workspaces.Templates.ImportFromGallery(parent).
 			GalleryOwner(input.GalleryOwner).
 			GalleryRepository(input.GalleryRepo).
 			AcknowledgePermissions(true)
@@ -80,8 +70,7 @@ func registerImportGalleryTemplate(server *mcp.Server) {
 				GalleryTemplateId: template.GalleryReference.GalleryTemplateId,
 			}
 		} else {
-			// Fallback for non-gallery templates
-			result.Type = fmt.Sprintf("cvt_%s_%s", input.ContainerID, template.TemplateId)
+			result.Type = fmt.Sprintf("cvt_%s_%s", wc.ContainerID, template.TemplateId)
 		}
 
 		return nil, ImportGalleryTemplateOutput{

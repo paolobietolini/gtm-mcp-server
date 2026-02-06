@@ -32,8 +32,8 @@ type UpdateTriggerOutput struct {
 
 func registerUpdateTrigger(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input UpdateTriggerInput) (*mcp.CallToolResult, UpdateTriggerOutput, error) {
-		// Validate workspace path
-		if err := ValidateWorkspacePath(input.AccountID, input.ContainerID, input.WorkspaceID); err != nil {
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		if err != nil {
 			return nil, UpdateTriggerOutput{}, err
 		}
 
@@ -47,12 +47,7 @@ func registerUpdateTrigger(server *mcp.Server) {
 			return nil, UpdateTriggerOutput{}, err
 		}
 
-		client, err := getClient(ctx)
-		if err != nil {
-			return nil, UpdateTriggerOutput{}, err
-		}
-
-		path := BuildTriggerPath(input.AccountID, input.ContainerID, input.WorkspaceID, input.TriggerID)
+		path := BuildTriggerPath(wc.AccountID, wc.ContainerID, wc.WorkspaceID, input.TriggerID)
 
 		// Parse filter JSON if provided
 		var filter []Condition
@@ -96,7 +91,7 @@ func registerUpdateTrigger(server *mcp.Server) {
 			Notes:             input.Notes,
 		}
 
-		trigger, err := client.UpdateTrigger(ctx, path, triggerInput)
+		trigger, err := wc.Client.UpdateTrigger(ctx, path, triggerInput)
 		if err != nil {
 			return nil, UpdateTriggerOutput{}, err
 		}

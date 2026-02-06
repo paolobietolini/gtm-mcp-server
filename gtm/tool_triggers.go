@@ -17,12 +17,12 @@ type ListTriggersOutput struct {
 
 func registerListTriggers(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input ListTriggersInput) (*mcp.CallToolResult, ListTriggersOutput, error) {
-		client, err := getClient(ctx)
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
 		if err != nil {
 			return nil, ListTriggersOutput{}, err
 		}
 
-		triggers, err := client.ListTriggers(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		triggers, err := wc.Client.ListTriggers(ctx, wc.AccountID, wc.ContainerID, wc.WorkspaceID)
 		if err != nil {
 			return nil, ListTriggersOutput{}, err
 		}

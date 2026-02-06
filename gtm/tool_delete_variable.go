@@ -32,8 +32,8 @@ func registerDeleteVariable(server *mcp.Server) {
 			}, nil
 		}
 
-		// Validate workspace path
-		if err := ValidateWorkspacePath(input.AccountID, input.ContainerID, input.WorkspaceID); err != nil {
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		if err != nil {
 			return nil, DeleteVariableOutput{}, err
 		}
 
@@ -42,14 +42,9 @@ func registerDeleteVariable(server *mcp.Server) {
 			return nil, DeleteVariableOutput{}, fmt.Errorf("variable ID is required")
 		}
 
-		client, err := getClient(ctx)
-		if err != nil {
-			return nil, DeleteVariableOutput{}, err
-		}
+		path := BuildVariablePath(wc.AccountID, wc.ContainerID, wc.WorkspaceID, input.VariableID)
 
-		path := BuildVariablePath(input.AccountID, input.ContainerID, input.WorkspaceID, input.VariableID)
-
-		if err := client.DeleteVariable(ctx, path); err != nil {
+		if err := wc.Client.DeleteVariable(ctx, path); err != nil {
 			return nil, DeleteVariableOutput{}, err
 		}
 

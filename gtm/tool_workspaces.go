@@ -16,12 +16,12 @@ type ListWorkspacesOutput struct {
 
 func registerListWorkspaces(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input ListWorkspacesInput) (*mcp.CallToolResult, ListWorkspacesOutput, error) {
-		client, err := getClient(ctx)
+		cc, err := resolveContainer(ctx, input.AccountID, input.ContainerID)
 		if err != nil {
 			return nil, ListWorkspacesOutput{}, err
 		}
 
-		workspaces, err := client.ListWorkspaces(ctx, input.AccountID, input.ContainerID)
+		workspaces, err := cc.Client.ListWorkspaces(ctx, cc.AccountID, cc.ContainerID)
 		if err != nil {
 			return nil, ListWorkspacesOutput{}, err
 		}

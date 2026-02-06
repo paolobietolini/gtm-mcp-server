@@ -33,12 +33,12 @@ type GetFolderEntitiesOutput struct {
 
 func registerListFolders(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input ListFoldersInput) (*mcp.CallToolResult, ListFoldersOutput, error) {
-		client, err := getClient(ctx)
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
 		if err != nil {
 			return nil, ListFoldersOutput{}, err
 		}
 
-		folders, err := client.ListFolders(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		folders, err := wc.Client.ListFolders(ctx, wc.AccountID, wc.ContainerID, wc.WorkspaceID)
 		if err != nil {
 			return nil, ListFoldersOutput{}, err
 		}
@@ -54,12 +54,12 @@ func registerListFolders(server *mcp.Server) {
 
 func registerGetFolderEntities(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input GetFolderEntitiesInput) (*mcp.CallToolResult, GetFolderEntitiesOutput, error) {
-		client, err := getClient(ctx)
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
 		if err != nil {
 			return nil, GetFolderEntitiesOutput{}, err
 		}
 
-		entities, err := client.GetFolderEntities(ctx, input.AccountID, input.ContainerID, input.WorkspaceID, input.FolderID)
+		entities, err := wc.Client.GetFolderEntities(ctx, wc.AccountID, wc.ContainerID, wc.WorkspaceID, input.FolderID)
 		if err != nil {
 			return nil, GetFolderEntitiesOutput{}, err
 		}

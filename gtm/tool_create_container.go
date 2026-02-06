@@ -20,9 +20,9 @@ type CreateContainerInput struct {
 
 // CreateContainerOutput is the output for create_container tool.
 type CreateContainerOutput struct {
-	Success   bool              `json:"success"`
-	Container CreatedContainer  `json:"container"`
-	Message   string            `json:"message"`
+	Success   bool             `json:"success"`
+	Container CreatedContainer `json:"container"`
+	Message   string           `json:"message"`
 }
 
 // CreatedContainer is a simplified container response.
@@ -37,9 +37,9 @@ type CreatedContainer struct {
 
 func registerCreateContainer(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input CreateContainerInput) (*mcp.CallToolResult, CreateContainerOutput, error) {
-		// Validate account ID
-		if input.AccountID == "" {
-			return nil, CreateContainerOutput{}, fmt.Errorf("accountId is required")
+		client, err := resolveAccount(ctx, input.AccountID)
+		if err != nil {
+			return nil, CreateContainerOutput{}, err
 		}
 
 		// Validate name
@@ -52,15 +52,10 @@ func registerCreateContainer(server *mcp.Server) {
 			return nil, CreateContainerOutput{}, fmt.Errorf("usageContext is required (valid values: web, android, ios, amp, server)")
 		}
 		validContexts := map[string]bool{"web": true, "android": true, "ios": true, "androidSdk5": true, "iosSdk5": true, "amp": true, "server": true}
-		for _, ctx := range input.UsageContext {
-			if !validContexts[ctx] {
-				return nil, CreateContainerOutput{}, fmt.Errorf("invalid usageContext '%s' (valid values: web, android, ios, amp, server)", ctx)
+		for _, uc := range input.UsageContext {
+			if !validContexts[uc] {
+				return nil, CreateContainerOutput{}, fmt.Errorf("invalid usageContext '%s' (valid values: web, android, ios, amp, server)", uc)
 			}
-		}
-
-		client, err := getClient(ctx)
-		if err != nil {
-			return nil, CreateContainerOutput{}, err
 		}
 
 		parent := fmt.Sprintf("accounts/%s", input.AccountID)

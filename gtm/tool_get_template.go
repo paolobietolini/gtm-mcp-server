@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
+	tagmanager "google.golang.org/api/tagmanager/v2"
 )
 
 // GetTemplateInput is the input for get_template tool.
@@ -29,29 +30,20 @@ type GetTemplateOutput struct {
 
 func registerGetTemplate(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input GetTemplateInput) (*mcp.CallToolResult, GetTemplateOutput, error) {
-		// Validate required fields
-		if input.AccountID == "" {
-			return nil, GetTemplateOutput{}, fmt.Errorf("accountId is required")
-		}
-		if input.ContainerID == "" {
-			return nil, GetTemplateOutput{}, fmt.Errorf("containerId is required")
-		}
-		if input.WorkspaceID == "" {
-			return nil, GetTemplateOutput{}, fmt.Errorf("workspaceId is required")
-		}
-		if input.TemplateID == "" {
-			return nil, GetTemplateOutput{}, fmt.Errorf("templateId is required")
-		}
-
-		client, err := getClient(ctx)
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
 		if err != nil {
 			return nil, GetTemplateOutput{}, err
 		}
 
-		path := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/templates/%s",
-			input.AccountID, input.ContainerID, input.WorkspaceID, input.TemplateID)
+		if input.TemplateID == "" {
+			return nil, GetTemplateOutput{}, fmt.Errorf("templateId is required")
+		}
 
-		template, err := client.Service.Accounts.Containers.Workspaces.Templates.Get(path).Context(ctx).Do()
+		path := fmt.Sprintf("%s/templates/%s", wc.WorkspacePath(), input.TemplateID)
+
+		template, err := retryWithBackoff(ctx, 3, func() (*tagmanager.CustomTemplate, error) {
+			return wc.Client.Service.Accounts.Containers.Workspaces.Templates.Get(path).Context(ctx).Do()
+		})
 		if err != nil {
 			return nil, GetTemplateOutput{}, mapGoogleError(err)
 		}
@@ -75,7 +67,7 @@ func registerGetTemplate(server *mcp.Server) {
 				GalleryTemplateId: template.GalleryReference.GalleryTemplateId,
 			}
 		} else {
-			output.Type = fmt.Sprintf("cvt_%s_%s", input.ContainerID, template.TemplateId)
+			output.Type = fmt.Sprintf("cvt_%s_%s", wc.ContainerID, template.TemplateId)
 		}
 
 		return nil, output, nil

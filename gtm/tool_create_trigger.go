@@ -30,18 +30,13 @@ type CreateTriggerOutput struct {
 
 func registerCreateTrigger(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input CreateTriggerInput) (*mcp.CallToolResult, CreateTriggerOutput, error) {
-		// Validate workspace path
-		if err := ValidateWorkspacePath(input.AccountID, input.ContainerID, input.WorkspaceID); err != nil {
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		if err != nil {
 			return nil, CreateTriggerOutput{}, err
 		}
 
 		// Validate trigger input
 		if err := ValidateTriggerInput(input.Name, input.Type); err != nil {
-			return nil, CreateTriggerOutput{}, err
-		}
-
-		client, err := getClient(ctx)
-		if err != nil {
 			return nil, CreateTriggerOutput{}, err
 		}
 
@@ -88,7 +83,7 @@ func registerCreateTrigger(server *mcp.Server) {
 			Notes:             input.Notes,
 		}
 
-		trigger, err := client.CreateTrigger(ctx, input.AccountID, input.ContainerID, input.WorkspaceID, triggerInput)
+		trigger, err := wc.Client.CreateTrigger(ctx, wc.AccountID, wc.ContainerID, wc.WorkspaceID, triggerInput)
 		if err != nil {
 			return nil, CreateTriggerOutput{}, err
 		}

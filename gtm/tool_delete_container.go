@@ -30,19 +30,14 @@ func registerDeleteContainer(server *mcp.Server) {
 			}, nil
 		}
 
-		// Validate container path
-		if err := ValidateContainerPath(input.AccountID, input.ContainerID); err != nil {
-			return nil, DeleteContainerOutput{}, err
-		}
-
-		client, err := getClient(ctx)
+		cc, err := resolveContainer(ctx, input.AccountID, input.ContainerID)
 		if err != nil {
 			return nil, DeleteContainerOutput{}, err
 		}
 
-		path := BuildContainerPath(input.AccountID, input.ContainerID)
+		path := cc.ContainerPath()
 
-		if err := client.DeleteContainer(ctx, path); err != nil {
+		if err := cc.Client.DeleteContainer(ctx, path); err != nil {
 			return nil, DeleteContainerOutput{}, err
 		}
 

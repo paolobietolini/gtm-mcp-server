@@ -32,8 +32,8 @@ func registerDeleteTag(server *mcp.Server) {
 			}, nil
 		}
 
-		// Validate workspace path
-		if err := ValidateWorkspacePath(input.AccountID, input.ContainerID, input.WorkspaceID); err != nil {
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		if err != nil {
 			return nil, DeleteTagOutput{}, err
 		}
 
@@ -42,14 +42,9 @@ func registerDeleteTag(server *mcp.Server) {
 			return nil, DeleteTagOutput{}, fmt.Errorf("tag ID is required")
 		}
 
-		client, err := getClient(ctx)
-		if err != nil {
-			return nil, DeleteTagOutput{}, err
-		}
+		path := BuildTagPath(wc.AccountID, wc.ContainerID, wc.WorkspaceID, input.TagID)
 
-		path := BuildTagPath(input.AccountID, input.ContainerID, input.WorkspaceID, input.TagID)
-
-		if err := client.DeleteTag(ctx, path); err != nil {
+		if err := wc.Client.DeleteTag(ctx, path); err != nil {
 			return nil, DeleteTagOutput{}, err
 		}
 

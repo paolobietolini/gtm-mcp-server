@@ -24,19 +24,6 @@ type DeleteTemplateOutput struct {
 
 func registerDeleteTemplate(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input DeleteTemplateInput) (*mcp.CallToolResult, DeleteTemplateOutput, error) {
-		// Validate required fields
-		if input.AccountID == "" {
-			return nil, DeleteTemplateOutput{}, fmt.Errorf("accountId is required")
-		}
-		if input.ContainerID == "" {
-			return nil, DeleteTemplateOutput{}, fmt.Errorf("containerId is required")
-		}
-		if input.WorkspaceID == "" {
-			return nil, DeleteTemplateOutput{}, fmt.Errorf("workspaceId is required")
-		}
-		if input.TemplateID == "" {
-			return nil, DeleteTemplateOutput{}, fmt.Errorf("templateId is required")
-		}
 		if !input.Confirm {
 			return nil, DeleteTemplateOutput{
 				Success: false,
@@ -44,15 +31,18 @@ func registerDeleteTemplate(server *mcp.Server) {
 			}, nil
 		}
 
-		client, err := getClient(ctx)
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
 		if err != nil {
 			return nil, DeleteTemplateOutput{}, err
 		}
 
-		path := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/templates/%s",
-			input.AccountID, input.ContainerID, input.WorkspaceID, input.TemplateID)
+		if input.TemplateID == "" {
+			return nil, DeleteTemplateOutput{}, fmt.Errorf("templateId is required")
+		}
 
-		err = client.Service.Accounts.Containers.Workspaces.Templates.Delete(path).Context(ctx).Do()
+		path := fmt.Sprintf("%s/templates/%s", wc.WorkspacePath(), input.TemplateID)
+
+		err = wc.Client.Service.Accounts.Containers.Workspaces.Templates.Delete(path).Context(ctx).Do()
 		if err != nil {
 			return nil, DeleteTemplateOutput{}, mapGoogleError(err)
 		}

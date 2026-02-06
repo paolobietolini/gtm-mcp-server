@@ -27,12 +27,12 @@ type GetTagOutput struct {
 
 func registerListTags(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input ListTagsInput) (*mcp.CallToolResult, ListTagsOutput, error) {
-		client, err := getClient(ctx)
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
 		if err != nil {
 			return nil, ListTagsOutput{}, err
 		}
 
-		tags, err := client.ListTags(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		tags, err := wc.Client.ListTags(ctx, wc.AccountID, wc.ContainerID, wc.WorkspaceID)
 		if err != nil {
 			return nil, ListTagsOutput{}, err
 		}
@@ -48,12 +48,12 @@ func registerListTags(server *mcp.Server) {
 
 func registerGetTag(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input GetTagInput) (*mcp.CallToolResult, GetTagOutput, error) {
-		client, err := getClient(ctx)
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
 		if err != nil {
 			return nil, GetTagOutput{}, err
 		}
 
-		tag, err := client.GetTag(ctx, input.AccountID, input.ContainerID, input.WorkspaceID, input.TagID)
+		tag, err := wc.Client.GetTag(ctx, wc.AccountID, wc.ContainerID, wc.WorkspaceID, input.TagID)
 		if err != nil {
 			return nil, GetTagOutput{}, err
 		}
@@ -66,4 +66,3 @@ func registerGetTag(server *mcp.Server) {
 		Description: "Get a specific tag by ID",
 	}, handler)
 }
-

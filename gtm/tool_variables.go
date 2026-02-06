@@ -17,12 +17,12 @@ type ListVariablesOutput struct {
 
 func registerListVariables(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input ListVariablesInput) (*mcp.CallToolResult, ListVariablesOutput, error) {
-		client, err := getClient(ctx)
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
 		if err != nil {
 			return nil, ListVariablesOutput{}, err
 		}
 
-		variables, err := client.ListVariables(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		variables, err := wc.Client.ListVariables(ctx, wc.AccountID, wc.ContainerID, wc.WorkspaceID)
 		if err != nil {
 			return nil, ListVariablesOutput{}, err
 		}

@@ -30,16 +30,11 @@ type CreateTemplateOutput struct {
 
 func registerCreateTemplate(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input CreateTemplateInput) (*mcp.CallToolResult, CreateTemplateOutput, error) {
-		// Validate required fields
-		if input.AccountID == "" {
-			return nil, CreateTemplateOutput{}, fmt.Errorf("accountId is required")
+		wc, err := resolveWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
+		if err != nil {
+			return nil, CreateTemplateOutput{}, err
 		}
-		if input.ContainerID == "" {
-			return nil, CreateTemplateOutput{}, fmt.Errorf("containerId is required")
-		}
-		if input.WorkspaceID == "" {
-			return nil, CreateTemplateOutput{}, fmt.Errorf("workspaceId is required")
-		}
+
 		if input.Name == "" {
 			return nil, CreateTemplateOutput{}, fmt.Errorf("name is required")
 		}
@@ -47,20 +42,14 @@ func registerCreateTemplate(server *mcp.Server) {
 			return nil, CreateTemplateOutput{}, fmt.Errorf("templateData is required")
 		}
 
-		client, err := getClient(ctx)
-		if err != nil {
-			return nil, CreateTemplateOutput{}, err
-		}
-
-		parent := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s",
-			input.AccountID, input.ContainerID, input.WorkspaceID)
+		parent := wc.WorkspacePath()
 
 		template := &tagmanager.CustomTemplate{
 			Name:         input.Name,
 			TemplateData: input.TemplateData,
 		}
 
-		created, err := client.Service.Accounts.Containers.Workspaces.Templates.Create(parent, template).Context(ctx).Do()
+		created, err := wc.Client.Service.Accounts.Containers.Workspaces.Templates.Create(parent, template).Context(ctx).Do()
 		if err != nil {
 			return nil, CreateTemplateOutput{}, mapGoogleError(err)
 		}
@@ -69,10 +58,10 @@ func registerCreateTemplate(server *mcp.Server) {
 			Success:       true,
 			TemplateID:    created.TemplateId,
 			Name:          created.Name,
-			Type:          fmt.Sprintf("cvt_%s_%s", input.ContainerID, created.TemplateId),
+			Type:          fmt.Sprintf("cvt_%s_%s", wc.ContainerID, created.TemplateId),
 			Path:          created.Path,
 			TagManagerUrl: created.TagManagerUrl,
-			Message:       fmt.Sprintf("Template '%s' created successfully. Use type 'cvt_%s_%s' when creating tags.", created.Name, input.ContainerID, created.TemplateId),
+			Message:       fmt.Sprintf("Template '%s' created successfully. Use type 'cvt_%s_%s' when creating tags.", created.Name, wc.ContainerID, created.TemplateId),
 		}, nil
 	}
 
