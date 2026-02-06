@@ -116,27 +116,47 @@ func (c *Client) DeleteTrigger(ctx context.Context, path string) error {
 }
 
 // UpdateTrigger updates an existing trigger. It fetches the current trigger first to get the fingerprint.
+// Fields not provided in input are preserved from the current trigger.
 func (c *Client) UpdateTrigger(ctx context.Context, path string, input *TriggerInput) (*CreatedTrigger, error) {
-	// Get current trigger for fingerprint
+	// Get current trigger for fingerprint and to preserve unset fields
 	current, err := c.Service.Accounts.Containers.Workspaces.Triggers.Get(path).Context(ctx).Do()
 	if err != nil {
 		return nil, mapGoogleError(err)
 	}
 
-	// Build updated trigger with fingerprint
+	// Preserve existing fields when not provided in input
+	filter := toAPIConditions(input.Filter)
+	if filter == nil {
+		filter = current.Filter
+	}
+	autoEventFilter := toAPIConditions(input.AutoEventFilter)
+	if autoEventFilter == nil {
+		autoEventFilter = current.AutoEventFilter
+	}
+	customEventFilter := toAPIConditions(input.CustomEventFilter)
+	if customEventFilter == nil {
+		customEventFilter = current.CustomEventFilter
+	}
+	params := toAPIParams(input.Parameter)
+	if params == nil {
+		params = current.Parameter
+	}
+
 	trigger := &tagmanager.Trigger{
 		Name:              input.Name,
 		Type:              input.Type,
-		Filter:            toAPIConditions(input.Filter),
-		AutoEventFilter:   toAPIConditions(input.AutoEventFilter),
-		CustomEventFilter: toAPIConditions(input.CustomEventFilter),
-		Parameter:         toAPIParams(input.Parameter),
+		Filter:            filter,
+		AutoEventFilter:   autoEventFilter,
+		CustomEventFilter: customEventFilter,
+		Parameter:         params,
 		Notes:             input.Notes,
 		Fingerprint:       current.Fingerprint,
 	}
 
 	if input.EventName != nil {
 		trigger.EventName = toAPIParam(input.EventName)
+	} else {
+		trigger.EventName = current.EventName
 	}
 
 	result, err := c.Service.Accounts.Containers.Workspaces.Triggers.Update(path, trigger).Context(ctx).Do()
