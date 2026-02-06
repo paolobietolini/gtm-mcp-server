@@ -95,8 +95,12 @@ func (c *Client) CreateTrigger(ctx context.Context, accountID, containerID, work
 		trigger.EventName = toAPIParam(input.EventName)
 	}
 
-	// Force-send filter fields so Google API client doesn't omit them via omitempty
-	trigger.ForceSendFields = triggerForceSendFields(input)
+	// For click/form triggers with autoEventFilter, set required companion fields
+	if len(input.AutoEventFilter) > 0 && (input.Type == "linkClick" || input.Type == "formSubmission" || input.Type == "click") {
+		trigger.WaitForTags = &tagmanager.Parameter{Type: "boolean", Value: "false"}
+		trigger.WaitForTagsTimeout = &tagmanager.Parameter{Type: "integer", Value: "2000"}
+		trigger.CheckValidation = &tagmanager.Parameter{Type: "boolean", Value: "false"}
+	}
 
 	result, err := c.Service.Accounts.Containers.Workspaces.Triggers.Create(parent, trigger).Context(ctx).Do()
 	if err != nil {
@@ -153,8 +157,25 @@ func (c *Client) UpdateTrigger(ctx context.Context, path string, input *TriggerI
 		CustomEventFilter: customEventFilter,
 		Parameter:         params,
 		Notes:             input.Notes,
-		Fingerprint:       current.Fingerprint,
+		// Preserve trigger-specific fields from current trigger (exclude auto-generated ones)
+		CheckValidation:                current.CheckValidation,
+		WaitForTags:                    current.WaitForTags,
+		WaitForTagsTimeout:             current.WaitForTagsTimeout,
+		ContinuousTimeMinMilliseconds:  current.ContinuousTimeMinMilliseconds,
+		HorizontalScrollPercentageList: current.HorizontalScrollPercentageList,
+		Interval:                       current.Interval,
+		IntervalSeconds:                current.IntervalSeconds,
+		Limit:                          current.Limit,
+		MaxTimerLengthSeconds:          current.MaxTimerLengthSeconds,
+		Selector:                       current.Selector,
+		TotalTimeMinMilliseconds:       current.TotalTimeMinMilliseconds,
+		VerticalScrollPercentageList:   current.VerticalScrollPercentageList,
+		VisibilitySelector:             current.VisibilitySelector,
+		VisiblePercentageMax:           current.VisiblePercentageMax,
+		VisiblePercentageMin:           current.VisiblePercentageMin,
 	}
+	// NOTE: Do NOT include UniqueTriggerId - it's auto-generated during output generation
+	// NOTE: Fingerprint is passed as URL parameter, not in body
 
 	if input.EventName != nil {
 		trigger.EventName = toAPIParam(input.EventName)
@@ -162,24 +183,21 @@ func (c *Client) UpdateTrigger(ctx context.Context, path string, input *TriggerI
 		trigger.EventName = current.EventName
 	}
 
-	// Force-send filter fields so Google API client doesn't omit them via omitempty.
-	// For updates, we always have values (either from input or preserved from current).
-	trigger.ForceSendFields = triggerForceSendFields(input)
-	// Also force-send fields preserved from the current trigger
-	if len(input.Filter) == 0 && current.Filter != nil {
-		trigger.ForceSendFields = append(trigger.ForceSendFields, "Filter")
-	}
-	if len(input.AutoEventFilter) == 0 && current.AutoEventFilter != nil {
-		trigger.ForceSendFields = append(trigger.ForceSendFields, "AutoEventFilter")
-	}
-	if len(input.CustomEventFilter) == 0 && current.CustomEventFilter != nil {
-		trigger.ForceSendFields = append(trigger.ForceSendFields, "CustomEventFilter")
-	}
-	if len(input.Parameter) == 0 && current.Parameter != nil {
-		trigger.ForceSendFields = append(trigger.ForceSendFields, "Parameter")
+	// For click/form triggers with autoEventFilter, ensure companion fields have proper boolean values
+	// (not empty template params which indicate "All Clicks" mode)
+	if len(autoEventFilter) > 0 && (input.Type == "linkClick" || input.Type == "formSubmission" || input.Type == "click") {
+		if trigger.WaitForTags == nil || trigger.WaitForTags.Value == "" {
+			trigger.WaitForTags = &tagmanager.Parameter{Type: "boolean", Value: "false"}
+		}
+		if trigger.WaitForTagsTimeout == nil || trigger.WaitForTagsTimeout.Value == "" {
+			trigger.WaitForTagsTimeout = &tagmanager.Parameter{Type: "integer", Value: "2000"}
+		}
+		if trigger.CheckValidation == nil || trigger.CheckValidation.Value == "" {
+			trigger.CheckValidation = &tagmanager.Parameter{Type: "boolean", Value: "false"}
+		}
 	}
 
-	result, err := c.Service.Accounts.Containers.Workspaces.Triggers.Update(path, trigger).Context(ctx).Do()
+	result, err := c.Service.Accounts.Containers.Workspaces.Triggers.Update(path, trigger).Fingerprint(current.Fingerprint).Context(ctx).Do()
 	if err != nil {
 		return nil, mapGoogleError(err)
 	}
@@ -270,9 +288,10 @@ func toAPIParam(p *Parameter) *tagmanager.Parameter {
 		return nil
 	}
 	param := &tagmanager.Parameter{
-		Type:  p.Type,
-		Key:   p.Key,
-		Value: p.Value,
+		Type:            p.Type,
+		Key:             p.Key,
+		Value:           p.Value,
+		ForceSendFields: []string{"Type", "Key", "Value"},
 	}
 	if len(p.List) > 0 {
 		param.List = toAPIParams(p.List)
@@ -298,8 +317,9 @@ func toAPIConditions(conditions []Condition) []*tagmanager.Condition {
 			})
 		}
 		result[i] = &tagmanager.Condition{
-			Type:      c.Type,
-			Parameter: params,
+			Type:            c.Type,
+			Parameter:       params,
+			ForceSendFields: []string{"Type", "Parameter"},
 		}
 	}
 	return result

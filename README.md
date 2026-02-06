@@ -330,6 +330,20 @@ For best results, give your AI assistant more GTM context:
 
 ---
 
+## Known Issues
+
+### `autoEventFilter` silently dropped by Google Tag Manager API
+
+When creating or updating `linkClick`, `click`, or `formSubmission` triggers via the API, the `autoEventFilter` field (used for "Some Link Clicks"/"Some Form Submissions" conditions) is silently dropped by the Google Tag Manager API. The API returns `200 OK` with a new fingerprint but does not persist the `autoEventFilter`.
+
+This has been confirmed by HTTP-level debugging: the correct JSON is sent in the request body, but Google's response omits the field. The `filter` and `customEventFilter` fields work correctly.
+
+**Workaround:** Configure `autoEventFilter` conditions manually through the [GTM web interface](https://tagmanager.google.com). The MCP server can read triggers that have `autoEventFilter` set via the UI.
+
+**Status:** [#33](https://github.com/paolobietolini/gtm-mcp-server/issues/33)
+
+---
+
 ## Links
 
 - [GitHub Repository](https://github.com/paolobietolini/gtm-mcp-server)
