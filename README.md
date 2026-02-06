@@ -240,7 +240,9 @@ claude mcp add -t http gtm http://localhost:8080
 | `list_tags` | List all tags in a workspace |
 | `get_tag` | Get tag details by ID |
 | `list_triggers` | List all triggers |
+| `get_trigger` | Get trigger details by ID |
 | `list_variables` | List all variables |
+| `get_variable` | Get variable details by ID |
 | `list_folders` | List folders in a workspace |
 | `get_folder_entities` | Get tags/triggers/variables in a folder |
 
@@ -263,11 +265,13 @@ claude mcp add -t http gtm http://localhost:8080
 | `update_trigger` | Modify an existing trigger |
 | `delete_trigger` | Remove a trigger (requires confirmation) |
 | `create_variable` | Create a new variable |
+| `update_variable` | Modify an existing variable |
 | `delete_variable` | Remove a variable (requires confirmation) |
 
 ### Publishing
 | Tool | Description |
 |------|-------------|
+| `get_workspace_status` | Check pending changes and merge conflicts before versioning |
 | `list_versions` | List all container versions with tag/trigger/variable counts |
 | `create_version` | Create a version from workspace changes |
 | `publish_version` | Publish a version (requires confirmation) |
