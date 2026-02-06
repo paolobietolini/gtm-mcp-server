@@ -1,0 +1,10 @@
+.env
+.env.*
+.git/
+go-sdk-main/
+deploy.sh
+Caddyfile
+docker-compose.yml
+*.md
+*.swp
+*.swo

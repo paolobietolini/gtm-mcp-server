@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/base64"
 	"errors"
@@ -11,9 +12,10 @@ import (
 )
 
 var (
-	ErrTokenNotFound = errors.New("token not found")
-	ErrTokenExpired  = errors.New("token expired")
-	ErrInvalidState  = errors.New("invalid state")
+	ErrTokenNotFound  = errors.New("token not found")
+	ErrTokenExpired   = errors.New("token expired")
+	ErrInvalidState   = errors.New("invalid state")
+	ErrClientNotFound = errors.New("client not found")
 )
 
 // TokenInfo holds information about an issued token and the associated Google tokens.
@@ -81,21 +83,32 @@ type MemoryTokenStore struct {
 
 	// Secondary index for refresh token lookup
 	refreshIndex map[string]string // refresh token -> access token
+
+	// Cancellation for cleanup goroutine
+	cancel context.CancelFunc
 }
 
 // NewMemoryTokenStore creates a new in-memory token store.
 func NewMemoryTokenStore() *MemoryTokenStore {
+	ctx, cancel := context.WithCancel(context.Background())
 	store := &MemoryTokenStore{
 		tokens:       make(map[string]*TokenInfo),
 		states:       make(map[string]*AuthState),
 		clients:      make(map[string]*ClientInfo),
 		refreshIndex: make(map[string]string),
+		cancel:       cancel,
 	}
 
 	// Start cleanup goroutine
-	go store.cleanup()
+	go store.cleanup(ctx)
 
 	return store
+}
+
+// Close stops the cleanup goroutine and releases resources.
+func (s *MemoryTokenStore) Close() error {
+	s.cancel()
+	return nil
 }
 
 func (s *MemoryTokenStore) StoreToken(info *TokenInfo) error {
@@ -156,6 +169,10 @@ func (s *MemoryTokenStore) DeleteToken(accessToken string) error {
 }
 
 func (s *MemoryTokenStore) UpdateGoogleToken(accessToken string, googleToken *oauth2.Token) error {
+	if googleToken == nil {
+		return errors.New("googleToken cannot be nil")
+	}
+
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -217,7 +234,7 @@ func (s *MemoryTokenStore) GetClient(clientID string) (*ClientInfo, error) {
 
 	client, ok := s.clients[clientID]
 	if !ok {
-		return nil, ErrTokenNotFound
+		return nil, ErrClientNotFound
 	}
 
 	return client, nil
@@ -232,45 +249,50 @@ func (s *MemoryTokenStore) DeleteClient(clientID string) error {
 	return nil
 }
 
-// cleanup periodically removes expired tokens and states.
-// Uses RLock to collect expired keys, then Lock only for deletion to minimize blocking.
-func (s *MemoryTokenStore) cleanup() {
+// cleanup periodically removes expired tokens, states, and stale clients.
+func (s *MemoryTokenStore) cleanup(ctx context.Context) {
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
 
-	for range ticker.C {
-		now := time.Now()
+	const maxClients = 1000
 
-		// Collect expired keys under read lock
-		var expiredTokens []string
-		var expiredStates []string
+	for {
+		select {
+		case <-ticker.C:
+			now := time.Now()
 
-		s.mu.RLock()
-		for accessToken, info := range s.tokens {
-			if now.After(info.ExpiresAt.Add(24 * time.Hour)) {
-				expiredTokens = append(expiredTokens, accessToken)
-			}
-		}
-		for stateValue, state := range s.states {
-			if now.Sub(state.CreatedAt) > 10*time.Minute {
-				expiredStates = append(expiredStates, stateValue)
-			}
-		}
-		s.mu.RUnlock()
-
-		// Delete under write lock only if needed
-		if len(expiredTokens) > 0 || len(expiredStates) > 0 {
+			// Delete directly under write lock to avoid race conditions
+			// between collecting expired keys and deleting them.
 			s.mu.Lock()
-			for _, accessToken := range expiredTokens {
-				if info, exists := s.tokens[accessToken]; exists {
+			for accessToken, info := range s.tokens {
+				if now.After(info.ExpiresAt.Add(1 * time.Hour)) {
 					delete(s.refreshIndex, info.RefreshToken)
 					delete(s.tokens, accessToken)
 				}
 			}
-			for _, stateValue := range expiredStates {
-				delete(s.states, stateValue)
+			for stateValue, state := range s.states {
+				if now.Sub(state.CreatedAt) > 10*time.Minute {
+					delete(s.states, stateValue)
+				}
+			}
+			// Evict oldest clients if over limit
+			if len(s.clients) > maxClients {
+				var oldest string
+				var oldestTime time.Time
+				for id, client := range s.clients {
+					if oldest == "" || client.CreatedAt.Before(oldestTime) {
+						oldest = id
+						oldestTime = client.CreatedAt
+					}
+				}
+				if oldest != "" {
+					delete(s.clients, oldest)
+				}
 			}
 			s.mu.Unlock()
+
+		case <-ctx.Done():
+			return
 		}
 	}
 }

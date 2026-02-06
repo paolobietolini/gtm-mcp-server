@@ -58,7 +58,7 @@ func (s *Server) RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Genera client_id
+	// Generate client_id
 	clientID, err := GenerateToken(16)
 	if err != nil {
 		s.logger.Error("failed to generate client_id", "error", err)
@@ -66,10 +66,10 @@ func (s *Server) RegistrationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Per public clients (MCP), non generiamo client_secret
+	// For public clients (MCP), we don't generate a client_secret
 	resp := ClientRegistrationResponse{
 		ClientID:                clientID,
-		ClientSecretExpiresAt:   0, // Non scade
+		ClientSecretExpiresAt:   0, // Does not expire
 		RedirectURIs:            req.RedirectURIs,
 		ClientName:              req.ClientName,
 		GrantTypes:              []string{"authorization_code", "refresh_token"},

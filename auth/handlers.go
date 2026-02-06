@@ -290,10 +290,7 @@ func (s *Server) handleAuthorizationCodeGrant(w http.ResponseWriter, r *http.Req
 	calculatedChallenge := base64.RawURLEncoding.EncodeToString(h[:])
 
 	if calculatedChallenge != codeState.CodeVerifier {
-		s.logger.Error("PKCE verification failed",
-			"expected", codeState.CodeVerifier,
-			"got", calculatedChallenge,
-		)
+		s.logger.Error("PKCE verification failed", "client_id", codeState.ClientID)
 		s.tokenError(w, "invalid_grant", "PKCE verification failed")
 		return
 	}
@@ -437,25 +434,36 @@ func (s *Server) errorResponse(w http.ResponseWriter, errCode, errDesc string) {
 	http.Error(w, fmt.Sprintf("%s: %s", errCode, errDesc), http.StatusBadRequest)
 }
 
-// validRedirectPrefixes contains known MCP client redirect URI prefixes.
-var validRedirectPrefixes = []string{
-	// Claude
-	"https://claude.ai/api/mcp/auth_callback",
-	"https://claude.com/api/mcp/auth_callback",
-	// ChatGPT / OpenAI
-	"https://chatgpt.com/connector_platform_oauth_redirect",
-	"https://platform.openai.com/apps-manage/oauth",
-	// For local development
-	"http://localhost",
-	"http://127.0.0.1",
+// validRedirectHosts maps allowed hostnames to required scheme and path prefix.
+var validRedirectHosts = map[string]struct {
+	scheme     string
+	pathPrefix string
+}{
+	"claude.ai":          {"https", "/api/mcp/auth_callback"},
+	"claude.com":         {"https", "/api/mcp/auth_callback"},
+	"chatgpt.com":        {"https", "/connector_platform_oauth_redirect"},
+	"platform.openai.com": {"https", "/apps-manage/oauth"},
 }
 
 // isValidRedirectURI checks if the redirect URI is from a known MCP client.
+// Uses exact hostname matching to prevent subdomain attacks (e.g., localhost.evil.com).
 func isValidRedirectURI(uri string) bool {
-	for _, valid := range validRedirectPrefixes {
-		if strings.HasPrefix(uri, valid) {
-			return true
-		}
+	parsed, err := url.Parse(uri)
+	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
+		return false
 	}
+
+	hostname := parsed.Hostname()
+
+	// Allow localhost/127.0.0.1 for development (http or https)
+	if hostname == "localhost" || hostname == "127.0.0.1" {
+		return parsed.Scheme == "http" || parsed.Scheme == "https"
+	}
+
+	// Check against known MCP client hosts
+	if rule, ok := validRedirectHosts[hostname]; ok {
+		return parsed.Scheme == rule.scheme && strings.HasPrefix(parsed.Path, rule.pathPrefix)
+	}
+
 	return false
 }

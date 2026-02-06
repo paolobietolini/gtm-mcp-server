@@ -135,7 +135,7 @@ func GetGoogleProvider(ctx context.Context) *GoogleProvider {
 
 // unauthorized sends a 401 response with WWW-Authenticate header per RFC 9728
 func unauthorized(w http.ResponseWriter, baseURL, message string) {
-	// Costruisci l'header WWW-Authenticate con resource_metadata
+	// Build WWW-Authenticate header with resource_metadata per RFC 9728
 	resourceMetadataURL := baseURL + "/.well-known/oauth-protected-resource"
 
 	authHeader := fmt.Sprintf(`Bearer resource_metadata="%s"`, resourceMetadataURL)

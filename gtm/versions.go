@@ -21,7 +21,7 @@ func (c *Client) CreateVersion(ctx context.Context, accountID, containerID, work
 		return nil, mapGoogleError(err)
 	}
 
-	if result.ContainerVersion == nil {
+	if result == nil || result.ContainerVersion == nil {
 		return nil, fmt.Errorf("no version created - workspace may have no changes")
 	}
 

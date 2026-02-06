@@ -120,7 +120,9 @@ func (s *AutoRefreshTokenSource) Token() (*oauth2.Token, error) {
 
 	// Update in store (best effort - don't fail if store update fails)
 	if s.store != nil && s.accessToken != "" {
-		_ = s.store.UpdateGoogleToken(s.accessToken, newToken)
+		if err := s.store.UpdateGoogleToken(s.accessToken, newToken); err != nil {
+			slog.Warn("failed to update Google token in store", "error", err)
+		}
 	}
 
 	return newToken, nil

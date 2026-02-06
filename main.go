@@ -90,6 +90,10 @@ func main() {
 	var tokenStore auth.TokenStore
 	oauthConfigured := cfg.ValidateAuth() == nil
 
+	// Rate limiters for public endpoints
+	oauthLimiter := middleware.NewRateLimiter(10, 20)   // 10 req/s, burst 20
+	registerLimiter := middleware.NewRateLimiter(2, 5)   // 2 req/s, burst 5
+
 	if oauthConfigured {
 		// Set up OAuth
 		tokenStore = auth.NewMemoryTokenStore()
@@ -100,11 +104,11 @@ func main() {
 		)
 		authServer = auth.NewServer(cfg.BaseURL, googleProvider, tokenStore, logger)
 
-		// OAuth endpoints (no auth required)
-		mux.HandleFunc("GET /authorize", authServer.AuthorizeHandler)
-		mux.HandleFunc("GET /oauth/callback", authServer.CallbackHandler)
-		mux.HandleFunc("POST /token", authServer.TokenHandler)
-		mux.HandleFunc("POST /register", authServer.RegistrationHandler)
+		// OAuth endpoints with rate limiting and body size limits
+		mux.HandleFunc("GET /authorize", oauthLimiter.MiddlewareFunc(authServer.AuthorizeHandler))
+		mux.HandleFunc("GET /oauth/callback", oauthLimiter.MiddlewareFunc(authServer.CallbackHandler))
+		mux.HandleFunc("POST /token", oauthLimiter.MiddlewareFunc(middleware.MaxBytesMiddleware(1<<20, authServer.TokenHandler)))
+		mux.HandleFunc("POST /register", registerLimiter.MiddlewareFunc(middleware.MaxBytesMiddleware(1<<20, authServer.RegistrationHandler)))
 
 		// MCP endpoint with REQUIRED auth middleware
 		// Returns 401 if no valid Bearer token - triggers Claude's OAuth flow
@@ -128,13 +132,13 @@ func main() {
 			w.WriteHeader(http.StatusServiceUnavailable)
 			json.NewEncoder(w).Encode(map[string]string{
 				"error":             "server_error",
-				"error_description": "OAuth is not configured on this server. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and JWT_SECRET environment variables.",
+				"error_description": "OAuth is not configured on this server.",
 			})
 		}
-		mux.HandleFunc("GET /authorize", oauthNotConfiguredHandler)
-		mux.HandleFunc("GET /oauth/callback", oauthNotConfiguredHandler)
-		mux.HandleFunc("POST /token", oauthNotConfiguredHandler)
-		mux.HandleFunc("POST /register", oauthNotConfiguredHandler)
+		mux.HandleFunc("GET /authorize", oauthLimiter.MiddlewareFunc(oauthNotConfiguredHandler))
+		mux.HandleFunc("GET /oauth/callback", oauthLimiter.MiddlewareFunc(oauthNotConfiguredHandler))
+		mux.HandleFunc("POST /token", oauthLimiter.MiddlewareFunc(oauthNotConfiguredHandler))
+		mux.HandleFunc("POST /register", registerLimiter.MiddlewareFunc(oauthNotConfiguredHandler))
 
 		// MCP endpoint without auth
 		mux.Handle("/", mcpHandler)

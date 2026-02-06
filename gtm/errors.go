@@ -24,6 +24,13 @@ func retryWithBackoff[T any](ctx context.Context, maxRetries int, fn func() (T, 
 	var lastErr error
 
 	for attempt := 0; attempt <= maxRetries; attempt++ {
+		// Check context before executing
+		select {
+		case <-ctx.Done():
+			return zero, ctx.Err()
+		default:
+		}
+
 		result, err := fn()
 		if err == nil {
 			return result, nil

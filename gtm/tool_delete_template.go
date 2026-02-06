@@ -38,7 +38,10 @@ func registerDeleteTemplate(server *mcp.Server) {
 			return nil, DeleteTemplateOutput{}, fmt.Errorf("templateId is required")
 		}
 		if !input.Confirm {
-			return nil, DeleteTemplateOutput{}, fmt.Errorf("confirm must be true to delete a template")
+			return nil, DeleteTemplateOutput{
+				Success: false,
+				Message: "Deletion requires confirm: true. This is a safety guard to prevent accidental deletions. Templates in use by tags cannot be deleted.",
+			}, nil
 		}
 
 		client, err := getClient(ctx)
