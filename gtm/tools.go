@@ -18,7 +18,9 @@ func RegisterTools(server *mcp.Server) {
 	registerListTags(server)
 	registerGetTag(server)
 	registerListTriggers(server)
+	registerGetTrigger(server)
 	registerListVariables(server)
+	registerGetVariable(server)
 	registerListFolders(server)
 	registerGetFolderEntities(server)
 	registerListTemplates(server)
@@ -33,10 +35,14 @@ func RegisterTools(server *mcp.Server) {
 	registerUpdateTrigger(server)
 	registerDeleteTrigger(server)
 	registerCreateVariable(server)
+	registerUpdateVariable(server)
 	registerDeleteVariable(server)
 	registerCreateContainer(server)
 	registerDeleteContainer(server)
 	registerCreateWorkspace(server)
+
+	// Workspace status
+	registerGetWorkspaceStatus(server)
 
 	// Version operations
 	registerCreateVersion(server)

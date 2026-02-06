@@ -178,6 +178,36 @@ func (c *Client) CreateVariable(ctx context.Context, accountID, containerID, wor
 	}, nil
 }
 
+// UpdateVariable updates an existing variable. It fetches the current variable first to get the fingerprint.
+func (c *Client) UpdateVariable(ctx context.Context, path string, input *VariableInput) (*CreatedVariable, error) {
+	// Get current variable for fingerprint
+	current, err := c.Service.Accounts.Containers.Workspaces.Variables.Get(path).Context(ctx).Do()
+	if err != nil {
+		return nil, mapGoogleError(err)
+	}
+
+	variable := &tagmanager.Variable{
+		Name:        input.Name,
+		Type:        input.Type,
+		Parameter:   toAPIParams(input.Parameter),
+		Notes:       input.Notes,
+		Fingerprint: current.Fingerprint,
+	}
+
+	result, err := c.Service.Accounts.Containers.Workspaces.Variables.Update(path, variable).Context(ctx).Do()
+	if err != nil {
+		return nil, mapGoogleError(err)
+	}
+
+	return &CreatedVariable{
+		VariableID:  result.VariableId,
+		Name:        result.Name,
+		Type:        result.Type,
+		Path:        result.Path,
+		Fingerprint: result.Fingerprint,
+	}, nil
+}
+
 // DeleteVariable deletes a variable from the workspace.
 func (c *Client) DeleteVariable(ctx context.Context, path string) error {
 	err := c.Service.Accounts.Containers.Workspaces.Variables.Delete(path).Context(ctx).Do()

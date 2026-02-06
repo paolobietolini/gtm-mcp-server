@@ -37,6 +37,22 @@ func (c *Client) ListTriggers(ctx context.Context, accountID, containerID, works
 	return toTriggers(resp.Trigger), nil
 }
 
+// GetTrigger returns a specific trigger by ID.
+func (c *Client) GetTrigger(ctx context.Context, accountID, containerID, workspaceID, triggerID string) (*Trigger, error) {
+	path := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/triggers/%s",
+		accountID, containerID, workspaceID, triggerID)
+
+	t, err := retryWithBackoff(ctx, 3, func() (*tagmanager.Trigger, error) {
+		return c.Service.Accounts.Containers.Workspaces.Triggers.Get(path).Context(ctx).Do()
+	})
+	if err != nil {
+		return nil, mapGoogleError(err)
+	}
+
+	triggers := toTriggers([]*tagmanager.Trigger{t})
+	return &triggers[0], nil
+}
+
 func toTriggers(triggers []*tagmanager.Trigger) []Trigger {
 	result := make([]Trigger, 0, len(triggers))
 	for _, t := range triggers {
