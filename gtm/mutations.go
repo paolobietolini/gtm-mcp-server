@@ -95,6 +95,9 @@ func (c *Client) CreateTrigger(ctx context.Context, accountID, containerID, work
 		trigger.EventName = toAPIParam(input.EventName)
 	}
 
+	// Force-send filter fields so Google API client doesn't omit them via omitempty
+	trigger.ForceSendFields = triggerForceSendFields(input)
+
 	result, err := c.Service.Accounts.Containers.Workspaces.Triggers.Create(parent, trigger).Context(ctx).Do()
 	if err != nil {
 		return nil, mapGoogleError(err)
@@ -157,6 +160,23 @@ func (c *Client) UpdateTrigger(ctx context.Context, path string, input *TriggerI
 		trigger.EventName = toAPIParam(input.EventName)
 	} else {
 		trigger.EventName = current.EventName
+	}
+
+	// Force-send filter fields so Google API client doesn't omit them via omitempty.
+	// For updates, we always have values (either from input or preserved from current).
+	trigger.ForceSendFields = triggerForceSendFields(input)
+	// Also force-send fields preserved from the current trigger
+	if len(input.Filter) == 0 && current.Filter != nil {
+		trigger.ForceSendFields = append(trigger.ForceSendFields, "Filter")
+	}
+	if len(input.AutoEventFilter) == 0 && current.AutoEventFilter != nil {
+		trigger.ForceSendFields = append(trigger.ForceSendFields, "AutoEventFilter")
+	}
+	if len(input.CustomEventFilter) == 0 && current.CustomEventFilter != nil {
+		trigger.ForceSendFields = append(trigger.ForceSendFields, "CustomEventFilter")
+	}
+	if len(input.Parameter) == 0 && current.Parameter != nil {
+		trigger.ForceSendFields = append(trigger.ForceSendFields, "Parameter")
 	}
 
 	result, err := c.Service.Accounts.Containers.Workspaces.Triggers.Update(path, trigger).Context(ctx).Do()
@@ -283,6 +303,28 @@ func toAPIConditions(conditions []Condition) []*tagmanager.Condition {
 		}
 	}
 	return result
+}
+
+// triggerForceSendFields returns the list of fields that must be force-sent
+// to the Google API to prevent omitempty from dropping them.
+func triggerForceSendFields(input *TriggerInput) []string {
+	var fields []string
+	if len(input.Filter) > 0 {
+		fields = append(fields, "Filter")
+	}
+	if len(input.AutoEventFilter) > 0 {
+		fields = append(fields, "AutoEventFilter")
+	}
+	if len(input.CustomEventFilter) > 0 {
+		fields = append(fields, "CustomEventFilter")
+	}
+	if len(input.Parameter) > 0 {
+		fields = append(fields, "Parameter")
+	}
+	if input.EventName != nil {
+		fields = append(fields, "EventName")
+	}
+	return fields
 }
 
 // BuildTagPath constructs a tag path from IDs.
