@@ -29,6 +29,7 @@ Create tags, audit configurations, generate tracking plans, and publish changes,
 - [Resources & Prompts](#resources--prompts)
 - [Better AI Context](#better-ai-context)
 - [Architecture](#architecture)
+- [Known Issues](#known-issues)
 - [Links](#links)
 - [Author](#author)
 - [License](#license)
