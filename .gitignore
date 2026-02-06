@@ -6,6 +6,11 @@ go-sdk-main/
 !README.md
 .env.local
 .*/
+!.github/
+!.goreleaser.yaml
+
+# Build artifacts
+dist/
 
 # Binary
 gtm-mcp-server
