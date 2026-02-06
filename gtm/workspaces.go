@@ -19,9 +19,11 @@ type Workspace struct {
 func (c *Client) ListWorkspaces(ctx context.Context, accountID, containerID string) ([]Workspace, error) {
 	parent := fmt.Sprintf("accounts/%s/containers/%s", accountID, containerID)
 
-	resp, err := c.Service.Accounts.Containers.Workspaces.List(parent).Context(ctx).Do()
+	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListWorkspacesResponse, error) {
+		return c.Service.Accounts.Containers.Workspaces.List(parent).Context(ctx).Do()
+	})
 	if err != nil {
-		return nil, err
+		return nil, mapGoogleError(err)
 	}
 
 	return toWorkspaces(resp.Workspace), nil

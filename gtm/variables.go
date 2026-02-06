@@ -19,9 +19,11 @@ type Variable struct {
 func (c *Client) ListVariables(ctx context.Context, accountID, containerID, workspaceID string) ([]Variable, error) {
 	parent := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s", accountID, containerID, workspaceID)
 
-	resp, err := c.Service.Accounts.Containers.Workspaces.Variables.List(parent).Context(ctx).Do()
+	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListVariablesResponse, error) {
+		return c.Service.Accounts.Containers.Workspaces.Variables.List(parent).Context(ctx).Do()
+	})
 	if err != nil {
-		return nil, err
+		return nil, mapGoogleError(err)
 	}
 
 	return toVariables(resp.Variable), nil

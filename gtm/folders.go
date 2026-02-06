@@ -26,7 +26,9 @@ type FolderEntities struct {
 func (c *Client) ListFolders(ctx context.Context, accountID, containerID, workspaceID string) ([]Folder, error) {
 	parent := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s", accountID, containerID, workspaceID)
 
-	resp, err := c.Service.Accounts.Containers.Workspaces.Folders.List(parent).Context(ctx).Do()
+	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListFoldersResponse, error) {
+		return c.Service.Accounts.Containers.Workspaces.Folders.List(parent).Context(ctx).Do()
+	})
 	if err != nil {
 		return nil, mapGoogleError(err)
 	}
@@ -39,7 +41,9 @@ func (c *Client) GetFolderEntities(ctx context.Context, accountID, containerID, 
 	path := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/folders/%s",
 		accountID, containerID, workspaceID, folderID)
 
-	resp, err := c.Service.Accounts.Containers.Workspaces.Folders.Entities(path).Context(ctx).Do()
+	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.FolderEntities, error) {
+		return c.Service.Accounts.Containers.Workspaces.Folders.Entities(path).Context(ctx).Do()
+	})
 	if err != nil {
 		return nil, mapGoogleError(err)
 	}

@@ -15,9 +15,11 @@ type Account struct {
 
 // ListAccounts returns all GTM accounts accessible to the authenticated user.
 func (c *Client) ListAccounts(ctx context.Context) ([]Account, error) {
-	resp, err := c.Service.Accounts.List().Context(ctx).Do()
+	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListAccountsResponse, error) {
+		return c.Service.Accounts.List().Context(ctx).Do()
+	})
 	if err != nil {
-		return nil, err
+		return nil, mapGoogleError(err)
 	}
 
 	return toAccounts(resp.Account), nil

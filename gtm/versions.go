@@ -53,7 +53,9 @@ func (c *Client) PublishVersion(ctx context.Context, accountID, containerID, ver
 func (c *Client) GetWorkspaceStatus(ctx context.Context, accountID, containerID, workspaceID string) (*WorkspaceStatus, error) {
 	path := BuildWorkspacePath(accountID, containerID, workspaceID)
 
-	status, err := c.Service.Accounts.Containers.Workspaces.GetStatus(path).Context(ctx).Do()
+	status, err := retryWithBackoff(ctx, 3, func() (*tagmanager.GetWorkspaceStatusResponse, error) {
+		return c.Service.Accounts.Containers.Workspaces.GetStatus(path).Context(ctx).Do()
+	})
 	if err != nil {
 		return nil, mapGoogleError(err)
 	}

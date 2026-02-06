@@ -20,9 +20,11 @@ type Container struct {
 func (c *Client) ListContainers(ctx context.Context, accountID string) ([]Container, error) {
 	parent := fmt.Sprintf("accounts/%s", accountID)
 
-	resp, err := c.Service.Accounts.Containers.List(parent).Context(ctx).Do()
+	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListContainersResponse, error) {
+		return c.Service.Accounts.Containers.List(parent).Context(ctx).Do()
+	})
 	if err != nil {
-		return nil, err
+		return nil, mapGoogleError(err)
 	}
 
 	return toContainers(resp.Container), nil

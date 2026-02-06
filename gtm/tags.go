@@ -22,9 +22,11 @@ type Tag struct {
 func (c *Client) ListTags(ctx context.Context, accountID, containerID, workspaceID string) ([]Tag, error) {
 	parent := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s", accountID, containerID, workspaceID)
 
-	resp, err := c.Service.Accounts.Containers.Workspaces.Tags.List(parent).Context(ctx).Do()
+	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListTagsResponse, error) {
+		return c.Service.Accounts.Containers.Workspaces.Tags.List(parent).Context(ctx).Do()
+	})
 	if err != nil {
-		return nil, err
+		return nil, mapGoogleError(err)
 	}
 
 	return toTags(resp.Tag), nil
@@ -35,9 +37,11 @@ func (c *Client) GetTag(ctx context.Context, accountID, containerID, workspaceID
 	path := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/tags/%s",
 		accountID, containerID, workspaceID, tagID)
 
-	tag, err := c.Service.Accounts.Containers.Workspaces.Tags.Get(path).Context(ctx).Do()
+	tag, err := retryWithBackoff(ctx, 3, func() (*tagmanager.Tag, error) {
+		return c.Service.Accounts.Containers.Workspaces.Tags.Get(path).Context(ctx).Do()
+	})
 	if err != nil {
-		return nil, err
+		return nil, mapGoogleError(err)
 	}
 
 	result := toTag(tag)
