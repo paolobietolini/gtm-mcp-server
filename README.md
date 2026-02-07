@@ -96,6 +96,12 @@ Build triggers for any scenario:
 - Create versions from workspace changes
 - Publish versions to go live
 - Organize with folders
+- Enable/disable built-in variables
+
+### Server-Side Containers
+Full support for server-side GTM containers:
+- **Clients** — Create, update, and delete server-side clients (e.g. GA4 client)
+- **Transformations** — Control event parameters with allow, exclude, and augment rules
 
 ### Community Template Gallery
 Import templates from Google's Community Template Gallery:
@@ -246,6 +252,7 @@ claude mcp add -t http gtm http://localhost:8080
 | `get_variable` | Get variable details by ID |
 | `list_folders` | List folders in a workspace |
 | `get_folder_entities` | Get tags/triggers/variables in a folder |
+| `list_built_in_variables` | List enabled built-in variables in a workspace |
 
 ### Utility
 | Tool | Description |
@@ -268,6 +275,22 @@ claude mcp add -t http gtm http://localhost:8080
 | `create_variable` | Create a new variable |
 | `update_variable` | Modify an existing variable |
 | `delete_variable` | Remove a variable (requires confirmation) |
+| `enable_built_in_variables` | Enable built-in variable types in a workspace |
+| `disable_built_in_variables` | Disable built-in variable types (requires confirmation) |
+
+### Server-Side Container Tools
+| Tool | Description |
+|------|-------------|
+| `list_clients` | List all clients in a workspace |
+| `get_client` | Get client details by ID |
+| `create_client` | Create a new client |
+| `update_client` | Modify an existing client |
+| `delete_client` | Remove a client (requires confirmation) |
+| `list_transformations` | List all transformations in a workspace |
+| `get_transformation` | Get transformation details by ID |
+| `create_transformation` | Create a new transformation |
+| `update_transformation` | Modify an existing transformation |
+| `delete_transformation` | Remove a transformation (requires confirmation) |
 
 ### Publishing
 | Tool | Description |
@@ -332,8 +355,7 @@ For best results, give your AI assistant more GTM context:
 ---
 
 ## Known Issues
-
-### `autoEventFilter` silently dropped by Google Tag Manager API
+### 🐛 `autoEventFilter` silently dropped by Google Tag Manager API
 
 When creating or updating `linkClick`, `click`, or `formSubmission` triggers via the API, the `autoEventFilter` field (used for "Some Link Clicks"/"Some Form Submissions" conditions) is silently dropped by the Google Tag Manager API. The API returns `200 OK` with a new fingerprint but does not persist the `autoEventFilter`.
 

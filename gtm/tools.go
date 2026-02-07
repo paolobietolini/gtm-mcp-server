@@ -54,6 +54,25 @@ func RegisterTools(server *mcp.Server) {
 	registerUpdateTemplate(server)
 	registerDeleteTemplate(server)
 
+	// Built-in variables
+	registerListBuiltInVariables(server)
+	registerEnableBuiltInVariables(server)
+	registerDisableBuiltInVariables(server)
+
+	// Clients (server-side containers)
+	registerListClients(server)
+	registerGetClient(server)
+	registerCreateClient(server)
+	registerUpdateClient(server)
+	registerDeleteClient(server)
+
+	// Transformations (server-side containers)
+	registerListTransformations(server)
+	registerGetTransformation(server)
+	registerCreateTransformation(server)
+	registerUpdateTransformation(server)
+	registerDeleteTransformation(server)
+
 	// Templates (help LLMs with correct parameter formats)
 	registerGetTagTemplates(server)
 	registerGetTriggerTemplates(server)

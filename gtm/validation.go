@@ -90,3 +90,31 @@ func ValidateContainerPath(accountID, containerID string) error {
 func BuildContainerPath(accountID, containerID string) string {
 	return fmt.Sprintf("accounts/%s/containers/%s", accountID, containerID)
 }
+
+// ValidateClientInput validates client creation/update inputs.
+func ValidateClientInput(name, clientType string) error {
+	if strings.TrimSpace(name) == "" {
+		return fmt.Errorf("client name is required")
+	}
+	if len(name) > 256 {
+		return fmt.Errorf("client name must be 256 characters or less")
+	}
+	if strings.TrimSpace(clientType) == "" {
+		return fmt.Errorf("client type is required")
+	}
+	return nil
+}
+
+// ValidateTransformationInput validates transformation creation/update inputs.
+func ValidateTransformationInput(name, transformationType string) error {
+	if strings.TrimSpace(name) == "" {
+		return fmt.Errorf("transformation name is required")
+	}
+	if len(name) > 256 {
+		return fmt.Errorf("transformation name must be 256 characters or less")
+	}
+	if strings.TrimSpace(transformationType) == "" {
+		return fmt.Errorf("transformation type is required (valid values: tf_exclude_params, tf_allow_params, tf_augment_event)")
+	}
+	return nil
+}

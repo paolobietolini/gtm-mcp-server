@@ -88,3 +88,72 @@ type CreatedVersion struct {
 	Name      string `json:"name"`
 	Path      string `json:"path"`
 }
+
+// BuiltInVariable represents an enabled built-in variable in a workspace.
+type BuiltInVariable struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+	Path string `json:"path"`
+}
+
+// ClientInfo represents a GTM client (server-side containers only).
+type ClientInfo struct {
+	ClientID       string `json:"clientId"`
+	Name           string `json:"name"`
+	Type           string `json:"type"`
+	Priority       int64  `json:"priority,omitempty"`
+	// Using any to avoid recursive type cycle in schema generation.
+	Parameter      any    `json:"parameter,omitempty"`
+	Notes          string `json:"notes,omitempty"`
+	ParentFolderID string `json:"parentFolderId,omitempty"`
+	Path           string `json:"path"`
+	Fingerprint    string `json:"fingerprint"`
+}
+
+// ClientInput represents input for creating/updating a client.
+type ClientInput struct {
+	Name      string      `json:"name"`
+	Type      string      `json:"type"`
+	Priority  int64       `json:"priority,omitempty"`
+	Parameter []Parameter `json:"parameter,omitempty"`
+	Notes     string      `json:"notes,omitempty"`
+}
+
+// CreatedClient represents the result of creating a client.
+type CreatedClient struct {
+	ClientID    string `json:"clientId"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Path        string `json:"path"`
+	Fingerprint string `json:"fingerprint"`
+}
+
+// TransformationInfo represents a GTM transformation (server-side containers only).
+type TransformationInfo struct {
+	TransformationID string `json:"transformationId"`
+	Name             string `json:"name"`
+	Type             string `json:"type"`
+	// Using any to avoid recursive type cycle in schema generation.
+	Parameter      any    `json:"parameter,omitempty"`
+	Notes          string `json:"notes,omitempty"`
+	ParentFolderID string `json:"parentFolderId,omitempty"`
+	Path           string `json:"path"`
+	Fingerprint    string `json:"fingerprint"`
+}
+
+// TransformationInput represents input for creating/updating a transformation.
+type TransformationInput struct {
+	Name      string      `json:"name"`
+	Type      string      `json:"type"`
+	Parameter []Parameter `json:"parameter,omitempty"`
+	Notes     string      `json:"notes,omitempty"`
+}
+
+// CreatedTransformation represents the result of creating a transformation.
+type CreatedTransformation struct {
+	TransformationID string `json:"transformationId"`
+	Name             string `json:"name"`
+	Type             string `json:"type,omitempty"`
+	Path             string `json:"path"`
+	Fingerprint      string `json:"fingerprint"`
+}

@@ -364,3 +364,15 @@ func BuildVariablePath(accountID, containerID, workspaceID, variableID string) s
 	return fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/variables/%s",
 		accountID, containerID, workspaceID, variableID)
 }
+
+// BuildClientPath constructs a client path from IDs.
+func BuildClientPath(accountID, containerID, workspaceID, clientID string) string {
+	return fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/clients/%s",
+		accountID, containerID, workspaceID, clientID)
+}
+
+// BuildTransformationPath constructs a transformation path from IDs.
+func BuildTransformationPath(accountID, containerID, workspaceID, transformationID string) string {
+	return fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s/transformations/%s",
+		accountID, containerID, workspaceID, transformationID)
+}
