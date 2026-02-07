@@ -23,3 +23,6 @@ docker-compose.yml
 # Swap files
 *.swp
 *.swo
+
+# MCP Registry tokens
+.mcpregistry_*

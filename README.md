@@ -339,10 +339,36 @@ gtm://accounts/.../workspaces/{id}/variables
 
 ## Better AI Context
 
-For best results, give your AI assistant more GTM context:
+For best results, install the **GTM API skill** so your AI assistant understands GTM's API structure, parameter formats, and validation rules.
 
-- **GTM API Skill:** Add the [GTM API skill](https://github.com/paolobietolini/gtm-api-for-llms/tree/main/skills/gtm-api) to Claude
-- **Documentation:** Have the AI read the [GTM API docs](https://github.com/paolobietolini/gtm-api-for-llms)
+### Claude Code
+
+```bash
+# One-liner install
+curl -sL https://github.com/paolobietolini/gtm-api-for-llms/archive/main.tar.gz | tar xz && \
+  mkdir -p ~/.claude/skills && \
+  cp -r gtm-api-for-llms-main/skills/gtm-api ~/.claude/skills/ && \
+  rm -rf gtm-api-for-llms-main
+```
+
+Or clone and copy:
+```bash
+git clone https://github.com/paolobietolini/gtm-api-for-llms.git
+cp -r gtm-api-for-llms/skills/gtm-api ~/.claude/skills/
+```
+
+### OpenAI Codex
+
+```bash
+curl -sL https://github.com/paolobietolini/gtm-api-for-llms/archive/main.tar.gz | tar xz && \
+  mkdir -p ~/.codex/skills && \
+  cp -r gtm-api-for-llms-main/skills/gtm-api ~/.codex/skills/ && \
+  rm -rf gtm-api-for-llms-main
+```
+
+### What does the skill include?
+
+The [GTM API for LLMs](https://github.com/paolobietolini/gtm-api-for-llms) repository provides LLM-optimized documentation: request templates, validation rules, workflow algorithms, and complete schemas for all GTM entity types including server-side containers.
 
 ---
 
