@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"sync"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -80,6 +81,7 @@ func (p *GoogleProvider) Config() *oauth2.Config {
 
 // AutoRefreshTokenSource wraps oauth2.Token with automatic refresh and store updates.
 type AutoRefreshTokenSource struct {
+	mu          sync.Mutex
 	store       TokenStore
 	accessToken string // Our token (to identify the record in store)
 	config      *oauth2.Config
@@ -98,6 +100,9 @@ func NewAutoRefreshTokenSource(store TokenStore, accessToken string, config *oau
 
 // Token returns a valid token, refreshing if necessary.
 func (s *AutoRefreshTokenSource) Token() (*oauth2.Token, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	// If token is still valid, return it
 	if s.current.Valid() {
 		return s.current, nil

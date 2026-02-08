@@ -21,9 +21,10 @@ var (
 // TokenInfo holds information about an issued token and the associated Google tokens.
 type TokenInfo struct {
 	// Our token (issued to Claude)
-	AccessToken  string
-	RefreshToken string
-	ExpiresAt    time.Time
+	AccessToken      string
+	RefreshToken     string
+	ExpiresAt        time.Time
+	RefreshExpiresAt time.Time
 
 	// Google tokens (for calling GTM API)
 	GoogleToken *oauth2.Token
@@ -66,6 +67,7 @@ type TokenStore interface {
 	// State operations (for OAuth flow)
 	StoreState(state *AuthState) error
 	GetState(stateValue string) (*AuthState, error)
+	ConsumeState(stateValue string) (*AuthState, error)
 	DeleteState(stateValue string) error
 
 	// Client registration operations (RFC 7591)
@@ -153,6 +155,10 @@ func (s *MemoryTokenStore) GetTokenByRefresh(refreshToken string) (*TokenInfo, e
 		return nil, ErrTokenNotFound
 	}
 
+	if !info.RefreshExpiresAt.IsZero() && time.Now().After(info.RefreshExpiresAt) {
+		return nil, ErrTokenExpired
+	}
+
 	return info, nil
 }
 
@@ -203,6 +209,25 @@ func (s *MemoryTokenStore) GetState(stateValue string) (*AuthState, error) {
 	}
 
 	// States expire after 10 minutes
+	if time.Since(state.CreatedAt) > 10*time.Minute {
+		return nil, ErrInvalidState
+	}
+
+	return state, nil
+}
+
+// ConsumeState atomically gets and deletes a state, making auth codes single-use.
+func (s *MemoryTokenStore) ConsumeState(stateValue string) (*AuthState, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	state, ok := s.states[stateValue]
+	if !ok {
+		return nil, ErrInvalidState
+	}
+
+	delete(s.states, stateValue)
+
 	if time.Since(state.CreatedAt) > 10*time.Minute {
 		return nil, ErrInvalidState
 	}
@@ -265,7 +290,9 @@ func (s *MemoryTokenStore) cleanup(ctx context.Context) {
 			// between collecting expired keys and deleting them.
 			s.mu.Lock()
 			for accessToken, info := range s.tokens {
-				if now.After(info.ExpiresAt.Add(1 * time.Hour)) {
+				accessExpired := now.After(info.ExpiresAt.Add(1 * time.Hour))
+				refreshExpired := !info.RefreshExpiresAt.IsZero() && now.After(info.RefreshExpiresAt)
+				if accessExpired || refreshExpired {
 					delete(s.refreshIndex, info.RefreshToken)
 					delete(s.tokens, accessToken)
 				}

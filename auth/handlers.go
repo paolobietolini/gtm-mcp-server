@@ -263,19 +263,31 @@ func (s *Server) TokenHandler(w http.ResponseWriter, r *http.Request) {
 func (s *Server) handleAuthorizationCodeGrant(w http.ResponseWriter, r *http.Request) {
 	code := r.FormValue("code")
 	codeVerifier := r.FormValue("code_verifier")
-	// clientID := r.FormValue("client_id")
-	// redirectURI := r.FormValue("redirect_uri")
+	clientID := r.FormValue("client_id")
+	redirectURI := r.FormValue("redirect_uri")
 
 	if code == "" {
 		s.tokenError(w, "invalid_request", "Missing code")
 		return
 	}
 
-	// Get the stored code state
-	codeState, err := s.store.GetState(code)
+	// Atomically consume the code state (single-use)
+	codeState, err := s.store.ConsumeState(code)
 	if err != nil {
 		s.logger.Error("failed to get code state", "error", err)
 		s.tokenError(w, "invalid_grant", "Invalid or expired code")
+		return
+	}
+
+	// Validate client_id and redirect_uri match the original authorization request
+	if clientID != "" && clientID != codeState.ClientID {
+		s.logger.Error("client_id mismatch", "expected", codeState.ClientID, "got", clientID)
+		s.tokenError(w, "invalid_grant", "client_id does not match")
+		return
+	}
+	if redirectURI != "" && redirectURI != codeState.RedirectURI {
+		s.logger.Error("redirect_uri mismatch", "expected", codeState.RedirectURI, "got", redirectURI)
+		s.tokenError(w, "invalid_grant", "redirect_uri does not match")
 		return
 	}
 
@@ -303,8 +315,7 @@ func (s *Server) handleAuthorizationCodeGrant(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	// Clean up temporary storage
-	_ = s.store.DeleteState(code)
+	// Clean up temporary token
 	_ = s.store.DeleteToken(code)
 
 	// Generate real tokens
@@ -324,12 +335,13 @@ func (s *Server) handleAuthorizationCodeGrant(w http.ResponseWriter, r *http.Req
 
 	// Create and store the real token
 	tokenInfo := &TokenInfo{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    time.Now().Add(s.accessTokenTTL),
-		GoogleToken:  tempToken.GoogleToken,
-		ClientID:     codeState.ClientID,
-		CreatedAt:    time.Now(),
+		AccessToken:      accessToken,
+		RefreshToken:     refreshToken,
+		ExpiresAt:        time.Now().Add(s.accessTokenTTL),
+		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		GoogleToken:      tempToken.GoogleToken,
+		ClientID:         codeState.ClientID,
+		CreatedAt:        time.Now(),
 	}
 
 	if err := s.store.StoreToken(tokenInfo); err != nil {
@@ -371,7 +383,7 @@ func (s *Server) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request)
 		tokenInfo.GoogleToken = newGoogleToken
 	}
 
-	// Generate new access token
+	// Generate new access token and new refresh token (rotation)
 	newAccessToken, err := GenerateToken(32)
 	if err != nil {
 		s.logger.Error("failed to generate access token", "error", err)
@@ -379,17 +391,25 @@ func (s *Server) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	// Delete old token
+	newRefreshToken, err := GenerateToken(32)
+	if err != nil {
+		s.logger.Error("failed to generate refresh token", "error", err)
+		s.tokenError(w, "server_error", "Internal server error")
+		return
+	}
+
+	// Delete old token (invalidates the old refresh token)
 	_ = s.store.DeleteToken(tokenInfo.AccessToken)
 
-	// Store new token (keep same refresh token)
+	// Store new token with rotated refresh token
 	newTokenInfo := &TokenInfo{
-		AccessToken:  newAccessToken,
-		RefreshToken: refreshToken,
-		ExpiresAt:    time.Now().Add(s.accessTokenTTL),
-		GoogleToken:  tokenInfo.GoogleToken,
-		ClientID:     tokenInfo.ClientID,
-		CreatedAt:    time.Now(),
+		AccessToken:      newAccessToken,
+		RefreshToken:     newRefreshToken,
+		ExpiresAt:        time.Now().Add(s.accessTokenTTL),
+		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		GoogleToken:      tokenInfo.GoogleToken,
+		ClientID:         tokenInfo.ClientID,
+		CreatedAt:        time.Now(),
 	}
 
 	if err := s.store.StoreToken(newTokenInfo); err != nil {
@@ -400,8 +420,8 @@ func (s *Server) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request)
 
 	s.logger.Info("refreshed access token", "client_id", tokenInfo.ClientID)
 
-	// Return token response (same refresh token)
-	s.tokenResponse(w, newAccessToken, refreshToken, int(s.accessTokenTTL.Seconds()))
+	// Return token response with new refresh token
+	s.tokenResponse(w, newAccessToken, newRefreshToken, int(s.accessTokenTTL.Seconds()))
 }
 
 func (s *Server) tokenResponse(w http.ResponseWriter, accessToken, refreshToken string, expiresIn int) {

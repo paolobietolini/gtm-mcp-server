@@ -2,11 +2,14 @@ package middleware
 
 import (
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"golang.org/x/time/rate"
 )
+
+const maxVisitors = 10000
 
 // RateLimiter provides per-IP rate limiting for HTTP endpoints.
 type RateLimiter struct {
@@ -32,18 +35,21 @@ func NewRateLimiter(rps float64, burst int) *RateLimiter {
 	return rl
 }
 
-func (rl *RateLimiter) getVisitor(ip string) *rate.Limiter {
+func (rl *RateLimiter) getVisitor(ip string) (*rate.Limiter, bool) {
 	rl.mu.Lock()
 	defer rl.mu.Unlock()
 
 	v, exists := rl.visitors[ip]
 	if !exists {
+		if len(rl.visitors) >= maxVisitors {
+			return nil, false
+		}
 		limiter := rate.NewLimiter(rl.rate, rl.burst)
 		rl.visitors[ip] = &visitor{limiter: limiter, lastSeen: time.Now()}
-		return limiter
+		return limiter, true
 	}
 	v.lastSeen = time.Now()
-	return v.limiter
+	return v.limiter, true
 }
 
 // cleanup removes stale visitors every minute.
@@ -62,20 +68,30 @@ func (rl *RateLimiter) cleanup() {
 	}
 }
 
+// extractClientIP returns the client IP from the request.
+// It uses the leftmost IP from X-Forwarded-For (set by Caddy), falling back to RemoteAddr.
+func extractClientIP(r *http.Request) string {
+	if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+		return strings.TrimSpace(strings.SplitN(forwarded, ",", 2)[0])
+	}
+	return r.RemoteAddr
+}
+
+func rateLimitReject(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Retry-After", "1")
+	w.WriteHeader(http.StatusTooManyRequests)
+	w.Write([]byte(`{"error":"rate_limit_exceeded","error_description":"Too many requests. Please retry later."}`))
+}
+
 // Middleware returns an HTTP middleware that rate limits by client IP.
 func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ip := r.RemoteAddr
-		if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-			ip = forwarded
-		}
+		ip := extractClientIP(r)
 
-		limiter := rl.getVisitor(ip)
-		if !limiter.Allow() {
-			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("Retry-After", "1")
-			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte(`{"error":"rate_limit_exceeded","error_description":"Too many requests. Please retry later."}`))
+		limiter, ok := rl.getVisitor(ip)
+		if !ok || !limiter.Allow() {
+			rateLimitReject(w)
 			return
 		}
 
@@ -86,17 +102,11 @@ func (rl *RateLimiter) Middleware(next http.Handler) http.Handler {
 // MiddlewareFunc wraps an http.HandlerFunc with rate limiting.
 func (rl *RateLimiter) MiddlewareFunc(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ip := r.RemoteAddr
-		if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
-			ip = forwarded
-		}
+		ip := extractClientIP(r)
 
-		limiter := rl.getVisitor(ip)
-		if !limiter.Allow() {
-			w.Header().Set("Content-Type", "application/json")
-			w.Header().Set("Retry-After", "1")
-			w.WriteHeader(http.StatusTooManyRequests)
-			w.Write([]byte(`{"error":"rate_limit_exceeded","error_description":"Too many requests. Please retry later."}`))
+		limiter, ok := rl.getVisitor(ip)
+		if !ok || !limiter.Allow() {
+			rateLimitReject(w)
 			return
 		}
 

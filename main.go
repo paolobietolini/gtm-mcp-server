@@ -110,10 +110,10 @@ func main() {
 		mux.HandleFunc("POST /token", oauthLimiter.MiddlewareFunc(middleware.MaxBytesMiddleware(1<<20, authServer.TokenHandler)))
 		mux.HandleFunc("POST /register", registerLimiter.MiddlewareFunc(middleware.MaxBytesMiddleware(1<<20, authServer.RegistrationHandler)))
 
-		// MCP endpoint with REQUIRED auth middleware
+		// MCP endpoint with REQUIRED auth middleware and body size limit
 		// Returns 401 if no valid Bearer token - triggers Claude's OAuth flow
 		authMiddleware := auth.Middleware(tokenStore, googleProvider, logger, cfg.BaseURL)
-		mux.Handle("/", authMiddleware(mcpHandler))
+		mux.Handle("/", authMiddleware(maxBytesHandler(5<<20, mcpHandler)))
 
 		logger.Info("OAuth configured",
 			"authorize_endpoint", cfg.BaseURL+"/authorize",
@@ -140,18 +140,19 @@ func main() {
 		mux.HandleFunc("POST /token", oauthLimiter.MiddlewareFunc(oauthNotConfiguredHandler))
 		mux.HandleFunc("POST /register", registerLimiter.MiddlewareFunc(oauthNotConfiguredHandler))
 
-		// MCP endpoint without auth
-		mux.Handle("/", mcpHandler)
+		// MCP endpoint without auth (still apply body size limit)
+		mux.Handle("/", maxBytesHandler(5<<20, mcpHandler))
 	}
 
 	// Create HTTP server
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	httpServer := &http.Server{
-		Addr:         addr,
-		Handler:      mux,
-		ReadTimeout:  30 * time.Second,
-		WriteTimeout: 0, // Disabled for SSE streams
-		IdleTimeout:  120 * time.Second,
+		Addr:              addr,
+		Handler:           mux,
+		ReadTimeout:       30 * time.Second,
+		ReadHeaderTimeout: 10 * time.Second,
+		WriteTimeout:      0, // Disabled for SSE streams
+		IdleTimeout:       120 * time.Second,
 	}
 
 	// Graceful shutdown
@@ -189,6 +190,16 @@ func main() {
 func registerTools(server *mcp.Server) {
 	registerUtilityTools(server)
 	gtm.RegisterTools(server)
+}
+
+// maxBytesHandler wraps an http.Handler with a request body size limit.
+func maxBytesHandler(maxBytes int64, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Body != nil {
+			r.Body = http.MaxBytesReader(w, r.Body, maxBytes)
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // registerUtilityTools adds ping and auth_status tools.
