@@ -74,11 +74,13 @@ func (m *mockTokenStore) ExtendTokenExpiry(accessToken string, newExpiry time.Ti
 	return nil
 }
 
-func (m *mockTokenStore) StoreState(state *AuthState) error          { return nil }
-func (m *mockTokenStore) GetState(stateValue string) (*AuthState, error)     { return nil, ErrInvalidState }
-func (m *mockTokenStore) ConsumeState(stateValue string) (*AuthState, error) { return nil, ErrInvalidState }
-func (m *mockTokenStore) DeleteState(stateValue string) error        { return nil }
-func (m *mockTokenStore) StoreClient(client *ClientInfo) error       { return nil }
+func (m *mockTokenStore) StoreState(state *AuthState) error              { return nil }
+func (m *mockTokenStore) GetState(stateValue string) (*AuthState, error) { return nil, ErrInvalidState }
+func (m *mockTokenStore) ConsumeState(stateValue string) (*AuthState, error) {
+	return nil, ErrInvalidState
+}
+func (m *mockTokenStore) DeleteState(stateValue string) error  { return nil }
+func (m *mockTokenStore) StoreClient(client *ClientInfo) error { return nil }
 func (m *mockTokenStore) GetClient(clientID string) (*ClientInfo, error) {
 	return nil, ErrClientNotFound
 }
@@ -231,9 +233,9 @@ func TestMiddleware_ExpiredToken_AutoRefreshSuccess(t *testing.T) {
 
 	// Store an expired token with a valid refresh token
 	token := &TokenInfo{
-		AccessToken:  "expired-token",
-		RefreshToken: "our-refresh-token",
-		ExpiresAt:    time.Now().Add(-1 * time.Hour), // Expired
+		AccessToken:      "expired-token",
+		RefreshToken:     "our-refresh-token",
+		ExpiresAt:        time.Now().Add(-1 * time.Hour),      // Expired
 		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour), // Valid
 		GoogleToken: &oauth2.Token{
 			AccessToken:  "old-google-access",

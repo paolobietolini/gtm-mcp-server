@@ -14,12 +14,12 @@ const maxVisitors = 10000
 
 // RateLimiter provides per-IP rate limiting for HTTP endpoints.
 type RateLimiter struct {
-	mu           sync.Mutex
-	visitors     map[string]*visitor
-	rate         rate.Limit
-	burst        int
-	done         chan struct{}
-	trustProxy   bool
+	mu         sync.Mutex
+	visitors   map[string]*visitor
+	rate       rate.Limit
+	burst      int
+	done       chan struct{}
+	trustProxy bool
 }
 
 type visitor struct {

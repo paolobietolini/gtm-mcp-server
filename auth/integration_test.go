@@ -175,8 +175,8 @@ func TestIntegration_UntrustedHostDoesNotLeakIntoResponses(t *testing.T) {
 // root URLs, so the expected resource is scheme + "://" + host + "/".
 func TestIntegration_ResourceMetadata_GeminiCLICompatibility(t *testing.T) {
 	tests := []struct {
-		name        string
-		baseURL     string
+		name         string
+		baseURL      string
 		wantResource string
 	}{
 		{

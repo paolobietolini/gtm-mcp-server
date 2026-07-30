@@ -9,10 +9,10 @@ import (
 
 // ProtectedResourceMetadata represents RFC 9728 OAuth 2.0 Protected Resource Metadata
 type ProtectedResourceMetadata struct {
-	Resource                 string   `json:"resource"`
-	AuthorizationServers     []string `json:"authorization_servers"`
-	ScopesSupported          []string `json:"scopes_supported,omitempty"`
-	BearerMethodsSupported   []string `json:"bearer_methods_supported"`
+	Resource               string   `json:"resource"`
+	AuthorizationServers   []string `json:"authorization_servers"`
+	ScopesSupported        []string `json:"scopes_supported,omitempty"`
+	BearerMethodsSupported []string `json:"bearer_methods_supported"`
 }
 
 // NewProtectedResourceMetadata creates metadata for the protected resource.

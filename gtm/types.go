@@ -3,7 +3,7 @@ package gtm
 // Parameter represents a GTM parameter structure.
 // Used in tags, triggers, and variables.
 type Parameter struct {
-	Type  string      `json:"type"`            // "template", "boolean", "integer", "list", "map"
+	Type  string      `json:"type"` // "template", "boolean", "integer", "list", "map"
 	Key   string      `json:"key"`
 	Value string      `json:"value,omitempty"`
 	List  []Parameter `json:"list,omitempty"`
@@ -36,13 +36,13 @@ type TagInput struct {
 	TagFiringOption    string             `json:"tagFiringOption,omitempty"`
 	SetupTag           []SetupTagInput    `json:"setupTag,omitempty"`
 	TeardownTag        []TeardownTagInput `json:"teardownTag,omitempty"`
-	HasSetupTag        bool               `json:"-"` // When true, SetupTag was explicitly provided
-	HasTeardownTag     bool               `json:"-"` // When true, TeardownTag was explicitly provided
-	ClearSetupTag      bool               `json:"-"` // When true, explicitly clear setup tags
-	ClearTeardownTag   bool               `json:"-"` // When true, explicitly clear teardown tags
-	ConsentStatus      string             `json:"consentStatus,omitempty"`  // "notSet", "notNeeded", "needed"
-	ConsentTypes       []string           `json:"consentTypes,omitempty"`   // e.g. ["ad_storage", "analytics_storage"]
-	HasConsentSettings bool               `json:"-"` // When true, consent settings were explicitly provided
+	HasSetupTag        bool               `json:"-"`                       // When true, SetupTag was explicitly provided
+	HasTeardownTag     bool               `json:"-"`                       // When true, TeardownTag was explicitly provided
+	ClearSetupTag      bool               `json:"-"`                       // When true, explicitly clear setup tags
+	ClearTeardownTag   bool               `json:"-"`                       // When true, explicitly clear teardown tags
+	ConsentStatus      string             `json:"consentStatus,omitempty"` // "notSet", "notNeeded", "needed"
+	ConsentTypes       []string           `json:"consentTypes,omitempty"`  // e.g. ["ad_storage", "analytics_storage"]
+	HasConsentSettings bool               `json:"-"`                       // When true, consent settings were explicitly provided
 }
 
 // TriggerInput represents input for creating/updating a trigger.
@@ -121,10 +121,10 @@ type BuiltInVariable struct {
 
 // ClientInfo represents a GTM client (server-side containers only).
 type ClientInfo struct {
-	ClientID       string `json:"clientId"`
-	Name           string `json:"name"`
-	Type           string `json:"type"`
-	Priority       int64  `json:"priority,omitempty"`
+	ClientID string `json:"clientId"`
+	Name     string `json:"name"`
+	Type     string `json:"type"`
+	Priority int64  `json:"priority,omitempty"`
 	// Using any to avoid recursive type cycle in schema generation.
 	Parameter      any    `json:"parameter,omitempty"`
 	Notes          string `json:"notes,omitempty"`

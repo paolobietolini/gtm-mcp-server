@@ -370,13 +370,13 @@ func TestMemoryTokenStore_StoreAndGetClient(t *testing.T) {
 	defer store.Close()
 
 	clientInfo := &ClientInfo{
-		ClientID:     "test-client-id",
-		RedirectURIs: []string{"https://example.com/callback"},
-		ClientName:   "Test Client",
-		GrantTypes:   []string{"authorization_code", "refresh_token"},
-		ResponseTypes: []string{"code"},
+		ClientID:                "test-client-id",
+		RedirectURIs:            []string{"https://example.com/callback"},
+		ClientName:              "Test Client",
+		GrantTypes:              []string{"authorization_code", "refresh_token"},
+		ResponseTypes:           []string{"code"},
 		TokenEndpointAuthMethod: "none",
-		CreatedAt:    time.Now(),
+		CreatedAt:               time.Now(),
 	}
 
 	err := store.StoreClient(clientInfo)
@@ -590,10 +590,10 @@ func TestMemoryTokenStore_TokenWithoutRefreshToken(t *testing.T) {
 
 	// Test storing a token without a refresh token
 	tokenInfo := &TokenInfo{
-		AccessToken: "access-only-token",
+		AccessToken:  "access-only-token",
 		RefreshToken: "", // No refresh token
-		ExpiresAt:   time.Now().Add(1 * time.Hour),
-		CreatedAt:   time.Now(),
+		ExpiresAt:    time.Now().Add(1 * time.Hour),
+		CreatedAt:    time.Now(),
 	}
 
 	err := store.StoreToken(tokenInfo)

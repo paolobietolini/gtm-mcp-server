@@ -9,14 +9,14 @@ import (
 
 // TagSequenceRef represents a setup or teardown tag reference.
 type TagSequenceRef struct {
-	TagName            string `json:"tagName"`
-	StopOnFailure      bool   `json:"stopOnFailure,omitempty"`
+	TagName       string `json:"tagName"`
+	StopOnFailure bool   `json:"stopOnFailure,omitempty"`
 }
 
 // TagConsentSettings represents consent configuration for a tag.
 type TagConsentSettings struct {
-	ConsentStatus string   `json:"consentStatus"`           // "notSet", "notNeeded", "needed"
-	ConsentTypes  []string `json:"consentTypes,omitempty"`  // e.g. ["ad_storage", "analytics_storage"]
+	ConsentStatus string   `json:"consentStatus"`          // "notSet", "notNeeded", "needed"
+	ConsentTypes  []string `json:"consentTypes,omitempty"` // e.g. ["ad_storage", "analytics_storage"]
 }
 
 // Tag is a simplified representation of a GTM tag.

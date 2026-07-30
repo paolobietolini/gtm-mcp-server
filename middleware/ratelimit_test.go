@@ -146,7 +146,7 @@ func TestRateLimiter_XForwardedFor(t *testing.T) {
 
 	// Second request with same X-Forwarded-For (should be rate limited)
 	req2 := httptest.NewRequest(http.MethodGet, "/test", nil)
-	req2.RemoteAddr = "10.0.0.2:5678" // Different proxy IP
+	req2.RemoteAddr = "10.0.0.2:5678"                 // Different proxy IP
 	req2.Header.Set("X-Forwarded-For", "203.0.113.1") // Same client IP
 	w2 := httptest.NewRecorder()
 	handler.ServeHTTP(w2, req2)
@@ -307,10 +307,10 @@ func TestRateLimiter_ConcurrentSameIP(t *testing.T) {
 
 func TestMaxBytesMiddleware(t *testing.T) {
 	tests := []struct {
-		name           string
-		maxBytes       int64
-		bodySize       int
-		expectSuccess  bool
+		name          string
+		maxBytes      int64
+		bodySize      int
+		expectSuccess bool
 	}{
 		{
 			name:          "body within limit",
