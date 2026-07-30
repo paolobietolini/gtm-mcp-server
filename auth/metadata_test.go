@@ -127,3 +127,10 @@ func TestMetadataHandler_CacheHeaders(t *testing.T) {
 		t.Errorf("Access-Control-Allow-Origin = %q", cors)
 	}
 }
+
+func TestNewOAuthMetadata_AdvertisesCIMDSupport(t *testing.T) {
+	m := NewOAuthMetadata("http://localhost:8080")
+	if !m.ClientIDMetadataDocumentSupported {
+		t.Error("expected client_id_metadata_document_supported to be true")
+	}
+}

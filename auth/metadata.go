@@ -17,20 +17,22 @@ type OAuthMetadata struct {
 	GrantTypesSupported               []string `json:"grant_types_supported"`
 	TokenEndpointAuthMethodsSupported []string `json:"token_endpoint_auth_methods_supported"`
 	CodeChallengeMethodsSupported     []string `json:"code_challenge_methods_supported"`
+	ClientIDMetadataDocumentSupported bool     `json:"client_id_metadata_document_supported"`
 }
 
 // NewOAuthMetadata creates metadata for the given base URL.
 func NewOAuthMetadata(baseURL string) *OAuthMetadata {
 	return &OAuthMetadata{
-		Issuer:                baseURL,
-		AuthorizationEndpoint: baseURL + "/authorize",
-		TokenEndpoint:         baseURL + "/token",
-		RegistrationEndpoint:  baseURL + "/register",
-		ScopesSupported: GoogleScopes,
+		Issuer:                            baseURL,
+		AuthorizationEndpoint:             baseURL + "/authorize",
+		TokenEndpoint:                     baseURL + "/token",
+		RegistrationEndpoint:              baseURL + "/register",
+		ScopesSupported:                   GoogleScopes,
 		ResponseTypesSupported:            []string{"code"},
 		GrantTypesSupported:               []string{"authorization_code", "refresh_token"},
 		TokenEndpointAuthMethodsSupported: []string{"client_secret_post", "none"},
 		CodeChallengeMethodsSupported:     []string{"S256"},
+		ClientIDMetadataDocumentSupported: true,
 	}
 }
 

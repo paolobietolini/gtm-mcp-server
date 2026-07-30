@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 )
@@ -19,6 +20,28 @@ type Server struct {
 	store          TokenStore
 	logger         *slog.Logger
 	accessTokenTTL time.Duration
+	resolver       *URLResolver
+	cimd           *CIMDFetcher
+}
+
+// SetCIMDFetcher overrides the Client ID Metadata Document fetcher (tests).
+func (s *Server) SetCIMDFetcher(f *CIMDFetcher) {
+	s.cimd = f
+}
+
+// SetURLResolver enables per-request issuer resolution (Docker-to-Docker
+// contexts), matching the dynamic behavior of the metadata endpoints.
+func (s *Server) SetURLResolver(r *URLResolver) {
+	s.resolver = r
+}
+
+// issuerForRequest returns the issuer identifier for the given request,
+// resolved dynamically when a URLResolver is configured.
+func (s *Server) issuerForRequest(r *http.Request) string {
+	if s.resolver != nil {
+		return s.resolver.Resolve(r)
+	}
+	return s.baseURL
 }
 
 // NewServer creates a new OAuth server.
@@ -29,6 +52,7 @@ func NewServer(baseURL string, google *GoogleProvider, store TokenStore, logger 
 		store:          store,
 		logger:         logger,
 		accessTokenTTL: accessTokenTTL,
+		cimd:           NewCIMDFetcher(),
 	}
 }
 
@@ -62,7 +86,20 @@ func (s *Server) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 	// Validate redirect URI
 	// If client is registered via DCR, validate against their registered URIs
 	// Otherwise accept any syntactically valid URI (PKCE provides code binding)
-	if clientID != "" {
+	if IsClientIDMetadataURL(clientID) {
+		// Client ID Metadata Document (MCP 2026-07-28): client_id is an HTTPS
+		// URL; fetch the document and validate redirect_uri against it.
+		client, err := s.cimd.Fetch(r.Context(), clientID)
+		if err != nil {
+			s.logger.Error("failed to fetch client metadata document", "client_id", clientID, "error", err)
+			s.errorResponse(w, "invalid_client", "Could not resolve client_id metadata document")
+			return
+		}
+		if !slices.Contains(client.RedirectURIs, redirectURI) {
+			s.errorResponse(w, "invalid_request", "redirect_uri does not match client metadata document")
+			return
+		}
+	} else if clientID != "" {
 		if client, err := s.store.GetClient(clientID); err == nil {
 			// Client is registered, validate against registered redirect_uris
 			validRedirect := false
@@ -109,6 +146,7 @@ func (s *Server) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 		RedirectURI:  redirectURI,
 		ClientID:     clientID,
 		Resource:     resource, // Store resource for audience binding
+		Issuer:       s.issuerForRequest(r),
 		CreatedAt:    time.Now(),
 	}
 
@@ -189,11 +227,11 @@ func (s *Server) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Store temporarily with the Google token (code is short-lived)
 	tempToken := &TokenInfo{
-		AccessToken:  ourCode, // Temporary: using code as key
-		GoogleToken:  googleToken,
-		ClientID:     authState.ClientID,
-		CreatedAt:    time.Now(),
-		ExpiresAt:    time.Now().Add(5 * time.Minute), // Code expires in 5 min
+		AccessToken: ourCode, // Temporary: using code as key
+		GoogleToken: googleToken,
+		ClientID:    authState.ClientID,
+		CreatedAt:   time.Now(),
+		ExpiresAt:   time.Now().Add(5 * time.Minute), // Code expires in 5 min
 	}
 
 	// Store code verifier for PKCE verification
@@ -223,6 +261,13 @@ func (s *Server) CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	q := redirectURL.Query()
 	q.Set("code", ourCode)
 	q.Set("state", claudeState)
+	// RFC 9207: identify the issuer so clients can detect mix-up attacks.
+	// Use the issuer the client saw at authorize time (resolver-aware).
+	issuer := authState.Issuer
+	if issuer == "" {
+		issuer = s.baseURL
+	}
+	q.Set("iss", issuer)
 	redirectURL.RawQuery = q.Encode()
 	finalURL := redirectURL.String()
 

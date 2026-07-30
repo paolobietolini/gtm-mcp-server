@@ -41,6 +41,7 @@ type AuthState struct {
 	RedirectURI  string
 	ClientID     string
 	Resource     string // RFC 9728: resource parameter for audience binding
+	Issuer       string // RFC 9207: issuer identifier resolved at authorize time
 	CreatedAt    time.Time
 }
 
@@ -80,9 +81,9 @@ type TokenStore interface {
 
 // MemoryTokenStore is an in-memory implementation of TokenStore.
 type MemoryTokenStore struct {
-	mu     sync.RWMutex
-	tokens map[string]*TokenInfo  // keyed by access token
-	states map[string]*AuthState  // keyed by state value
+	mu      sync.RWMutex
+	tokens  map[string]*TokenInfo  // keyed by access token
+	states  map[string]*AuthState  // keyed by state value
 	clients map[string]*ClientInfo // keyed by client_id
 
 	// Secondary index for refresh token lookup

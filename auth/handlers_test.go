@@ -367,22 +367,22 @@ func TestServer_AuthorizeHandler_RegisteredClientValidation(t *testing.T) {
 func TestPKCEVerification(t *testing.T) {
 	// Test PKCE challenge/verifier validation logic
 	tests := []struct {
-		name         string
-		verifier     string
-		challenge    string
-		shouldMatch  bool
+		name        string
+		verifier    string
+		challenge   string
+		shouldMatch bool
 	}{
 		{
-			name:         "valid match",
-			verifier:     "test-verifier-123",
-			challenge:    "", // Will be calculated
-			shouldMatch:  true,
+			name:        "valid match",
+			verifier:    "test-verifier-123",
+			challenge:   "", // Will be calculated
+			shouldMatch: true,
 		},
 		{
-			name:         "invalid match",
-			verifier:     "test-verifier-123",
-			challenge:    "wrong-challenge",
-			shouldMatch:  false,
+			name:        "invalid match",
+			verifier:    "test-verifier-123",
+			challenge:   "wrong-challenge",
+			shouldMatch: false,
 		},
 	}
 
@@ -723,5 +723,103 @@ func TestServer_CallbackHandler_ExpiredState(t *testing.T) {
 
 	if !strings.Contains(w.Body.String(), "Invalid or expired state") {
 		t.Error("expected Invalid or expired state error")
+	}
+}
+
+// newFakeGoogleProvider returns a GoogleProvider whose token endpoint is a
+// local httptest server, plus a cleanup function.
+func newFakeGoogleProvider(t *testing.T) (*GoogleProvider, func()) {
+	t.Helper()
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Write([]byte(`{"access_token":"google-access","refresh_token":"google-refresh","token_type":"Bearer","expires_in":3600}`))
+	}))
+	p := NewGoogleProvider("client-id", "client-secret", "http://localhost:8080/oauth/callback")
+	p.Config().Endpoint.TokenURL = ts.URL
+	p.Config().Endpoint.AuthURL = ts.URL + "/auth"
+	return p, ts.Close
+}
+
+// runAuthorizeCallbackFlow drives /authorize then /oauth/callback and returns
+// the final redirect Location back to the MCP client.
+func runAuthorizeCallbackFlow(t *testing.T, server *Server, authorizeHost string) *url.URL {
+	t.Helper()
+
+	params := url.Values{}
+	params.Set("response_type", "code")
+	params.Set("client_id", "test-client")
+	params.Set("redirect_uri", "https://claude.ai/api/mcp/auth_callback")
+	params.Set("state", "claude-state")
+	params.Set("code_challenge", base64.RawURLEncoding.EncodeToString(func() []byte { h := sha256.Sum256([]byte("verifier")); return h[:] }()))
+	params.Set("code_challenge_method", "S256")
+
+	req := httptest.NewRequest(http.MethodGet, "/authorize?"+params.Encode(), nil)
+	if authorizeHost != "" {
+		req.Host = authorizeHost
+	}
+	w := httptest.NewRecorder()
+	server.AuthorizeHandler(w, req)
+	if w.Code != http.StatusFound {
+		t.Fatalf("authorize: expected 302, got %d: %s", w.Code, w.Body.String())
+	}
+
+	googleURL, err := url.Parse(w.Header().Get("Location"))
+	if err != nil {
+		t.Fatalf("authorize: bad Location: %v", err)
+	}
+	googleState := googleURL.Query().Get("state")
+	if googleState == "" {
+		t.Fatal("authorize: no state in Google redirect")
+	}
+
+	cbParams := url.Values{}
+	cbParams.Set("code", "google-code")
+	cbParams.Set("state", googleState)
+	cbReq := httptest.NewRequest(http.MethodGet, "/oauth/callback?"+cbParams.Encode(), nil)
+	cbW := httptest.NewRecorder()
+	server.CallbackHandler(cbW, cbReq)
+	if cbW.Code != http.StatusFound {
+		t.Fatalf("callback: expected 302, got %d: %s", cbW.Code, cbW.Body.String())
+	}
+
+	loc, err := url.Parse(cbW.Header().Get("Location"))
+	if err != nil {
+		t.Fatalf("callback: bad Location: %v", err)
+	}
+	return loc
+}
+
+func TestServer_CallbackHandler_IncludesIssParam(t *testing.T) {
+	store := NewMemoryTokenStore()
+	defer store.Close()
+
+	google, cleanup := newFakeGoogleProvider(t)
+	defer cleanup()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	server := NewServer("http://localhost:8080", google, store, logger, 1*time.Hour)
+
+	loc := runAuthorizeCallbackFlow(t, server, "")
+
+	if got := loc.Query().Get("iss"); got != "http://localhost:8080" {
+		t.Errorf("expected iss=http://localhost:8080 in redirect (RFC 9207), got %q", got)
+	}
+}
+
+func TestServer_CallbackHandler_IssUsesResolvedIssuerFromAuthorize(t *testing.T) {
+	store := NewMemoryTokenStore()
+	defer store.Close()
+
+	google, cleanup := newFakeGoogleProvider(t)
+	defer cleanup()
+
+	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	server := NewServer("http://localhost:8080", google, store, logger, 1*time.Hour)
+	server.SetURLResolver(NewURLResolver("http://localhost:8080", []string{"gtm-mcp:8080"}))
+
+	loc := runAuthorizeCallbackFlow(t, server, "gtm-mcp:8080")
+
+	if got := loc.Query().Get("iss"); got != "http://gtm-mcp:8080" {
+		t.Errorf("expected iss=http://gtm-mcp:8080 (issuer resolved at authorize time), got %q", got)
 	}
 }

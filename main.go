@@ -26,7 +26,7 @@ var llmsTxt string
 
 const (
 	serverName    = "gtm-mcp-server"
-	serverVersion = "1.7.0"
+	serverVersion = "1.8.0"
 )
 
 func main() {
@@ -130,8 +130,8 @@ func main() {
 	oauthConfigured := cfg.ValidateAuth() == nil
 
 	// Rate limiters for public endpoints
-	oauthLimiter := middleware.NewRateLimiter(10, 20, cfg.TrustProxy)   // 10 req/s, burst 20
-	registerLimiter := middleware.NewRateLimiter(2, 5, cfg.TrustProxy)   // 2 req/s, burst 5
+	oauthLimiter := middleware.NewRateLimiter(10, 20, cfg.TrustProxy)  // 10 req/s, burst 20
+	registerLimiter := middleware.NewRateLimiter(2, 5, cfg.TrustProxy) // 2 req/s, burst 5
 
 	if oauthConfigured {
 		// Set up OAuth
@@ -142,6 +142,9 @@ func main() {
 			cfg.BaseURL+"/oauth/callback",
 		)
 		authServer = auth.NewServer(cfg.BaseURL, googleProvider, tokenStore, logger, cfg.AccessTokenTTL)
+		if urlResolver != nil {
+			authServer.SetURLResolver(urlResolver)
+		}
 
 		// OAuth endpoints with rate limiting and body size limits
 		mux.HandleFunc("GET /authorize", oauthLimiter.MiddlewareFunc(authServer.AuthorizeHandler))
