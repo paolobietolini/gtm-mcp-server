@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -23,6 +24,7 @@ const (
 	cimdFetchTimeout = 10 * time.Second
 	cimdDefaultTTL   = 5 * time.Minute
 	cimdMaxTTL       = 24 * time.Hour
+	cimdMaxRedirects = 5
 )
 
 // IsClientIDMetadataURL reports whether clientID is a valid CIMD identifier:
@@ -65,10 +67,56 @@ type CIMDFetcher struct {
 
 // NewCIMDFetcher creates a fetcher with safe defaults.
 func NewCIMDFetcher() *CIMDFetcher {
-	return &CIMDFetcher{
-		HTTPClient: &http.Client{Timeout: cimdFetchTimeout},
-		cache:      make(map[string]cimdCacheEntry),
+	f := &CIMDFetcher{cache: make(map[string]cimdCacheEntry)}
+	transport := http.DefaultTransport.(*http.Transport).Clone()
+	// Clone inherits ProxyFromEnvironment. Through a proxy the Control hook
+	// below would only ever see the proxy's own address, never the target,
+	// so the guard would be silently blind. CIMD documents are public
+	// internet resources; fetch them directly.
+	transport.Proxy = nil
+	transport.DialContext = (&net.Dialer{
+		Timeout:   cimdFetchTimeout,
+		KeepAlive: 30 * time.Second,
+		Control:   f.dialControl,
+	}).DialContext
+	f.HTTPClient = &http.Client{Timeout: cimdFetchTimeout, Transport: transport}
+	return f
+}
+
+// dialControl runs after DNS resolution, on the address actually being
+// dialed. That closes the window rejectPrivateHost cannot: a name that
+// resolves public during the pre-flight check and private at connect time
+// (DNS rebinding), and any redirect hop that never went through the check.
+func (f *CIMDFetcher) dialControl(network, address string, c syscall.RawConn) error {
+	if f.AllowPrivateHosts {
+		return nil
 	}
+	return rejectPrivateAddr(network, address, c)
+}
+
+// checkRedirect vets every hop the client is asked to follow. Without it Go
+// follows redirects with no further validation, letting a public host bounce
+// the fetch to an internal one.
+func (f *CIMDFetcher) checkRedirect(req *http.Request, via []*http.Request) error {
+	if len(via) >= cimdMaxRedirects {
+		return fmt.Errorf("client metadata fetch exceeded %d redirects", cimdMaxRedirects)
+	}
+	if req.URL.Scheme != "https" {
+		return fmt.Errorf("client metadata redirect to non-https URL rejected")
+	}
+	if f.AllowPrivateHosts {
+		return nil
+	}
+	return rejectPrivateHost(req.Context(), req.URL.Hostname())
+}
+
+// clientForFetch returns HTTPClient with the redirect guard installed. It
+// copies rather than mutates so that an injected client (tests) is still
+// guarded without being modified.
+func (f *CIMDFetcher) clientForFetch() *http.Client {
+	c := *f.HTTPClient
+	c.CheckRedirect = f.checkRedirect
+	return &c
 }
 
 // Fetch retrieves and validates the metadata document at clientID.
@@ -98,7 +146,7 @@ func (f *CIMDFetcher) Fetch(ctx context.Context, clientID string) (*ClientInfo, 
 	}
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := f.HTTPClient.Do(req)
+	resp, err := f.clientForFetch().Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch client metadata: %w", err)
 	}
@@ -166,6 +214,73 @@ func cacheTTLFromResponse(resp *http.Response) time.Duration {
 	return cimdDefaultTTL
 }
 
+// rejectPrivateAddr fails for a host:port whose IP is not publicly routable.
+// Intended as a net.Dialer.Control hook.
+func rejectPrivateAddr(network, address string, _ syscall.RawConn) error {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return fmt.Errorf("malformed dial address %q: %w", address, err)
+	}
+	ip := net.ParseIP(host)
+	if ip == nil {
+		return fmt.Errorf("dial address %q is not a resolved IP", address)
+	}
+	if !isPublicIP(ip) {
+		return fmt.Errorf("client metadata host resolves to a non-public address")
+	}
+	return nil
+}
+
+// nonPublicCIDRs covers ranges that are not publicly routable but that net.IP
+// does not classify: IsPrivate only knows RFC1918 and fc00::/7. Without these,
+// a CGNAT or NAT64 address reaches real infrastructure — 64:ff9b::a9fe:a9fe is
+// the cloud metadata service on any NAT64 network.
+var nonPublicCIDRs = parseCIDRs(
+	"100.64.0.0/10", // RFC 6598 carrier-grade NAT
+	"192.0.0.0/24",  // RFC 6890 IETF protocol assignments
+	"198.18.0.0/15", // RFC 2544 benchmarking
+	"240.0.0.0/4",   // class E, includes 255.255.255.255
+	"64:ff9b::/96",  // RFC 6052 NAT64
+	"64:ff9b:1::/48",
+	"2002::/16",      // 6to4, reaches the embedded IPv4 address
+	"100::/64",       // RFC 6666 discard-only
+	"192.88.99.0/24", // RFC 7526 6to4 relay anycast
+	"2001::/32",      // Teredo, embeds an IPv4 address
+	"2001:10::/28",   // ORCHID
+	"2001:20::/28",   // ORCHIDv2
+	// IPv4-compatible IPv6 (::a.b.c.d). Deprecated by RFC 4291 and normally
+	// unroutable, but To4() only normalizes the ::ffff: form, so ::7f00:1
+	// would otherwise pass every net.IP check as public.
+	"::/96",
+)
+
+func parseCIDRs(cidrs ...string) []*net.IPNet {
+	nets := make([]*net.IPNet, 0, len(cidrs))
+	for _, c := range cidrs {
+		_, n, err := net.ParseCIDR(c)
+		if err != nil {
+			panic("auth: bad CIDR in nonPublicCIDRs: " + c)
+		}
+		nets = append(nets, n)
+	}
+	return nets
+}
+
+// isPublicIP reports whether ip is publicly routable.
+func isPublicIP(ip net.IP) bool {
+	if ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() ||
+		ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() ||
+		ip.IsInterfaceLocalMulticast() || ip.IsMulticast() {
+		return false
+	}
+	for _, n := range nonPublicCIDRs {
+		if n.Contains(ip) {
+			return false
+		}
+	}
+	return true
+}
+
 // rejectPrivateHost resolves host and fails if any address is loopback,
 // private, link-local, or otherwise non-global (SSRF guard).
 func rejectPrivateHost(ctx context.Context, host string) error {
@@ -174,8 +289,7 @@ func rejectPrivateHost(ctx context.Context, host string) error {
 		return fmt.Errorf("failed to resolve client metadata host: %w", err)
 	}
 	for _, ip := range ips {
-		if ip.IP.IsLoopback() || ip.IP.IsPrivate() || ip.IP.IsLinkLocalUnicast() ||
-			ip.IP.IsLinkLocalMulticast() || ip.IP.IsUnspecified() {
+		if !isPublicIP(ip.IP) {
 			return fmt.Errorf("client metadata host resolves to a non-public address")
 		}
 	}
