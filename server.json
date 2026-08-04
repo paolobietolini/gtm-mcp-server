@@ -3,7 +3,7 @@
   "name": "io.github.paolobietolini/gtm-mcp-server",
   "title": "GTM MCP Server",
   "description": "Let AI manage your Google Tag Manager containers — tags, triggers, variables, and more.",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "remotes": [
     {
       "type": "streamable-http",
