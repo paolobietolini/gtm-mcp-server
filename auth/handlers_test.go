@@ -107,6 +107,99 @@ func TestIsValidRedirectURI(t *testing.T) {
 	}
 }
 
+func TestRedirectURIAllowed(t *testing.T) {
+	tests := []struct {
+		name       string
+		registered []string
+		candidate  string
+		expected   bool
+	}{
+		{
+			name:       "exact match",
+			registered: []string{"https://claude.ai/api/mcp/auth_callback"},
+			candidate:  "https://claude.ai/api/mcp/auth_callback",
+			expected:   true,
+		},
+		// RFC 8252 §7.3: loopback redirects match regardless of port
+		{
+			name:       "localhost with ephemeral port matches port-less registration",
+			registered: []string{"http://localhost/callback", "http://127.0.0.1/callback"},
+			candidate:  "http://localhost:3118/callback",
+			expected:   true,
+		},
+		{
+			name:       "127.0.0.1 with ephemeral port matches port-less registration",
+			registered: []string{"http://localhost/callback", "http://127.0.0.1/callback"},
+			candidate:  "http://127.0.0.1:41973/callback",
+			expected:   true,
+		},
+		{
+			name:       "IPv6 loopback with port matches port-less registration",
+			registered: []string{"http://[::1]/callback"},
+			candidate:  "http://[::1]:8080/callback",
+			expected:   true,
+		},
+		{
+			name:       "loopback with different registered port still matches",
+			registered: []string{"http://localhost:9999/callback"},
+			candidate:  "http://localhost:3118/callback",
+			expected:   true,
+		},
+		// The exemption must not loosen anything non-loopback
+		{
+			name:       "remote host with different port does not match",
+			registered: []string{"https://example.com/callback"},
+			candidate:  "https://example.com:8443/callback",
+			expected:   false,
+		},
+		{
+			name:       "localhost subdomain trick does not match",
+			registered: []string{"http://localhost/callback"},
+			candidate:  "http://localhost.evil.com:80/callback",
+			expected:   false,
+		},
+		{
+			name:       "https loopback is not exempted",
+			registered: []string{"https://localhost/callback"},
+			candidate:  "https://localhost:3118/callback",
+			expected:   false,
+		},
+		{
+			name:       "loopback path mismatch does not match",
+			registered: []string{"http://localhost/callback"},
+			candidate:  "http://localhost:3118/other",
+			expected:   false,
+		},
+		{
+			name:       "loopback candidate does not match remote registration",
+			registered: []string{"https://claude.ai/api/mcp/auth_callback"},
+			candidate:  "http://localhost:3118/callback",
+			expected:   false,
+		},
+		{
+			name:       "malformed candidate does not match",
+			registered: []string{"http://localhost/callback"},
+			candidate:  "http://local host/callback",
+			expected:   false,
+		},
+		{
+			name:       "empty registered list matches nothing",
+			registered: nil,
+			candidate:  "http://localhost:3118/callback",
+			expected:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := redirectURIAllowed(tt.registered, tt.candidate)
+			if result != tt.expected {
+				t.Errorf("redirectURIAllowed(%v, %q) = %v, expected %v", tt.registered, tt.candidate, result, tt.expected)
+			}
+		})
+	}
+}
+
 func TestServer_TokenError(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	server := &Server{logger: logger}

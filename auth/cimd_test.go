@@ -323,6 +323,41 @@ func TestServer_AuthorizeHandler_CIMDClient(t *testing.T) {
 	}
 }
 
+// RFC 8252 §7.3: native clients bind an ephemeral loopback port at request
+// time, so a redirect_uri registered without a port must match any port.
+func TestServer_AuthorizeHandler_CIMDLoopbackPortIgnored(t *testing.T) {
+	var metadataURL string
+	fetcher, u, cleanup := newCIMDTestServer(t, "/client.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"client_id": %q, "client_name": "Claude Code", "redirect_uris": ["http://localhost/callback", "http://127.0.0.1/callback"]}`, metadataURL)
+	})
+	defer cleanup()
+	metadataURL = u
+
+	store := NewMemoryTokenStore()
+	defer store.Close()
+	google, gcleanup := newFakeGoogleProvider(t)
+	defer gcleanup()
+	server := NewServer("http://localhost:8080", google, store, testLogger(), testTTL)
+	server.SetCIMDFetcher(fetcher)
+
+	w := doAuthorize(t, server, metadataURL, "http://localhost:3118/callback")
+	if w.Code != http.StatusFound {
+		t.Errorf("loopback redirect with ephemeral port: expected 302, got %d: %s", w.Code, w.Body.String())
+	}
+
+	w = doAuthorize(t, server, metadataURL, "http://127.0.0.1:41973/callback")
+	if w.Code != http.StatusFound {
+		t.Errorf("127.0.0.1 redirect with ephemeral port: expected 302, got %d: %s", w.Code, w.Body.String())
+	}
+
+	// Port exemption must not extend to non-loopback hosts
+	w = doAuthorize(t, server, metadataURL, "http://localhost.evil.com:3118/callback")
+	if w.Code == http.StatusFound {
+		t.Error("non-loopback redirect: expected rejection, got 302")
+	}
+}
+
 func TestServer_AuthorizeHandler_CIMDFetchFailure(t *testing.T) {
 	fetcher, u, cleanup := newCIMDTestServer(t, "/client.json", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)

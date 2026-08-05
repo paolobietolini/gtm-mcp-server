@@ -95,21 +95,14 @@ func (s *Server) AuthorizeHandler(w http.ResponseWriter, r *http.Request) {
 			s.errorResponse(w, "invalid_client", "Could not resolve client_id metadata document")
 			return
 		}
-		if !slices.Contains(client.RedirectURIs, redirectURI) {
+		if !redirectURIAllowed(client.RedirectURIs, redirectURI) {
 			s.errorResponse(w, "invalid_request", "redirect_uri does not match client metadata document")
 			return
 		}
 	} else if clientID != "" {
 		if client, err := s.store.GetClient(clientID); err == nil {
 			// Client is registered, validate against registered redirect_uris
-			validRedirect := false
-			for _, uri := range client.RedirectURIs {
-				if uri == redirectURI {
-					validRedirect = true
-					break
-				}
-			}
-			if !validRedirect {
+			if !redirectURIAllowed(client.RedirectURIs, redirectURI) {
 				s.errorResponse(w, "invalid_request", "redirect_uri does not match registered URIs")
 				return
 			}
@@ -545,6 +538,34 @@ func (s *Server) tokenError(w http.ResponseWriter, errCode, errDesc string) {
 
 func (s *Server) errorResponse(w http.ResponseWriter, errCode, errDesc string) {
 	http.Error(w, fmt.Sprintf("%s: %s", errCode, errDesc), http.StatusBadRequest)
+}
+
+func isLoopbackHost(h string) bool {
+	return h == "localhost" || h == "127.0.0.1" || h == "::1"
+}
+
+// redirectURIAllowed reports whether candidate matches one of the registered
+// URIs. Per RFC 8252 section 7.3, http loopback redirects match on scheme,
+// host and path only, since native clients bind an ephemeral port at request
+// time. All other URIs require an exact match.
+func redirectURIAllowed(registered []string, candidate string) bool {
+	if slices.Contains(registered, candidate) {
+		return true
+	}
+	u, err := url.Parse(candidate)
+	if err != nil || u.Scheme != "http" || !isLoopbackHost(u.Hostname()) {
+		return false
+	}
+	for _, r := range registered {
+		ru, err := url.Parse(r)
+		if err != nil || ru.Scheme != "http" || !isLoopbackHost(ru.Hostname()) {
+			continue
+		}
+		if ru.Hostname() == u.Hostname() && ru.Path == u.Path {
+			return true
+		}
+	}
+	return false
 }
 
 // isValidRedirectURI validates redirect URIs for non-DCR clients.
