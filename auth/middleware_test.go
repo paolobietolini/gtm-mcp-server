@@ -492,6 +492,43 @@ func TestMiddleware_AuthFailedLogDoesNotLeakToken(t *testing.T) {
 	}
 }
 
+// The auto-refresh path logs the token separately, and is the second of the
+// two lines CodeQL flags.
+func TestMiddleware_ExpiredTokenLogDoesNotLeakToken(t *testing.T) {
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
+
+	// Must share no 4-char run with any word the handler logs (e.g. "expired"
+	// in auth_token_expired), or the leak assertion below false-positives.
+	const token = "zqx-stale-bearer-value"
+	store := newMockTokenStore()
+	store.StoreToken(&TokenInfo{
+		AccessToken: token,
+		ClientID:    "test-client",
+		ExpiresAt:   time.Now().Add(-time.Hour),
+	})
+
+	mw := Middleware(store, nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "")
+	handler := mw(dummyHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	handler.ServeHTTP(httptest.NewRecorder(), req)
+
+	out := logs.String()
+	if !strings.Contains(out, "auth_token_expired") {
+		t.Fatalf("expected an auth_token_expired log line, got: %s", out)
+	}
+	for n := 4; n <= len(token); n++ {
+		if strings.Contains(out, token[:n]) {
+			t.Errorf("log output contains the token prefix %q: %s", token[:n], out)
+		}
+	}
+	if !strings.Contains(out, "token_fp="+tokenFingerprint(token)) {
+		t.Errorf("expected the token fingerprint in the log line, got: %s", out)
+	}
+}
+
 func TestMiddleware_ErrorResponseFormat(t *testing.T) {
 	store := newMockTokenStore()
 	logger := testLogger()

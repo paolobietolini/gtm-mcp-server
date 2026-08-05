@@ -252,9 +252,7 @@ func unauthorized(w http.ResponseWriter, baseURL, message string) {
 }
 
 // tokenFingerprint returns a short, non-reversible identifier for a token,
-// safe to log for correlating entries about the same token. The previous
-// helper logged the token's first 8 characters — or, for an input shorter
-// than that, the whole thing.
+// safe to log for correlating entries about the same token.
 func tokenFingerprint(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:4])
