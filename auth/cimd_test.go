@@ -273,6 +273,64 @@ func TestCIMDFetcher_Fetch_Caches(t *testing.T) {
 	}
 }
 
+// newCIMDPathServer serves a valid metadata document at every path, each
+// echoing its own URL, so a single server can back many distinct client_ids.
+func newCIMDPathServer(t *testing.T) (*CIMDFetcher, string, func()) {
+	t.Helper()
+	var base string
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprintf(w, `{"client_id": %q, "client_name": "x", "redirect_uris": ["http://localhost:3000/cb"]}`, base+r.URL.Path)
+	}))
+	base = ts.URL
+	fetcher := NewCIMDFetcher()
+	fetcher.HTTPClient = ts.Client()
+	fetcher.AllowPrivateHosts = true // httptest listens on 127.0.0.1
+	return fetcher, ts.URL, ts.Close
+}
+
+func TestCIMDFetcher_Cache_BoundedByMaxEntries(t *testing.T) {
+	fetcher, base, cleanup := newCIMDPathServer(t)
+	defer cleanup()
+
+	for i := 0; i < cimdMaxCacheEntries+10; i++ {
+		u := fmt.Sprintf("%s/client-%d.json", base, i)
+		if _, err := fetcher.Fetch(context.Background(), u); err != nil {
+			t.Fatalf("fetch %d failed: %v", i, err)
+		}
+	}
+
+	fetcher.mu.Lock()
+	size := len(fetcher.cache)
+	fetcher.mu.Unlock()
+	if size > cimdMaxCacheEntries {
+		t.Errorf("cache holds %d entries, want at most %d", size, cimdMaxCacheEntries)
+	}
+}
+
+func TestCIMDFetcher_Cache_DropsExpiredEntriesOnInsert(t *testing.T) {
+	fetcher, base, cleanup := newCIMDPathServer(t)
+	defer cleanup()
+
+	fetcher.mu.Lock()
+	fetcher.cache["https://stale.example.com/client.json"] = cimdCacheEntry{
+		client:    &ClientInfo{ClientID: "https://stale.example.com/client.json"},
+		expiresAt: time.Now().Add(-time.Minute),
+	}
+	fetcher.mu.Unlock()
+
+	if _, err := fetcher.Fetch(context.Background(), base+"/client.json"); err != nil {
+		t.Fatalf("fetch failed: %v", err)
+	}
+
+	fetcher.mu.Lock()
+	_, stillCached := fetcher.cache["https://stale.example.com/client.json"]
+	fetcher.mu.Unlock()
+	if stillCached {
+		t.Error("expired entry survived an insert, so memory is never reclaimed")
+	}
+}
+
 const testTTL = 1 * time.Hour
 
 // doAuthorize performs a GET /authorize with valid PKCE params.
