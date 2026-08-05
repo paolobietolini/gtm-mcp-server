@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -426,24 +428,67 @@ func TestUnauthorized_RetryAfterOnExpired(t *testing.T) {
 	}
 }
 
-func TestTruncateToken(t *testing.T) {
-	tests := []struct {
-		input    string
-		expected string
-	}{
-		{"abcdefghijklmnop", "abcdefgh..."},
-		{"short", "short..."},
-		{"12345678", "12345678..."},
-		{"123456789", "12345678..."},
-	}
-
-	for _, tt := range tests {
-		t.Run(fmt.Sprintf("len=%d", len(tt.input)), func(t *testing.T) {
-			result := truncateToken(tt.input)
-			if result != tt.expected {
-				t.Errorf("truncateToken(%q) = %q, expected %q", tt.input, result, tt.expected)
+func TestTokenFingerprint_LeaksNoTokenBytes(t *testing.T) {
+	for _, token := range []string{
+		"abcdefghijklmnop",
+		"short",
+		"12345678",
+		"aGVsbG8td29ybGQtdGhpcy1pcy1hLXRlc3QtdG9rZW4taGVyZQ",
+	} {
+		t.Run(fmt.Sprintf("len=%d", len(token)), func(t *testing.T) {
+			fp := tokenFingerprint(token)
+			if fp == "" {
+				t.Fatal("fingerprint is empty")
+			}
+			if strings.Contains(fp, token) {
+				t.Errorf("fingerprint %q contains the whole token", fp)
+			}
+			// Any run of token bytes is secret material; the previous helper
+			// logged the first 8, or the entire token when it was shorter.
+			for n := 4; n <= len(token); n++ {
+				if strings.Contains(fp, token[:n]) {
+					t.Errorf("fingerprint %q contains the token prefix %q", fp, token[:n])
+				}
 			}
 		})
+	}
+}
+
+func TestTokenFingerprint_IsStableAndDistinct(t *testing.T) {
+	a := tokenFingerprint("token-one")
+	if a != tokenFingerprint("token-one") {
+		t.Error("fingerprint is not stable, so log lines cannot be correlated")
+	}
+	if a == tokenFingerprint("token-two") {
+		t.Error("distinct tokens share a fingerprint")
+	}
+}
+
+// The alerts behind this are on the log calls, not the helper: a bearer token
+// from the request header must not reach the log in any form.
+func TestMiddleware_AuthFailedLogDoesNotLeakToken(t *testing.T) {
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
+
+	mw := Middleware(newMockTokenStore(), nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "")
+	handler := mw(dummyHandler)
+
+	const token = "sekrit-bearer-token-value"
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	handler.ServeHTTP(httptest.NewRecorder(), req)
+
+	out := logs.String()
+	if !strings.Contains(out, "auth_failed") {
+		t.Fatalf("expected an auth_failed log line, got: %s", out)
+	}
+	for n := 4; n <= len(token); n++ {
+		if strings.Contains(out, token[:n]) {
+			t.Errorf("log output contains the token prefix %q: %s", token[:n], out)
+		}
+	}
+	if !strings.Contains(out, "token_fp="+tokenFingerprint(token)) {
+		t.Errorf("expected the token fingerprint in the log line, got: %s", out)
 	}
 }
 
