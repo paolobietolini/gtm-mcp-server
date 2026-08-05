@@ -275,7 +275,7 @@ func TestCIMDFetcher_Fetch_Caches(t *testing.T) {
 
 // newCIMDPathServer serves a valid metadata document at every path, each
 // echoing its own URL, so a single server can back many distinct client_ids.
-func newCIMDPathServer(t *testing.T) (*CIMDFetcher, string, func()) {
+func newCIMDPathServer(t *testing.T) (*CIMDFetcher, string) {
 	t.Helper()
 	var base string
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -283,15 +283,15 @@ func newCIMDPathServer(t *testing.T) (*CIMDFetcher, string, func()) {
 		fmt.Fprintf(w, `{"client_id": %q, "client_name": "x", "redirect_uris": ["http://localhost:3000/cb"]}`, base+r.URL.Path)
 	}))
 	base = ts.URL
+	t.Cleanup(ts.Close)
 	fetcher := NewCIMDFetcher()
 	fetcher.HTTPClient = ts.Client()
 	fetcher.AllowPrivateHosts = true // httptest listens on 127.0.0.1
-	return fetcher, ts.URL, ts.Close
+	return fetcher, ts.URL
 }
 
 func TestCIMDFetcher_Cache_BoundedByMaxEntries(t *testing.T) {
-	fetcher, base, cleanup := newCIMDPathServer(t)
-	defer cleanup()
+	fetcher, base := newCIMDPathServer(t)
 
 	for i := 0; i < cimdMaxCacheEntries+10; i++ {
 		u := fmt.Sprintf("%s/client-%d.json", base, i)
@@ -306,11 +306,15 @@ func TestCIMDFetcher_Cache_BoundedByMaxEntries(t *testing.T) {
 	if size > cimdMaxCacheEntries {
 		t.Errorf("cache holds %d entries, want at most %d", size, cimdMaxCacheEntries)
 	}
+	// Without a lower bound, clearing the whole cache on every insert would
+	// pass the check above while making the cache useless.
+	if size < cimdMaxCacheEntries/2 {
+		t.Errorf("cache holds only %d entries after overflow, evicting far more than needed", size)
+	}
 }
 
 func TestCIMDFetcher_Cache_DropsExpiredEntriesOnInsert(t *testing.T) {
-	fetcher, base, cleanup := newCIMDPathServer(t)
-	defer cleanup()
+	fetcher, base := newCIMDPathServer(t)
 
 	fetcher.mu.Lock()
 	fetcher.cache["https://stale.example.com/client.json"] = cimdCacheEntry{

@@ -199,10 +199,12 @@ func (f *CIMDFetcher) Fetch(ctx context.Context, clientID string) (*ClientInfo, 
 
 // storeInCache inserts an entry, first dropping every expired entry (lookup
 // only skips them, so otherwise nothing is ever reclaimed) and then evicting
-// until there is room. Eviction relies on Go's randomized map order rather
-// than on expiry: TTLs are caller-influenced via Cache-Control, so evicting
-// the soonest-to-expire would let a flood of long-TTL entries preferentially
-// push out legitimate short-TTL ones.
+// until there is room. The victim comes from Go's unspecified, runtime-
+// randomized map iteration order rather than from expiry order: TTLs are
+// caller-influenced via Cache-Control, so evicting the soonest-to-expire
+// would let a flood of long-TTL entries preferentially push out legitimate
+// short-TTL ones. The property relied on is that a caller cannot predict or
+// bias the victim, not that the choice is uniform.
 func (f *CIMDFetcher) storeInCache(clientID string, entry cimdCacheEntry) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
