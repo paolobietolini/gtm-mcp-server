@@ -428,11 +428,22 @@ func TestUnauthorized_RetryAfterOnExpired(t *testing.T) {
 	}
 }
 
+// isHex reports whether s is made up entirely of hex digits, and so could
+// occur inside a hex fingerprint without any token having leaked.
+func isHex(s string) bool {
+	for _, r := range s {
+		if !strings.ContainsRune("0123456789abcdefABCDEF", r) {
+			return false
+		}
+	}
+	return true
+}
+
 func TestTokenFingerprint_LeaksNoTokenBytes(t *testing.T) {
 	for _, token := range []string{
 		"abcdefghijklmnop",
 		"short",
-		"12345678",
+		"1234567z", // eight chars: what the old prefix helper used to log
 		"aGVsbG8td29ybGQtdGhpcy1pcy1hLXRlc3QtdG9rZW4taGVyZQ",
 	} {
 		t.Run(fmt.Sprintf("len=%d", len(token)), func(t *testing.T) {
@@ -446,6 +457,12 @@ func TestTokenFingerprint_LeaksNoTokenBytes(t *testing.T) {
 			// Any run of token bytes is secret material; the previous helper
 			// logged the first 8, or the entire token when it was shorter.
 			for n := 4; n <= len(token); n++ {
+				// An all-hex prefix can turn up inside the hex fingerprint by
+				// digest coincidence, which is not a leak. Such a prefix
+				// cannot tell the two apart, so it proves nothing either way.
+				if isHex(token[:n]) {
+					continue
+				}
 				if strings.Contains(fp, token[:n]) {
 					t.Errorf("fingerprint %q contains the token prefix %q", fp, token[:n])
 				}
@@ -483,6 +500,9 @@ func TestMiddleware_AuthFailedLogDoesNotLeakToken(t *testing.T) {
 		t.Fatalf("expected an auth_failed log line, got: %s", out)
 	}
 	for n := 4; n <= len(token); n++ {
+		if isHex(token[:n]) {
+			continue // see TestTokenFingerprint_LeaksNoTokenBytes
+		}
 		if strings.Contains(out, token[:n]) {
 			t.Errorf("log output contains the token prefix %q: %s", token[:n], out)
 		}
@@ -520,6 +540,9 @@ func TestMiddleware_ExpiredTokenLogDoesNotLeakToken(t *testing.T) {
 		t.Fatalf("expected an auth_token_expired log line, got: %s", out)
 	}
 	for n := 4; n <= len(token); n++ {
+		if isHex(token[:n]) {
+			continue // see TestTokenFingerprint_LeaksNoTokenBytes
+		}
 		if strings.Contains(out, token[:n]) {
 			t.Errorf("log output contains the token prefix %q: %s", token[:n], out)
 		}
