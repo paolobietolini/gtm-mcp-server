@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -82,7 +84,7 @@ func Middleware(store TokenStore, google *GoogleProvider, logger *slog.Logger, b
 						return
 					}
 				} else {
-					logger.Warn("auth_failed", "reason", "token_not_found", "token_prefix", truncateToken(accessToken))
+					logger.Warn("auth_failed", "reason", "token_not_found", "token_fp", tokenFingerprint(accessToken))
 					unauthorized(w, effectiveURL, "Invalid token")
 					return
 				}
@@ -110,7 +112,7 @@ func Middleware(store TokenStore, google *GoogleProvider, logger *slog.Logger, b
 // It refreshes the Google token and updates the EXISTING token entry in-place,
 // keeping the same access token so the client's bearer token remains valid.
 func tryAutoRefresh(ctx context.Context, store TokenStore, google *GoogleProvider, logger *slog.Logger, accessToken string, baseURL string, accessTokenTTL time.Duration) (*TokenInfo, error) {
-	logger.Info("auth_token_expired", "token_prefix", truncateToken(accessToken), "action", "auto_refresh")
+	logger.Info("auth_token_expired", "token_fp", tokenFingerprint(accessToken), "action", "auto_refresh")
 
 	// Get the expired token info (including refresh token)
 	expiredToken, err := store.GetTokenByAccessIncludeExpired(accessToken)
@@ -249,10 +251,9 @@ func unauthorized(w http.ResponseWriter, baseURL, message string) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-// truncateToken returns the first 8 characters of a token for safe logging.
-func truncateToken(token string) string {
-	if len(token) <= 8 {
-		return token + "..."
-	}
-	return token[:8] + "..."
+// tokenFingerprint returns a short, non-reversible identifier for a token,
+// safe to log for correlating entries about the same token.
+func tokenFingerprint(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:4])
 }
