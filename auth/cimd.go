@@ -25,6 +25,10 @@ const (
 	cimdDefaultTTL   = 5 * time.Minute
 	cimdMaxTTL       = 24 * time.Hour
 	cimdMaxRedirects = 5
+	// cimdMaxCacheEntries bounds the cache. /authorize is unauthenticated and
+	// entries are keyed by the caller-supplied client_id, so without a cap one
+	// domain serving valid documents at unlimited paths grows it without limit.
+	cimdMaxCacheEntries = 256
 )
 
 // IsClientIDMetadataURL reports whether clientID is a valid CIMD identifier:
@@ -188,11 +192,37 @@ func (f *CIMDFetcher) Fetch(ctx context.Context, clientID string) (*ClientInfo, 
 	}
 
 	ttl := cacheTTLFromResponse(resp)
-	f.mu.Lock()
-	f.cache[clientID] = cimdCacheEntry{client: client, expiresAt: time.Now().Add(ttl)}
-	f.mu.Unlock()
+	f.storeInCache(clientID, cimdCacheEntry{client: client, expiresAt: time.Now().Add(ttl)})
 
 	return client, nil
+}
+
+// storeInCache inserts an entry, first dropping every expired entry (lookup
+// only skips them, so otherwise nothing is ever reclaimed) and then evicting
+// until there is room. The victim comes from Go's unspecified, runtime-
+// randomized map iteration order rather than from expiry order: TTLs are
+// caller-influenced via Cache-Control, so evicting the soonest-to-expire
+// would let a flood of long-TTL entries preferentially push out legitimate
+// short-TTL ones. The property relied on is that a caller cannot predict or
+// bias the victim, not that the choice is uniform.
+func (f *CIMDFetcher) storeInCache(clientID string, entry cimdCacheEntry) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
+	now := time.Now()
+	for k, e := range f.cache {
+		if !now.Before(e.expiresAt) {
+			delete(f.cache, k)
+		}
+	}
+	for k := range f.cache {
+		if len(f.cache) < cimdMaxCacheEntries {
+			break
+		}
+		delete(f.cache, k)
+	}
+
+	f.cache[clientID] = entry
 }
 
 // cacheTTLFromResponse derives a bounded cache TTL from Cache-Control max-age.
