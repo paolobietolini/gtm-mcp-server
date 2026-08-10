@@ -15,7 +15,11 @@ import (
 // FileTokenStore is a TokenStore that persists issued tokens to a JSON file so
 // that sessions survive process restarts (container redeploys, crashes, host
 // reboots). It embeds MemoryTokenStore for all in-memory behaviour and writes a
-// snapshot to disk after every token mutation.
+// snapshot to disk after every token mutation. The embedded store's background
+// purge does not trigger a write, so the file can hold purged entries until the
+// next mutation rewrites it; that is deliberate — load skips entries with a
+// lapsed refresh window, and a reloaded auth-code token is rejected on lookup,
+// so the lag has no security consequence.
 //
 // Only issued tokens are persisted. OAuth flow states (10-minute lifetime) and
 // dynamically-registered clients are intentionally not persisted: they are
@@ -198,11 +202,15 @@ func (f *FileTokenStore) persistBestEffort() {
 	}
 }
 
-// snapshot returns a copy of the current tokens under the read lock. The
-// entries must be cloned, not aliased: marshalling happens after the lock is
-// released, while ExtendTokenExpiry and UpdateGoogleToken mutate the stored
-// structs in place, so sharing the pointers would race and could serialise a
-// torn ExpiresAt as the authoritative expiry.
+// snapshot returns a copy of the current tokens under the read lock.
+// cloneTokenInfo is a shallow copy: value fields such as ExpiresAt are copied
+// under the lock, which is what keeps marshalling outside the lock safe while
+// ExtendTokenExpiry mutates them in place — aliasing the structs would race
+// and could serialise a torn ExpiresAt as the authoritative expiry. The
+// GoogleToken pointer is still shared with the live entry; that is safe only
+// because UpdateGoogleToken swaps in a new pointer rather than writing through
+// the old one, so an in-place mutation of a stored *oauth2.Token anywhere in
+// the store would reintroduce the race.
 func (f *FileTokenStore) snapshot() []*TokenInfo {
 	f.MemoryTokenStore.mu.RLock()
 	defer f.MemoryTokenStore.mu.RUnlock()
