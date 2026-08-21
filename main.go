@@ -165,7 +165,7 @@ func main() {
 
 		// MCP endpoint with REQUIRED auth middleware and body size limit
 		// Returns 401 if no valid Bearer token - triggers Claude's OAuth flow
-		authMiddleware := auth.Middleware(tokenStore, googleProvider, logger, cfg.BaseURL, cfg.AccessTokenTTL, urlResolver, saTokenSource, cfg.ServiceAccountAPIKey)
+		authMiddleware := auth.Middleware(tokenStore, googleProvider, logger, cfg.BaseURL, cfg.AccessTokenTTL, urlResolver, saTokenSource, cfg.ServiceAccountAPIKey, cfg.AutoRefreshEnabled)
 		mux.Handle("/", authMiddleware(maxBytesHandler(5<<20, mcpHandler)))
 
 		logger.Info("OAuth configured",
@@ -194,7 +194,7 @@ func main() {
 		mux.HandleFunc("POST /token", oauthLimiter.MiddlewareFunc(oauthNotConfiguredHandler))
 		mux.HandleFunc("POST /register", registerLimiter.MiddlewareFunc(oauthNotConfiguredHandler))
 
-		s2sMiddleware := auth.Middleware(auth.NewMemoryTokenStore(), nil, logger, cfg.BaseURL, cfg.AccessTokenTTL, urlResolver, saTokenSource, cfg.ServiceAccountAPIKey)
+		s2sMiddleware := auth.Middleware(auth.NewMemoryTokenStore(), nil, logger, cfg.BaseURL, cfg.AccessTokenTTL, urlResolver, saTokenSource, cfg.ServiceAccountAPIKey, cfg.AutoRefreshEnabled)
 		mux.Handle("/", s2sMiddleware(maxBytesHandler(5<<20, mcpHandler)))
 	} else {
 		logger.Warn("No authentication configured (no OAuth, no API key), running open")

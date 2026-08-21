@@ -247,3 +247,81 @@ func TestFileTokenStore_DeleteReportsPersistFailure(t *testing.T) {
 		t.Error("expected DeleteToken to report the persist failure")
 	}
 }
+
+// TestFileTokenStore_PersistsClientName pins client attribution across a
+// restart. TokenInfo is marshalled without json tags, so this guards the field
+// against being tagged out or renamed: a token whose ClientName does not
+// survive a reload is invisible to the #79 canary readout.
+func TestFileTokenStore_PersistsClientName(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tokens.json")
+
+	store, err := NewFileTokenStore(path, testLogger())
+	if err != nil {
+		t.Fatalf("NewFileTokenStore failed: %v", err)
+	}
+	if err := store.StoreToken(&TokenInfo{
+		AccessToken:      "access-1",
+		RefreshToken:     "refresh-1",
+		ExpiresAt:        time.Now().Add(1 * time.Hour),
+		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		GoogleToken:      &oauth2.Token{AccessToken: "g-access", RefreshToken: "g-refresh"},
+		ClientID:         "client-abc",
+		ClientName:       "Claude Code",
+		CreatedAt:        time.Now(),
+	}); err != nil {
+		t.Fatalf("StoreToken failed: %v", err)
+	}
+	store.Close()
+
+	reloaded, err := NewFileTokenStore(path, testLogger())
+	if err != nil {
+		t.Fatalf("reload failed: %v", err)
+	}
+	defer reloaded.Close()
+
+	got, err := reloaded.GetTokenByAccess("access-1")
+	if err != nil {
+		t.Fatalf("token missing after reload: %v", err)
+	}
+	if got.ClientName != "Claude Code" {
+		t.Errorf("ClientName after reload = %q, want %q", got.ClientName, "Claude Code")
+	}
+}
+
+// TestFileTokenStore_LoadsFileWithoutClientName covers the upgrade path: a store
+// file written before ClientName existed must still load, with an empty name
+// rather than a startup failure.
+func TestFileTokenStore_LoadsFileWithoutClientName(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "tokens.json")
+
+	legacy := fmt.Sprintf(`{"tokens":[{
+		"AccessToken":"access-1",
+		"RefreshToken":"refresh-1",
+		"ExpiresAt":%q,
+		"RefreshExpiresAt":%q,
+		"GoogleToken":{"access_token":"g-access","refresh_token":"g-refresh"},
+		"ClientID":"client-abc",
+		"CreatedAt":%q
+	}]}`,
+		time.Now().Add(1*time.Hour).Format(time.RFC3339Nano),
+		time.Now().Add(30*24*time.Hour).Format(time.RFC3339Nano),
+		time.Now().Format(time.RFC3339Nano))
+
+	if err := os.WriteFile(path, []byte(legacy), 0o600); err != nil {
+		t.Fatalf("writing legacy file failed: %v", err)
+	}
+
+	store, err := NewFileTokenStore(path, testLogger())
+	if err != nil {
+		t.Fatalf("a file predating ClientName must still load, got: %v", err)
+	}
+	defer store.Close()
+
+	got, err := store.GetTokenByAccess("access-1")
+	if err != nil {
+		t.Fatalf("token missing after loading legacy file: %v", err)
+	}
+	if got.ClientName != "" {
+		t.Errorf("ClientName = %q, want empty for a legacy entry", got.ClientName)
+	}
+}

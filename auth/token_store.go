@@ -30,8 +30,14 @@ type TokenInfo struct {
 	GoogleToken *oauth2.Token
 
 	// Metadata
-	ClientID  string
-	CreatedAt time.Time
+	ClientID string
+	// ClientName is the registered client_name, copied onto the token at issue
+	// time. Registered clients are not persisted (see FileTokenStore), so
+	// resolving the name lazily would lose it across a restart for exactly the
+	// long-lived sessions the #79 canary needs to attribute. Empty for clients
+	// that never registered (CIMD).
+	ClientName string
+	CreatedAt  time.Time
 }
 
 // AuthState holds temporary state during OAuth flow.

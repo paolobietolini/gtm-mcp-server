@@ -18,7 +18,7 @@ func TestIntegration_MetadataAndMiddleware401_Consistency(t *testing.T) {
 
 	// Both use nil resolver — static URLs
 	metaHandler := MetadataHandler(baseURL, nil)
-	mw := Middleware(store, nil, logger, baseURL, 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, baseURL, 1*time.Hour, nil, nil, "", true)
 	protectedHandler := mw(dummyHandler)
 
 	// Fetch metadata
@@ -62,7 +62,7 @@ func TestIntegration_MetadataAndMiddleware401_ConsistencyWithResolver(t *testing
 
 	metaHandler := MetadataHandler(baseURL, resolver)
 	resHandler := ProtectedResourceMetadataHandler(baseURL, baseURL, resolver)
-	mw := Middleware(store, nil, logger, baseURL, 1*time.Hour, resolver, nil, "")
+	mw := Middleware(store, nil, logger, baseURL, 1*time.Hour, resolver, nil, "", true)
 	protectedHandler := mw(dummyHandler)
 
 	// Test with the allowed Docker host
@@ -141,7 +141,7 @@ func TestIntegration_UntrustedHostDoesNotLeakIntoResponses(t *testing.T) {
 	handlers := map[string]http.Handler{
 		"metadata":           MetadataHandler(baseURL, resolver),
 		"protected_resource": ProtectedResourceMetadataHandler(baseURL, baseURL, resolver),
-		"middleware_401":     Middleware(store, nil, logger, baseURL, 1*time.Hour, resolver, nil, "")(dummyHandler),
+		"middleware_401":     Middleware(store, nil, logger, baseURL, 1*time.Hour, resolver, nil, "", true)(dummyHandler),
 	}
 
 	for name, handler := range handlers {

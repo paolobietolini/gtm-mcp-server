@@ -379,6 +379,36 @@ TOKEN_STORE_PATH=/data/tokens.json
 
 The file is written with `0600` permissions and holds refresh tokens, so it belongs on a volume you would treat as secret. The directory must be writable by the user the server runs as (the Docker image runs as `appuser` and ships `/data` owned by it, mode `0700`; a directory the server creates itself gets the same mode) — the store fails closed, so a path that cannot be created or read stops the server at startup rather than silently discarding sessions. Leave `TOKEN_STORE_PATH` unset to keep the in-memory behaviour.
 
+#### Bearer Auto-Refresh (AUTH_AUTO_REFRESH)
+
+When a client presents an **expired** bearer, the server refreshes the upstream
+Google token and extends the *same* bearer in place, so the client never notices.
+That keeps sessions smooth, but it also means the bearer's expiry does not bound
+it: presenting an expired bearer is enough to be issued a fresh window, for as
+long as the refresh window is open (up to 30 days).
+
+Set `AUTH_AUTO_REFRESH=false` to turn that off. An expired bearer is then answered
+with `401` plus the RFC 9728 `WWW-Authenticate` header, and the client is expected
+to use the standard OAuth refresh grant — which rotates both credentials — to get
+a new one:
+
+```env
+AUTH_AUTO_REFRESH=false
+```
+
+Defaults to `true`, so leaving it unset changes nothing.
+
+This flag exists to run a canary (see issue #79) establishing which MCP clients
+actually implement the refresh grant. With it disabled, group the `auth_grant` log
+events by `client_name`:
+
+- `grant_type=refresh_token` — the client recovered silently. Good.
+- repeated `grant_type=authorization_code` — the client has no refresh grant and
+  falls back to interactive re-authentication every `ACCESS_TOKEN_TTL`.
+
+`auth_auto_refresh_disabled` counts the expired bearers that would have been
+renewed silently while the flag was on.
+
 ### Google Cloud Setup
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)

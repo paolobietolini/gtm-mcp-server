@@ -33,7 +33,7 @@ const (
 // If a token is expired but has a valid refresh token, it will automatically
 // refresh the token and continue the request transparently.
 // If resolver is non-nil, 401 responses will use dynamically resolved URLs.
-func Middleware(store TokenStore, google *GoogleProvider, logger *slog.Logger, baseURL string, accessTokenTTL time.Duration, resolver *URLResolver, saTokenSource oauth2.TokenSource, apiKey string) func(http.Handler) http.Handler {
+func Middleware(store TokenStore, google *GoogleProvider, logger *slog.Logger, baseURL string, accessTokenTTL time.Duration, resolver *URLResolver, saTokenSource oauth2.TokenSource, apiKey string, autoRefreshEnabled bool) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Resolve the base URL for error responses
@@ -77,6 +77,20 @@ func Middleware(store TokenStore, google *GoogleProvider, logger *slog.Logger, b
 			tokenInfo, err := store.GetTokenByAccess(accessToken)
 			if err != nil {
 				if err == ErrTokenExpired {
+					// Auto-refresh renews the bearer in place without rotating it,
+					// so its expiry bounds nothing (issue #79). The kill switch
+					// answers 401 instead: unauthorized() carries the RFC 9728
+					// WWW-Authenticate header, so a client that implements the
+					// refresh grant recovers on its own.
+					if !autoRefreshEnabled {
+						logger.Info("auth_auto_refresh_disabled",
+							"token_fp", tokenFingerprint(accessToken),
+							"action", "reject",
+						)
+						unauthorized(w, effectiveURL, "Token expired")
+						return
+					}
+
 					// Attempt auto-refresh
 					tokenInfo, err = tryAutoRefresh(r.Context(), store, google, logger, accessToken, baseURL, accessTokenTTL)
 					if err != nil {

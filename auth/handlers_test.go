@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"golang.org/x/oauth2"
 )
 
 func TestIsValidRedirectURI(t *testing.T) {
@@ -914,5 +918,157 @@ func TestServer_CallbackHandler_IssUsesResolvedIssuerFromAuthorize(t *testing.T)
 
 	if got := loc.Query().Get("iss"); got != "http://gtm-mcp:8080" {
 		t.Errorf("expected iss=http://gtm-mcp:8080 (issuer resolved at authorize time), got %q", got)
+	}
+}
+
+// TestRefreshTokenGrant_CarriesClientNameThroughRotation keeps the canary
+// readout intact across a rotation. handleRefreshTokenGrant deletes the old
+// entry and stores a new one, so a ClientName that is not carried across would
+// blank out for exactly the long-lived sessions the #79 canary is about.
+func TestRefreshTokenGrant_CarriesClientNameThroughRotation(t *testing.T) {
+	store := NewMemoryTokenStore()
+	defer store.Close()
+
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, nil))
+	server := NewServer("http://localhost:8080", nil, store, logger, 1*time.Hour)
+
+	store.StoreToken(&TokenInfo{
+		AccessToken:      "old-access",
+		RefreshToken:     "old-refresh",
+		ExpiresAt:        time.Now().Add(1 * time.Hour),
+		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		GoogleToken:      &oauth2.Token{AccessToken: "g-access", Expiry: time.Now().Add(1 * time.Hour)},
+		ClientID:         "client-abc",
+		ClientName:       "Claude Code",
+		CreatedAt:        time.Now(),
+	})
+
+	form := url.Values{}
+	form.Set("grant_type", "refresh_token")
+	form.Set("refresh_token", "old-refresh")
+
+	req := httptest.NewRequest(http.MethodPost, "/token", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+
+	server.TokenHandler(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected status 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("bad token response: %v", err)
+	}
+
+	rotated, err := store.GetTokenByAccess(resp["access_token"].(string))
+	if err != nil {
+		t.Fatalf("rotated token not found: %v", err)
+	}
+	if rotated.ClientName != "Claude Code" {
+		t.Errorf("ClientName after rotation = %q, want %q", rotated.ClientName, "Claude Code")
+	}
+}
+
+// TestRefreshTokenGrant_LogsAuthGrantEvent is the canary's counting mechanism:
+// a client that recovers via the refresh grant must be distinguishable, by name,
+// from one that falls back to a full interactive re-auth.
+func TestRefreshTokenGrant_LogsAuthGrantEvent(t *testing.T) {
+	store := NewMemoryTokenStore()
+	defer store.Close()
+
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, nil))
+	server := NewServer("http://localhost:8080", nil, store, logger, 1*time.Hour)
+
+	store.StoreToken(&TokenInfo{
+		AccessToken:      "old-access",
+		RefreshToken:     "old-refresh",
+		ExpiresAt:        time.Now().Add(1 * time.Hour),
+		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		GoogleToken:      &oauth2.Token{AccessToken: "g-access", Expiry: time.Now().Add(1 * time.Hour)},
+		ClientID:         "client-abc",
+		ClientName:       "Claude Code",
+		CreatedAt:        time.Now(),
+	})
+
+	form := url.Values{}
+	form.Set("grant_type", "refresh_token")
+	form.Set("refresh_token", "old-refresh")
+
+	req := httptest.NewRequest(http.MethodPost, "/token", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	server.TokenHandler(httptest.NewRecorder(), req)
+
+	var found bool
+	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n") {
+		var entry map[string]interface{}
+		if json.Unmarshal([]byte(line), &entry) != nil {
+			continue
+		}
+		if entry["msg"] != "auth_grant" {
+			continue
+		}
+		found = true
+		if entry["grant_type"] != "refresh_token" {
+			t.Errorf("grant_type = %v, want refresh_token", entry["grant_type"])
+		}
+		if entry["client_name"] != "Claude Code" {
+			t.Errorf("client_name = %v, want %q", entry["client_name"], "Claude Code")
+		}
+		if entry["client_id"] != "client-abc" {
+			t.Errorf("client_id = %v, want client-abc", entry["client_id"])
+		}
+	}
+	if !found {
+		t.Errorf("no auth_grant event logged; got: %s", buf.String())
+	}
+}
+
+// TestAuthGrantLog_DoesNotLeakTokens guards the new log line against the class
+// of bug fixed in #74.
+func TestAuthGrantLog_DoesNotLeakTokens(t *testing.T) {
+	store := NewMemoryTokenStore()
+	defer store.Close()
+
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, nil))
+	server := NewServer("http://localhost:8080", nil, store, logger, 1*time.Hour)
+
+	store.StoreToken(&TokenInfo{
+		AccessToken:      "supersecretaccess",
+		RefreshToken:     "supersecretrefresh",
+		ExpiresAt:        time.Now().Add(1 * time.Hour),
+		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		GoogleToken:      &oauth2.Token{AccessToken: "g-access", Expiry: time.Now().Add(1 * time.Hour)},
+		ClientID:         "client-abc",
+		ClientName:       "Claude Code",
+		CreatedAt:        time.Now(),
+	})
+
+	form := url.Values{}
+	form.Set("grant_type", "refresh_token")
+	form.Set("refresh_token", "supersecretrefresh")
+
+	req := httptest.NewRequest(http.MethodPost, "/token", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	server.TokenHandler(w, req)
+
+	logs := buf.String()
+	for _, secret := range []string{"supersecretaccess", "supersecretrefresh"} {
+		if strings.Contains(logs, secret) {
+			t.Errorf("logs leaked %q: %s", secret, logs)
+		}
+	}
+
+	var resp map[string]interface{}
+	json.Unmarshal(w.Body.Bytes(), &resp)
+	for _, k := range []string{"access_token", "refresh_token"} {
+		if tok, ok := resp[k].(string); ok && strings.Contains(logs, tok) {
+			t.Errorf("logs leaked the newly issued %s", k)
+		}
 	}
 }

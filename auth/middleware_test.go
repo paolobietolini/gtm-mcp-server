@@ -133,7 +133,7 @@ func TestMiddleware_ValidToken(t *testing.T) {
 	}
 	store.StoreToken(token)
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", true)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -154,7 +154,7 @@ func TestMiddleware_MissingAuthHeader(t *testing.T) {
 	store := newMockTokenStore()
 	logger := testLogger()
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", true)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -183,7 +183,7 @@ func TestMiddleware_InvalidFormat(t *testing.T) {
 	store := newMockTokenStore()
 	logger := testLogger()
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", true)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -201,7 +201,7 @@ func TestMiddleware_TokenNotFound(t *testing.T) {
 	store := newMockTokenStore()
 	logger := testLogger()
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", true)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -249,7 +249,7 @@ func TestMiddleware_ExpiredToken_AutoRefreshSuccess(t *testing.T) {
 	}
 	store.StoreToken(token)
 
-	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", true)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -297,7 +297,7 @@ func TestMiddleware_ExpiredToken_NoRefreshToken(t *testing.T) {
 	}
 	store.StoreToken(token)
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", true)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -334,7 +334,7 @@ func TestMiddleware_ExpiredToken_ExpiredRefreshToken(t *testing.T) {
 	}
 	store.StoreToken(token)
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", true)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -379,7 +379,7 @@ func TestMiddleware_ExpiredToken_GoogleRefreshFails(t *testing.T) {
 	}
 	store.StoreToken(token)
 
-	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", true)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -487,7 +487,7 @@ func TestMiddleware_AuthFailedLogDoesNotLeakToken(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
-	mw := Middleware(newMockTokenStore(), nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "")
+	mw := Middleware(newMockTokenStore(), nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "", true)
 	handler := mw(dummyHandler)
 
 	const token = "sekrit-bearer-token-value"
@@ -528,7 +528,7 @@ func TestMiddleware_ExpiredTokenLogDoesNotLeakToken(t *testing.T) {
 		ExpiresAt:   time.Now().Add(-time.Hour),
 	})
 
-	mw := Middleware(store, nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "", true)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -556,7 +556,7 @@ func TestMiddleware_ErrorResponseFormat(t *testing.T) {
 	store := newMockTokenStore()
 	logger := testLogger()
 
-	mw := Middleware(store, nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "", true)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -630,7 +630,7 @@ func TestMiddleware_ContextValues(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", true)
 	handler := mw(captureHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -667,7 +667,7 @@ func TestMiddleware_ContextValues(t *testing.T) {
 
 // saMiddlewareWithOAuth is a helper that builds Middleware with S2S configured.
 func saMiddlewareWithOAuth(store TokenStore, apiKey string, saTS oauth2.TokenSource) func(http.Handler) http.Handler {
-	return Middleware(store, nil, testLogger(), "http://localhost:8080", 1*time.Hour, nil, saTS, apiKey)
+	return Middleware(store, nil, testLogger(), "http://localhost:8080", 1*time.Hour, nil, saTS, apiKey, true)
 }
 
 func TestMiddleware_SAMode_CorrectKey(t *testing.T) {
@@ -805,5 +805,123 @@ func TestMiddleware_OAuthUser_NoSATokenSource(t *testing.T) {
 		t.Error("OAuth user must have their own Google token in context")
 	} else if got.AccessToken != "google-oauth-token" {
 		t.Errorf("expected user's Google token, got %q", got.AccessToken)
+	}
+}
+
+// TestMiddleware_AutoRefreshDisabled_ExpiredTokenGets401 is the kill switch for
+// the #79 canary: with auto-refresh off, an expired bearer is answered with a
+// 401 carrying the RFC 9728 WWW-Authenticate header, so a grant-capable client
+// recovers via the refresh grant rather than having its bearer silently renewed.
+func TestMiddleware_AutoRefreshDisabled_ExpiredTokenGets401(t *testing.T) {
+	store := newMockTokenStore()
+	logger := testLogger()
+
+	googleTokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("Google token endpoint must not be called when auto-refresh is disabled")
+	}))
+	defer googleTokenServer.Close()
+
+	google := newTestGoogleProvider(googleTokenServer.URL)
+
+	originalExpiry := time.Now().Add(-1 * time.Hour)
+	token := &TokenInfo{
+		AccessToken:      "expired-token",
+		RefreshToken:     "our-refresh-token",
+		ExpiresAt:        originalExpiry,
+		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		GoogleToken: &oauth2.Token{
+			AccessToken:  "old-google-access",
+			RefreshToken: "google-refresh-token",
+			Expiry:       time.Now().Add(-1 * time.Hour),
+		},
+		ClientID:  "test-client",
+		CreatedAt: time.Now(),
+	}
+	store.StoreToken(token)
+
+	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", false)
+	handler := mw(dummyHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer expired-token")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected status 401 with auto-refresh disabled, got %d", w.Code)
+	}
+	if got := w.Header().Get("WWW-Authenticate"); got == "" {
+		t.Error("expected WWW-Authenticate header so the client can discover the token endpoint")
+	}
+
+	// The bearer must not be renewed: expiry unchanged, Google token untouched.
+	stored, err := store.GetTokenByAccessIncludeExpired("expired-token")
+	if err != nil {
+		t.Fatalf("expected token entry to survive: %v", err)
+	}
+	if !stored.ExpiresAt.Equal(originalExpiry) {
+		t.Errorf("expiry was extended to %v, want it left at %v", stored.ExpiresAt, originalExpiry)
+	}
+	if stored.GoogleToken.AccessToken != "old-google-access" {
+		t.Errorf("Google token was refreshed (%q) with auto-refresh disabled", stored.GoogleToken.AccessToken)
+	}
+}
+
+// TestMiddleware_AutoRefreshDisabled_ValidTokenStillWorks guards the blast
+// radius of the kill switch: it must only affect the expired-bearer branch.
+func TestMiddleware_AutoRefreshDisabled_ValidTokenStillWorks(t *testing.T) {
+	store := newMockTokenStore()
+	store.StoreToken(&TokenInfo{
+		AccessToken: "valid-token",
+		ExpiresAt:   time.Now().Add(1 * time.Hour),
+		GoogleToken: &oauth2.Token{AccessToken: "google-access"},
+		ClientID:    "test-client",
+		CreatedAt:   time.Now(),
+	})
+
+	mw := Middleware(store, nil, testLogger(), "http://localhost:8080", 1*time.Hour, nil, nil, "", false)
+	handler := mw(dummyHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer valid-token")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200 for a live token, got %d", w.Code)
+	}
+}
+
+// TestMiddleware_AutoRefreshDisabled_LogsCanaryEvent gives the canary window a
+// countable event for bearers that would have been renewed silently before.
+func TestMiddleware_AutoRefreshDisabled_LogsCanaryEvent(t *testing.T) {
+	var buf bytes.Buffer
+	logger := slog.New(slog.NewJSONHandler(&buf, &slog.HandlerOptions{Level: slog.LevelDebug}))
+
+	store := newMockTokenStore()
+	store.StoreToken(&TokenInfo{
+		AccessToken:      "expired-token",
+		RefreshToken:     "our-refresh-token",
+		ExpiresAt:        time.Now().Add(-1 * time.Hour),
+		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		GoogleToken:      &oauth2.Token{AccessToken: "old-google-access", RefreshToken: "g-refresh"},
+		ClientID:         "test-client",
+		CreatedAt:        time.Now(),
+	})
+
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", false)
+	handler := mw(dummyHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer expired-token")
+	handler.ServeHTTP(httptest.NewRecorder(), req)
+
+	if !strings.Contains(buf.String(), "auth_auto_refresh_disabled") {
+		t.Errorf("expected an auth_auto_refresh_disabled event, got logs: %s", buf.String())
+	}
+	if strings.Contains(buf.String(), "expired-token") {
+		t.Error("canary log leaked the bearer token")
 	}
 }

@@ -45,6 +45,13 @@ type Config struct {
 	// TrustProxy enables trusting X-Forwarded-For for rate limiting.
 	// Set to true when behind a reverse proxy (e.g. Caddy).
 	TrustProxy bool
+
+	// AutoRefreshEnabled controls whether an expired bearer is transparently
+	// renewed by the auth middleware. Disabling it makes the server answer 401
+	// instead, so clients must use the OAuth refresh grant. See issue #79: this
+	// is the kill switch for the canary that establishes which clients
+	// implement the grant.
+	AutoRefreshEnabled bool
 }
 
 // Load reads configuration from environment variables.
@@ -69,6 +76,7 @@ func Load() (*Config, error) {
 		ServiceAccountAPIKey:  getEnv("SERVICE_ACCOUNT_API_KEY", ""),
 		ServiceAccountKeyJSON: getEnv("GOOGLE_SERVICE_ACCOUNT_KEY_JSON", ""),
 		TrustProxy:            getEnvBool("TRUST_PROXY", false),
+		AutoRefreshEnabled:    getEnvBool("AUTH_AUTO_REFRESH", true),
 	}
 
 	// Validation is deferred to when auth is actually needed

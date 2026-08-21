@@ -423,6 +423,7 @@ func (s *Server) handleAuthorizationCodeGrant(w http.ResponseWriter, r *http.Req
 		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour),
 		GoogleToken:      tempToken.GoogleToken,
 		ClientID:         codeState.ClientID,
+		ClientName:       s.clientName(codeState.ClientID),
 		CreatedAt:        time.Now(),
 	}
 
@@ -432,10 +433,25 @@ func (s *Server) handleAuthorizationCodeGrant(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	s.logger.Info("issued access token", "client_id", codeState.ClientID)
+	s.logger.Info("auth_grant",
+		"grant_type", "authorization_code",
+		"client_id", tokenInfo.ClientID,
+		"client_name", tokenInfo.ClientName,
+	)
 
 	// Return token response
 	s.tokenResponse(w, accessToken, refreshToken, int(s.accessTokenTTL.Seconds()))
+}
+
+// clientName resolves the registered client_name for a client_id, best-effort:
+// clients that authenticated via CIMD were never registered, so an empty name is
+// a normal outcome rather than an error.
+func (s *Server) clientName(clientID string) string {
+	client, err := s.store.GetClient(clientID)
+	if err != nil || client == nil {
+		return ""
+	}
+	return client.ClientName
 }
 
 func (s *Server) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request) {
@@ -495,6 +511,7 @@ func (s *Server) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request)
 		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour),
 		GoogleToken:      tokenInfo.GoogleToken,
 		ClientID:         tokenInfo.ClientID,
+		ClientName:       tokenInfo.ClientName,
 		CreatedAt:        time.Now(),
 	}
 
@@ -504,7 +521,11 @@ func (s *Server) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	s.logger.Info("refreshed access token", "client_id", tokenInfo.ClientID)
+	s.logger.Info("auth_grant",
+		"grant_type", "refresh_token",
+		"client_id", tokenInfo.ClientID,
+		"client_name", tokenInfo.ClientName,
+	)
 
 	// Return token response with new refresh token
 	s.tokenResponse(w, newAccessToken, newRefreshToken, int(s.accessTokenTTL.Seconds()))
