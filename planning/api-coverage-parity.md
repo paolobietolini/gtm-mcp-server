@@ -97,17 +97,42 @@ For each resource, in this order:
 
 ## Interaction with the tools/list token cost
 
-Measured 21 August 2026: the current 50 tools serialise to 62,379 bytes, about
-**15,600 tokens**, sent on every conversation before the user asks anything.
-This plan adds roughly 30 tools and takes that toward 25,000.
+Measured 21 August 2026, by serialising the real `tools/list` response.
 
-That is affordable only if the per-tool cost comes down first. About 1,400
-tokens today are duplicate parameter descriptions — "The GTM account ID" is
-repeated 47 times, "The GTM container ID" 44 times, "The GTM workspace ID" 38
-times — and the largest tools carry long JSON-format prose inside their schemas
-that belongs in the best-practice resources instead.
+| Component | Bytes | Share |
+|---|---|---|
+| Input schemas | ~30,500 | 49% |
+| JSON structure and tool names | ~24,000 | 39% |
+| Tool description prose | ~7,300 | 12% |
+| **Total** | **62,379** | **~15,600 tokens** |
 
-Trim that before the new tools land, not after.
+That payload is sent on every conversation, before the user asks anything.
+This plan adds roughly 30 tools and takes it toward 25,000 tokens.
+
+**Trimming prose does not solve this.** It was tried in #91 and closed: every
+mechanical edit available — dropping the article from the three ID
+descriptions repeated 47, 44 and 38 times, dropping "This is a safety guard"
+from seven confirmations, and removing the partial-update rule repeated on
+eleven `update_tag` fields — saved 1,237 bytes, 2.0%. Only 12% of the payload
+was ever prose. The number is made of structure.
+
+**Decision, 21 August 2026: multiplex the tools at some future point.** Merging
+the 50 single-operation tools into roughly 18 resource tools with an `action`
+enum is the only lever that moves this materially, worth an estimated 5,000 to
+7,000 tokens. It is deferred, not rejected.
+
+This has a consequence for the sequence in this plan. New tools added now are
+tools that a future multiplexing pass must also convert. Two options:
+
+- Add the resources here as single-operation tools, consistent with the
+  existing 50, and convert everything in one pass later.
+- Wait, multiplex first, then add the new resources directly in the new shape.
+
+The second does less total work. The first delivers coverage sooner. Decide
+before starting the implementation, not during it.
+
+Do not trim descriptions to buy room. The measurement says that room is not
+there.
 
 ## Not in scope
 
