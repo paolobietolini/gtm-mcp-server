@@ -33,7 +33,7 @@ const (
 // If a token is expired but has a valid refresh token, it will automatically
 // refresh the token and continue the request transparently.
 // If resolver is non-nil, 401 responses will use dynamically resolved URLs.
-func Middleware(store TokenStore, google *GoogleProvider, logger *slog.Logger, baseURL string, accessTokenTTL time.Duration, resolver *URLResolver, saTokenSource oauth2.TokenSource, apiKey string) func(http.Handler) http.Handler {
+func Middleware(store TokenStore, google *GoogleProvider, logger *slog.Logger, baseURL string, accessTokenTTL time.Duration, resolver *URLResolver, saTokenSource oauth2.TokenSource, apiKey string, autoRefreshMaxAge time.Duration) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Resolve the base URL for error responses
@@ -78,7 +78,7 @@ func Middleware(store TokenStore, google *GoogleProvider, logger *slog.Logger, b
 			if err != nil {
 				if err == ErrTokenExpired {
 					// Attempt auto-refresh
-					tokenInfo, err = tryAutoRefresh(r.Context(), store, google, logger, accessToken, baseURL, accessTokenTTL)
+					tokenInfo, err = tryAutoRefresh(r.Context(), store, google, logger, accessToken, baseURL, accessTokenTTL, autoRefreshMaxAge)
 					if err != nil {
 						unauthorized(w, effectiveURL, err.Error())
 						return
@@ -111,7 +111,7 @@ func Middleware(store TokenStore, google *GoogleProvider, logger *slog.Logger, b
 // tryAutoRefresh attempts to refresh an expired token transparently.
 // It refreshes the Google token and updates the EXISTING token entry in-place,
 // keeping the same access token so the client's bearer token remains valid.
-func tryAutoRefresh(ctx context.Context, store TokenStore, google *GoogleProvider, logger *slog.Logger, accessToken string, baseURL string, accessTokenTTL time.Duration) (*TokenInfo, error) {
+func tryAutoRefresh(ctx context.Context, store TokenStore, google *GoogleProvider, logger *slog.Logger, accessToken string, baseURL string, accessTokenTTL time.Duration, maxAge time.Duration) (*TokenInfo, error) {
 	logger.Info("auth_token_expired", "token_fp", tokenFingerprint(accessToken), "action", "auto_refresh")
 
 	// Get the expired token info (including refresh token)
@@ -125,6 +125,21 @@ func tryAutoRefresh(ctx context.Context, store TokenStore, google *GoogleProvide
 	if expiredToken.RefreshToken == "" || expiredToken.GoogleToken == nil || expiredToken.GoogleToken.RefreshToken == "" {
 		logger.Warn("auth_auto_refresh_failed", "reason", "no_refresh_token", "client_id", expiredToken.ClientID)
 		return nil, fmt.Errorf("Token expired, no refresh token available")
+	}
+
+	// Bound the silent renewal chain (issue #79). Auto-refresh extends the same
+	// bearer rather than rotating it, so its expiry bounds nothing on its own and
+	// a leaked bearer would stay useful for the whole refresh window. Past maxAge
+	// the client must use the refresh grant, which rotates both credentials and
+	// starts a new entry with a fresh CreatedAt. A non-positive maxAge disables
+	// the cap.
+	if maxAge > 0 && time.Since(expiredToken.CreatedAt) > maxAge {
+		logger.Info("auth_auto_refresh_capped",
+			"client_id", expiredToken.ClientID,
+			"chain_age", time.Since(expiredToken.CreatedAt).Round(time.Minute).String(),
+			"max_age", maxAge.String(),
+		)
+		return nil, fmt.Errorf("Token expired")
 	}
 
 	// Check refresh token hasn't expired

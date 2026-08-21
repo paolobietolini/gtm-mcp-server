@@ -379,6 +379,34 @@ TOKEN_STORE_PATH=/data/tokens.json
 
 The file is written with `0600` permissions and holds refresh tokens, so it belongs on a volume you would treat as secret. The directory must be writable by the user the server runs as (the Docker image runs as `appuser` and ships `/data` owned by it, mode `0700`; a directory the server creates itself gets the same mode) — the store fails closed, so a path that cannot be created or read stops the server at startup rather than silently discarding sessions. Leave `TOKEN_STORE_PATH` unset to keep the in-memory behaviour.
 
+#### Bearer Renewal Cap (AUTH_AUTO_REFRESH_MAX_AGE)
+
+When a client presents an **expired** bearer, the server refreshes the upstream
+Google token and extends the *same* bearer in place, so the session continues
+without an interactive login. Because the bearer is never rotated, its expiry
+does not bound it on its own: presenting an expired bearer is enough to be issued
+a fresh window, for as long as the entry survives.
+
+`AUTH_AUTO_REFRESH_MAX_AGE` bounds that chain by absolute age since the token was
+issued. Default `168h` (7 days):
+
+```env
+AUTH_AUTO_REFRESH_MAX_AGE=168h
+```
+
+Past the cap, an expired bearer gets `401` plus the RFC 9728 `WWW-Authenticate`
+header instead of a silent renewal. The client then uses the standard OAuth
+refresh grant, which **rotates both credentials** and issues a new entry with a
+fresh age — so a well-behaved client crosses the cap without the user noticing,
+and it is the leaked-bearer chain that dies.
+
+A client with no refresh grant re-authenticates interactively once per cap period
+rather than once per `ACCESS_TOKEN_TTL`. Set the value to `0` to disable the cap
+entirely and restore unbounded renewal.
+
+`auth_auto_refresh_capped` logs each rejection, with `client_id` and the age of
+the chain that was refused.
+
 ### Google Cloud Setup
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)

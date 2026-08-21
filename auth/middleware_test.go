@@ -133,7 +133,7 @@ func TestMiddleware_ValidToken(t *testing.T) {
 	}
 	store.StoreToken(token)
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -154,7 +154,7 @@ func TestMiddleware_MissingAuthHeader(t *testing.T) {
 	store := newMockTokenStore()
 	logger := testLogger()
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -183,7 +183,7 @@ func TestMiddleware_InvalidFormat(t *testing.T) {
 	store := newMockTokenStore()
 	logger := testLogger()
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -201,7 +201,7 @@ func TestMiddleware_TokenNotFound(t *testing.T) {
 	store := newMockTokenStore()
 	logger := testLogger()
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -249,7 +249,7 @@ func TestMiddleware_ExpiredToken_AutoRefreshSuccess(t *testing.T) {
 	}
 	store.StoreToken(token)
 
-	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -297,7 +297,7 @@ func TestMiddleware_ExpiredToken_NoRefreshToken(t *testing.T) {
 	}
 	store.StoreToken(token)
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -334,7 +334,7 @@ func TestMiddleware_ExpiredToken_ExpiredRefreshToken(t *testing.T) {
 	}
 	store.StoreToken(token)
 
-	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -379,7 +379,7 @@ func TestMiddleware_ExpiredToken_GoogleRefreshFails(t *testing.T) {
 	}
 	store.StoreToken(token)
 
-	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -487,7 +487,7 @@ func TestMiddleware_AuthFailedLogDoesNotLeakToken(t *testing.T) {
 	var logs bytes.Buffer
 	logger := slog.New(slog.NewTextHandler(&logs, &slog.HandlerOptions{Level: slog.LevelDebug}))
 
-	mw := Middleware(newMockTokenStore(), nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "")
+	mw := Middleware(newMockTokenStore(), nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(dummyHandler)
 
 	const token = "sekrit-bearer-token-value"
@@ -528,7 +528,7 @@ func TestMiddleware_ExpiredTokenLogDoesNotLeakToken(t *testing.T) {
 		ExpiresAt:   time.Now().Add(-time.Hour),
 	})
 
-	mw := Middleware(store, nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -556,7 +556,7 @@ func TestMiddleware_ErrorResponseFormat(t *testing.T) {
 	store := newMockTokenStore()
 	logger := testLogger()
 
-	mw := Middleware(store, nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, nil, logger, "https://mcp.gtmeditor.com", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(dummyHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -630,7 +630,7 @@ func TestMiddleware_ContextValues(t *testing.T) {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "")
+	mw := Middleware(store, google, logger, "http://localhost:8080", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
 	handler := mw(captureHandler)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -667,7 +667,7 @@ func TestMiddleware_ContextValues(t *testing.T) {
 
 // saMiddlewareWithOAuth is a helper that builds Middleware with S2S configured.
 func saMiddlewareWithOAuth(store TokenStore, apiKey string, saTS oauth2.TokenSource) func(http.Handler) http.Handler {
-	return Middleware(store, nil, testLogger(), "http://localhost:8080", 1*time.Hour, nil, saTS, apiKey)
+	return Middleware(store, nil, testLogger(), "http://localhost:8080", 1*time.Hour, nil, saTS, apiKey, 7*24*time.Hour)
 }
 
 func TestMiddleware_SAMode_CorrectKey(t *testing.T) {
@@ -805,5 +805,143 @@ func TestMiddleware_OAuthUser_NoSATokenSource(t *testing.T) {
 		t.Error("OAuth user must have their own Google token in context")
 	} else if got.AccessToken != "google-oauth-token" {
 		t.Errorf("expected user's Google token, got %q", got.AccessToken)
+	}
+}
+
+// TestMiddleware_AutoRefreshCapped_RejectsOldChain is the bound from issue #79.
+// Auto-refresh renews a bearer in place without rotating it, so without an
+// absolute cap a bearer captured from a log or a proxy stays useful for the
+// whole 30-day refresh window. Past the cap the server stops renewing.
+func TestMiddleware_AutoRefreshCapped_RejectsOldChain(t *testing.T) {
+	store := newMockTokenStore()
+
+	googleTokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("Google token endpoint must not be called past the renewal cap")
+	}))
+	defer googleTokenServer.Close()
+
+	originalExpiry := time.Now().Add(-1 * time.Hour)
+	store.StoreToken(&TokenInfo{
+		AccessToken:      "old-chain-token",
+		RefreshToken:     "our-refresh-token",
+		ExpiresAt:        originalExpiry,
+		RefreshExpiresAt: time.Now().Add(20 * 24 * time.Hour), // refresh window still open
+		GoogleToken: &oauth2.Token{
+			AccessToken:  "old-google-access",
+			RefreshToken: "google-refresh-token",
+			Expiry:       time.Now().Add(-1 * time.Hour),
+		},
+		ClientID:  "test-client",
+		CreatedAt: time.Now().Add(-8 * 24 * time.Hour), // issued 8 days ago
+	})
+
+	mw := Middleware(store, newTestGoogleProvider(googleTokenServer.URL), testLogger(),
+		"http://localhost:8080", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
+	handler := mw(dummyHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer old-chain-token")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Errorf("expected 401 past the renewal cap, got %d", w.Code)
+	}
+	if w.Header().Get("WWW-Authenticate") == "" {
+		t.Error("expected WWW-Authenticate so the client can reach the refresh grant")
+	}
+
+	stored, err := store.GetTokenByAccessIncludeExpired("old-chain-token")
+	if err != nil {
+		t.Fatalf("entry should survive so the refresh grant still works: %v", err)
+	}
+	if !stored.ExpiresAt.Equal(originalExpiry) {
+		t.Errorf("bearer was renewed past the cap: expiry moved to %v", stored.ExpiresAt)
+	}
+}
+
+// TestMiddleware_AutoRefreshCapped_AllowsYoungChain keeps the everyday case
+// working: this is the silent overnight renewal that #76 exists to enable.
+func TestMiddleware_AutoRefreshCapped_AllowsYoungChain(t *testing.T) {
+	store := newMockTokenStore()
+
+	googleTokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "new-google-access", "token_type": "Bearer", "expires_in": 3600,
+		})
+	}))
+	defer googleTokenServer.Close()
+
+	store.StoreToken(&TokenInfo{
+		AccessToken:      "young-chain-token",
+		RefreshToken:     "our-refresh-token",
+		ExpiresAt:        time.Now().Add(-1 * time.Hour),
+		RefreshExpiresAt: time.Now().Add(30 * 24 * time.Hour),
+		GoogleToken: &oauth2.Token{
+			AccessToken:  "old-google-access",
+			RefreshToken: "google-refresh-token",
+			Expiry:       time.Now().Add(-1 * time.Hour),
+		},
+		ClientID:  "test-client",
+		CreatedAt: time.Now().Add(-16 * time.Hour), // overnight gap, well inside the cap
+	})
+
+	mw := Middleware(store, newTestGoogleProvider(googleTokenServer.URL), testLogger(),
+		"http://localhost:8080", 1*time.Hour, nil, nil, "", 7*24*time.Hour)
+	handler := mw(dummyHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer young-chain-token")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 for a chain inside the cap, got %d", w.Code)
+	}
+}
+
+// TestMiddleware_AutoRefreshCap_ZeroDisables keeps an escape hatch: a zero or
+// negative cap means "no cap", so an operator can restore the old behaviour
+// without a code change.
+func TestMiddleware_AutoRefreshCap_ZeroDisables(t *testing.T) {
+	store := newMockTokenStore()
+
+	googleTokenServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"access_token": "new-google-access", "token_type": "Bearer", "expires_in": 3600,
+		})
+	}))
+	defer googleTokenServer.Close()
+
+	store.StoreToken(&TokenInfo{
+		AccessToken:      "ancient-token",
+		RefreshToken:     "our-refresh-token",
+		ExpiresAt:        time.Now().Add(-1 * time.Hour),
+		RefreshExpiresAt: time.Now().Add(20 * 24 * time.Hour),
+		GoogleToken: &oauth2.Token{
+			AccessToken:  "old-google-access",
+			RefreshToken: "google-refresh-token",
+			Expiry:       time.Now().Add(-1 * time.Hour),
+		},
+		ClientID:  "test-client",
+		CreatedAt: time.Now().Add(-100 * 24 * time.Hour),
+	})
+
+	mw := Middleware(store, newTestGoogleProvider(googleTokenServer.URL), testLogger(),
+		"http://localhost:8080", 1*time.Hour, nil, nil, "", 0)
+	handler := mw(dummyHandler)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer ancient-token")
+	w := httptest.NewRecorder()
+
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected 200 with the cap disabled, got %d", w.Code)
 	}
 }

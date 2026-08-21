@@ -45,6 +45,13 @@ type Config struct {
 	// TrustProxy enables trusting X-Forwarded-For for rate limiting.
 	// Set to true when behind a reverse proxy (e.g. Caddy).
 	TrustProxy bool
+
+	// AutoRefreshMaxAge bounds the silent renewal chain. tryAutoRefresh extends a
+	// bearer in place without rotating it, so its expiry bounds nothing on its
+	// own; past this age since the token was issued the server stops renewing and
+	// answers 401, forcing the client through the refresh grant, which does
+	// rotate. See issue #79.
+	AutoRefreshMaxAge time.Duration
 }
 
 // Load reads configuration from environment variables.
@@ -69,6 +76,7 @@ func Load() (*Config, error) {
 		ServiceAccountAPIKey:  getEnv("SERVICE_ACCOUNT_API_KEY", ""),
 		ServiceAccountKeyJSON: getEnv("GOOGLE_SERVICE_ACCOUNT_KEY_JSON", ""),
 		TrustProxy:            getEnvBool("TRUST_PROXY", false),
+		AutoRefreshMaxAge:     getEnvDuration("AUTH_AUTO_REFRESH_MAX_AGE", 7*24*time.Hour),
 	}
 
 	// Validation is deferred to when auth is actually needed
