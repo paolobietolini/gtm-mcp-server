@@ -3,6 +3,8 @@ package auth
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"golang.org/x/oauth2"
 )
 
 func TestIsValidRedirectURI(t *testing.T) {
@@ -914,5 +918,55 @@ func TestServer_CallbackHandler_IssUsesResolvedIssuerFromAuthorize(t *testing.T)
 
 	if got := loc.Query().Get("iss"); got != "http://gtm-mcp:8080" {
 		t.Errorf("expected iss=http://gtm-mcp:8080 (issuer resolved at authorize time), got %q", got)
+	}
+}
+
+// TestRefreshTokenGrant_ResetsChainAge is load-bearing for the #79 cap. The cap
+// measures age from CreatedAt, and the refresh grant is the sanctioned way past
+// it: because it rotates both credentials, the new entry earns a fresh window.
+// If rotation carried the old CreatedAt forward, a capped client could never
+// recover and would be forced into interactive re-auth instead.
+func TestRefreshTokenGrant_ResetsChainAge(t *testing.T) {
+	store := NewMemoryTokenStore()
+	defer store.Close()
+
+	server := NewServer("http://localhost:8080", nil, store,
+		slog.New(slog.NewTextHandler(io.Discard, nil)), 1*time.Hour)
+
+	oldCreatedAt := time.Now().Add(-10 * 24 * time.Hour)
+	store.StoreToken(&TokenInfo{
+		AccessToken:      "old-access",
+		RefreshToken:     "old-refresh",
+		ExpiresAt:        time.Now().Add(1 * time.Hour),
+		RefreshExpiresAt: time.Now().Add(20 * 24 * time.Hour),
+		GoogleToken:      &oauth2.Token{AccessToken: "g-access", Expiry: time.Now().Add(1 * time.Hour)},
+		ClientID:         "client-abc",
+		CreatedAt:        oldCreatedAt,
+	})
+
+	form := url.Values{}
+	form.Set("grant_type", "refresh_token")
+	form.Set("refresh_token", "old-refresh")
+
+	req := httptest.NewRequest(http.MethodPost, "/token", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	w := httptest.NewRecorder()
+	server.TokenHandler(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var resp map[string]interface{}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("bad token response: %v", err)
+	}
+
+	rotated, err := store.GetTokenByAccess(resp["access_token"].(string))
+	if err != nil {
+		t.Fatalf("rotated token not found: %v", err)
+	}
+	if !rotated.CreatedAt.After(oldCreatedAt.Add(24 * time.Hour)) {
+		t.Errorf("rotation carried the old chain age forward (CreatedAt=%v); a capped client could never recover", rotated.CreatedAt)
 	}
 }
