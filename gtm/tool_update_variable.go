@@ -10,9 +10,9 @@ import (
 
 // UpdateVariableInput is the input for update_variable tool.
 type UpdateVariableInput struct {
-	AccountID      string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID    string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID    string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID      string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID    string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID    string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	VariableID     string `json:"variableId" jsonschema:"description:The variable ID to update"`
 	Name           string `json:"name" jsonschema:"description:Variable name"`
 	Type           string `json:"type" jsonschema:"description:Variable type (e.g. c for Constant, v for Data Layer, k for Cookie, jsm for Custom JavaScript)"`

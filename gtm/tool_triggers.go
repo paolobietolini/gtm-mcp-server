@@ -7,9 +7,9 @@ import (
 )
 
 type ListTriggersInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 }
 type ListTriggersOutput struct {
 	Triggers []Trigger `json:"triggers"`

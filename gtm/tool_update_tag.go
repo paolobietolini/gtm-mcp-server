@@ -11,21 +11,21 @@ import (
 
 // UpdateTagInput is the input for update_tag tool.
 type UpdateTagInput struct {
-	AccountID          string   `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID        string   `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID        string   `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID          string   `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID        string   `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID        string   `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	TagID              string   `json:"tagId" jsonschema:"description:The tag ID to update"`
-	Name               string   `json:"name,omitempty" jsonschema:"description:Tag name. If omitted\\, existing name is preserved."`
-	Type               string   `json:"type,omitempty" jsonschema:"description:Tag type. If omitted\\, existing type is preserved."`
-	FiringTriggerIDs   []string `json:"firingTriggerIds,omitempty" jsonschema:"description:Array of trigger IDs that fire this tag. If omitted\\, existing triggers are preserved."`
-	BlockingTriggerIDs []string `json:"blockingTriggerIds,omitempty" jsonschema:"description:Array of trigger IDs that block this tag. If omitted\\, existing blocking triggers are preserved."`
-	ParametersJSON     string   `json:"parametersJson,omitempty" jsonschema:"description:Tag parameters as JSON array. If omitted\\, existing parameters (pixel IDs\\, measurement IDs\\, etc.) are preserved."`
-	SetupTagJSON       string   `json:"setupTagJson,omitempty" jsonschema:"description:Setup tag sequencing as JSON array. Each element: {tagName: string\\, stopOnSetupFailure: bool}. Pass [] to clear. If omitted\\, existing setup tags are preserved."`
-	TeardownTagJSON    string   `json:"teardownTagJson,omitempty" jsonschema:"description:Teardown tag sequencing as JSON array. Each element: {tagName: string\\, stopTeardownOnFailure: bool}. Pass [] to clear. If omitted\\, existing teardown tags are preserved."`
-	ConsentStatus      string   `json:"consentStatus,omitempty" jsonschema:"description:Consent status: notSet (default/clear)\\, notNeeded (no consent required)\\, needed (requires consent types to be granted before firing). If omitted\\, existing consent settings are preserved."`
+	Name               string   `json:"name,omitempty" jsonschema:"description:Tag name"`
+	Type               string   `json:"type,omitempty" jsonschema:"description:Tag type"`
+	FiringTriggerIDs   []string `json:"firingTriggerIds,omitempty" jsonschema:"description:Array of trigger IDs that fire this tag"`
+	BlockingTriggerIDs []string `json:"blockingTriggerIds,omitempty" jsonschema:"description:Array of trigger IDs that block this tag"`
+	ParametersJSON     string   `json:"parametersJson,omitempty" jsonschema:"description:Tag parameters as JSON array (pixel IDs\\, measurement IDs)"`
+	SetupTagJSON       string   `json:"setupTagJson,omitempty" jsonschema:"description:Setup tag sequencing as JSON array. Each element: {tagName: string\\, stopOnSetupFailure: bool}. Pass [] to clear"`
+	TeardownTagJSON    string   `json:"teardownTagJson,omitempty" jsonschema:"description:Teardown tag sequencing as JSON array. Each element: {tagName: string\\, stopTeardownOnFailure: bool}. Pass [] to clear"`
+	ConsentStatus      string   `json:"consentStatus,omitempty" jsonschema:"description:Consent status: notSet (default/clear)\\, notNeeded (no consent required)\\, needed (requires consent types to be granted before firing)"`
 	ConsentTypes       string   `json:"consentTypes,omitempty" jsonschema:"description:Comma-separated consent types when consentStatus is needed (e.g. ad_storage\\,analytics_storage\\,ad_user_data\\,ad_personalization). Ignored when consentStatus is notSet or notNeeded."`
-	Notes              string   `json:"notes,omitempty" jsonschema:"description:Tag notes. If omitted\\, existing notes are preserved."`
-	Paused             *bool    `json:"paused,omitempty" jsonschema:"description:Whether tag is paused. If omitted\\, existing paused state is preserved."`
+	Notes              string   `json:"notes,omitempty" jsonschema:"description:Tag notes"`
+	Paused             *bool    `json:"paused,omitempty" jsonschema:"description:Whether tag is paused"`
 }
 
 // UpdateTagOutput is the output for update_tag tool.

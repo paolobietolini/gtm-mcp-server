@@ -10,9 +10,9 @@ import (
 
 // UpdateTransformationInput is the input for update_transformation tool.
 type UpdateTransformationInput struct {
-	AccountID        string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID      string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID      string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID        string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID      string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID      string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	TransformationID string `json:"transformationId" jsonschema:"description:The transformation ID to update"`
 	Name             string `json:"name" jsonschema:"description:Transformation name"`
 	Type             string `json:"type,omitempty" jsonschema:"description:Transformation type (optional). Valid values: tf_exclude_params, tf_allow_params, tf_augment_event"`

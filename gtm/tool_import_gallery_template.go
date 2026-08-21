@@ -9,9 +9,9 @@ import (
 
 // ImportGalleryTemplateInput is the input for import_gallery_template tool.
 type ImportGalleryTemplateInput struct {
-	AccountID    string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID  string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID  string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID    string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID  string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID  string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	GalleryOwner string `json:"galleryOwner" jsonschema:"description:Owner of the Gallery template (e.g. 'iubenda' or 'GoogleAnalytics')"`
 	GalleryRepo  string `json:"galleryRepository" jsonschema:"description:Repository of the Gallery template (e.g. 'gtm-cookie-solution')"`
 	GallerySha   string `json:"gallerySha,omitempty" jsonschema:"description:SHA version of the Gallery template. Defaults to latest if not provided"`

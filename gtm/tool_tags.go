@@ -7,18 +7,18 @@ import (
 )
 
 type ListTagsInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 }
 type ListTagsOutput struct {
 	Tags []Tag `json:"tags"`
 }
 
 type GetTagInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	TagID       string `json:"tagId" jsonschema:"description:The tag ID to retrieve"`
 }
 type GetTagOutput struct {

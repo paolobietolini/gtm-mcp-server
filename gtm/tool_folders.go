@@ -8,9 +8,9 @@ import (
 
 // ListFoldersInput is the input for list_folders tool.
 type ListFoldersInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 }
 
 // ListFoldersOutput is the output for list_folders tool.
@@ -20,9 +20,9 @@ type ListFoldersOutput struct {
 
 // GetFolderEntitiesInput is the input for get_folder_entities tool.
 type GetFolderEntitiesInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	FolderID    string `json:"folderId" jsonschema:"description:The folder ID"`
 }
 

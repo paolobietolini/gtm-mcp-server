@@ -9,9 +9,9 @@ import (
 // -- List Transformations --
 
 type ListTransformationsInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 }
 
 type ListTransformationsOutput struct {
@@ -42,9 +42,9 @@ func registerListTransformations(server *mcp.Server) {
 // -- Get Transformation --
 
 type GetTransformationInput struct {
-	AccountID        string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID      string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID      string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID        string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID      string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID      string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	TransformationID string `json:"transformationId" jsonschema:"description:The transformation ID to retrieve"`
 }
 

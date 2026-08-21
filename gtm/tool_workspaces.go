@@ -7,8 +7,8 @@ import (
 )
 
 type ListWorkspacesInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
 }
 type ListWorkspacesOutput struct {
 	Workspaces []Workspace `json:"workspaces"`

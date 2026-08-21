@@ -10,9 +10,9 @@ import (
 // -- List Built-In Variables --
 
 type ListBuiltInVariablesInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 }
 
 type ListBuiltInVariablesOutput struct {
@@ -43,9 +43,9 @@ func registerListBuiltInVariables(server *mcp.Server) {
 // -- Enable Built-In Variables --
 
 type EnableBuiltInVariablesInput struct {
-	AccountID   string   `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string   `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string   `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string   `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string   `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string   `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	Types       []string `json:"types" jsonschema:"description:Array of built-in variable types to enable (e.g. eventName, clientName, requestPath, pageUrl, event)"`
 }
 
@@ -87,11 +87,11 @@ func registerEnableBuiltInVariables(server *mcp.Server) {
 // -- Disable Built-In Variables --
 
 type DisableBuiltInVariablesInput struct {
-	AccountID   string   `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string   `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string   `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string   `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string   `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string   `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	Types       []string `json:"types" jsonschema:"description:Array of built-in variable types to disable"`
-	Confirm     bool     `json:"confirm" jsonschema:"description:Must be true to confirm disabling. This is a safety guard."`
+	Confirm     bool     `json:"confirm" jsonschema:"description:Must be true to confirm disabling."`
 }
 
 type DisableBuiltInVariablesOutput struct {

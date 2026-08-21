@@ -9,9 +9,9 @@ import (
 
 // CreateTransformationInput is the input for create_transformation tool.
 type CreateTransformationInput struct {
-	AccountID      string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID    string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID    string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID      string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID    string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID    string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	Name           string `json:"name" jsonschema:"description:Transformation name"`
 	Type           string `json:"type" jsonschema:"description:Transformation type. Valid values: tf_exclude_params (exclude parameters from tags), tf_allow_params (allow only specified parameters), tf_augment_event (add/modify event parameters)"`
 	ParametersJSON string `json:"parametersJson,omitempty" jsonschema:"description:Transformation parameters as JSON array (optional). Each parameter: {type, key, value} or {type, key, list/map}"`

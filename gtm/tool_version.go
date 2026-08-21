@@ -9,9 +9,9 @@ import (
 
 // CreateVersionInput is the input for create_version tool.
 type CreateVersionInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	Name        string `json:"name,omitempty" jsonschema:"description:Version name (optional)"`
 	Notes       string `json:"notes,omitempty" jsonschema:"description:Version notes describing changes (optional)"`
 }
@@ -25,10 +25,10 @@ type CreateVersionOutput struct {
 
 // PublishVersionInput is the input for publish_version tool.
 type PublishVersionInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
 	VersionID   string `json:"versionId" jsonschema:"description:The version ID to publish"`
-	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to confirm publishing. This is a safety guard - publishing makes changes live."`
+	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to confirm publishing. Publishing makes changes live."`
 }
 
 // PublishVersionOutput is the output for publish_version tool.

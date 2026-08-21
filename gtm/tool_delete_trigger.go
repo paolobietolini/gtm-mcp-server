@@ -9,11 +9,11 @@ import (
 
 // DeleteTriggerInput is the input for delete_trigger tool.
 type DeleteTriggerInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	TriggerID   string `json:"triggerId" jsonschema:"description:The trigger ID to delete"`
-	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to confirm deletion. This is a safety guard."`
+	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to confirm deletion."`
 }
 
 // DeleteTriggerOutput is the output for delete_trigger tool.

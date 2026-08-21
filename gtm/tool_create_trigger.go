@@ -9,9 +9,9 @@ import (
 
 // CreateTriggerInput is the input for create_trigger tool.
 type CreateTriggerInput struct {
-	AccountID             string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID           string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID           string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID             string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID           string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID           string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	Name                  string `json:"name" jsonschema:"description:Trigger name"`
 	Type                  string `json:"type" jsonschema:"description:Trigger type (e.g. pageview, customEvent, linkClick, formSubmission, timer)"`
 	FilterJSON            string `json:"filterJson,omitempty" jsonschema:"description:Filter conditions as JSON array for pageview triggers. Condition types: equals\\, contains\\, doesNotContain\\, startsWith\\, endsWith\\, matchRegex. Each condition has type and parameter array with arg0 (variable) and arg1 (value). (optional)"`

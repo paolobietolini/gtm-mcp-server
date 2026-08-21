@@ -9,11 +9,11 @@ import (
 
 // DeleteVariableInput is the input for delete_variable tool.
 type DeleteVariableInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	VariableID  string `json:"variableId" jsonschema:"description:The variable ID to delete"`
-	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to confirm deletion. This is a safety guard."`
+	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to confirm deletion."`
 }
 
 // DeleteVariableOutput is the output for delete_variable tool.

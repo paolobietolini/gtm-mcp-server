@@ -9,9 +9,9 @@ import (
 
 // CreateVariableInput is the input for create_variable tool.
 type CreateVariableInput struct {
-	AccountID      string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID    string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID    string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID      string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID    string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID    string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	Name           string `json:"name" jsonschema:"description:Variable name"`
 	Type           string `json:"type" jsonschema:"description:Variable type (e.g. c for Constant, v for Data Layer, k for Cookie, jsm for Custom JavaScript)"`
 	ParametersJSON string `json:"parametersJson,omitempty" jsonschema:"description:Variable parameters as JSON array (required for most types)"`

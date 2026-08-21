@@ -10,9 +10,9 @@ import (
 
 // UpdateTriggerInput is the input for update_trigger tool.
 type UpdateTriggerInput struct {
-	AccountID             string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID           string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID           string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID             string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID           string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID           string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	TriggerID             string `json:"triggerId" jsonschema:"description:The trigger ID to update"`
 	Name                  string `json:"name" jsonschema:"description:Trigger name"`
 	Type                  string `json:"type" jsonschema:"description:Trigger type (e.g. pageview, customEvent, linkClick, triggerGroup)"`

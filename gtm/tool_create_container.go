@@ -10,7 +10,7 @@ import (
 
 // CreateContainerInput is the input for create_container tool.
 type CreateContainerInput struct {
-	AccountID         string   `json:"accountId" jsonschema:"description:The GTM account ID"`
+	AccountID         string   `json:"accountId" jsonschema:"description:GTM account ID"`
 	Name              string   `json:"name" jsonschema:"description:Container display name"`
 	UsageContext      []string `json:"usageContext" jsonschema:"description:Usage context for the container. Valid values: web, android, ios, amp, server"`
 	Notes             string   `json:"notes,omitempty" jsonschema:"description:Container notes (optional)"`

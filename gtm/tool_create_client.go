@@ -9,9 +9,9 @@ import (
 
 // CreateClientInput is the input for create_client tool.
 type CreateClientInput struct {
-	AccountID      string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID    string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID    string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID      string `json:"accountId" jsonschema:"description:GTM account ID"`
+	ContainerID    string `json:"containerId" jsonschema:"description:GTM container ID"`
+	WorkspaceID    string `json:"workspaceId" jsonschema:"description:GTM workspace ID"`
 	Name           string `json:"name" jsonschema:"description:Client name"`
 	Type           string `json:"type" jsonschema:"description:Client type (e.g. __ga4 for GA4, __googtag for Google tag)"`
 	Priority       int64  `json:"priority,omitempty" jsonschema:"description:Client priority (optional, higher runs first)"`

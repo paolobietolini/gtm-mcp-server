@@ -7,7 +7,7 @@ import (
 )
 
 type ListContainersInput struct {
-	AccountID string `json:"accountId" jsonschema:"description:The GTM account ID"`
+	AccountID string `json:"accountId" jsonschema:"description:GTM account ID"`
 }
 type ListContainersOutput struct {
 	Containers []Container `json:"containers"`
