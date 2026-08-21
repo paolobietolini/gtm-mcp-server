@@ -26,7 +26,7 @@ var llmsTxt string
 
 const (
 	serverName    = "gtm-mcp-server"
-	serverVersion = "1.9.0"
+	serverVersion = "1.10.0"
 )
 
 func main() {
