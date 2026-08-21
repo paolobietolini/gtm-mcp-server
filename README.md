@@ -369,6 +369,16 @@ ALLOWED_HOSTS=gtm-mcp:8080
 
 This enables dynamic URL resolution for trusted internal hostnames while keeping the server secure against host header injection.
 
+#### Token Persistence (TOKEN_STORE_PATH)
+
+By default, issued tokens are kept in memory only, so **every restart logs all users out** and forces them to re-authenticate. To keep sessions across restarts, point `TOKEN_STORE_PATH` at a file on a persistent volume:
+
+```bash
+TOKEN_STORE_PATH=/data/tokens.json
+```
+
+The file is written with `0600` permissions and holds refresh tokens, so it belongs on a volume you would treat as secret. The directory must be writable by the user the server runs as (the Docker image runs as `appuser` and ships `/data` owned by it, mode `0700`; a directory the server creates itself gets the same mode) — the store fails closed, so a path that cannot be created or read stops the server at startup rather than silently discarding sessions. Leave `TOKEN_STORE_PATH` unset to keep the in-memory behaviour.
+
 ### Google Cloud Setup
 
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
