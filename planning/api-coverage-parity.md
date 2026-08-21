@@ -45,8 +45,6 @@ a README table entry.
       `list`, `update`, `delete`.
 - [ ] **Destinations** — `get`, `list`, `link`, `unlink`. `link` and `unlink`
       change what a container publishes to; require confirmation.
-- [ ] **User permissions** — `create`, `get`, `list`, `update`, `delete`.
-      **Read the security note below before building this one.**
 - [ ] **Version headers** — `list`, `latest`. Cheap, and useful for finding a
       version to publish without listing full versions.
 
@@ -61,25 +59,19 @@ a README table entry.
 `revert` is the largest single item: eight near-identical tools. Build one,
 settle the shape, then repeat.
 
-## Security note on user permissions
+## User permissions: out of scope
 
-`user_permission` is different in kind from everything else in this server. It
-grants and removes access to GTM accounts and containers. An AI assistant that
-can call `create_user_permission` can grant a stranger administrator access to
-a container, and `delete_user_permission` can lock the owner out.
+Decided 21 August 2026: **not built.** Not deferred pending a design — left out.
 
-Before building it, decide:
+`user_permission` grants and removes access to GTM accounts and containers. An
+AI assistant that can call it can give a stranger administrator access to a
+container, or lock out the owner. The confirmation pattern in this server was
+designed for "you will lose a tag", not for "you will give someone else
+administrator access", and the two are not the same sentence to a user.
 
-- [ ] Whether write operations on permissions are exposed at all, or only
-      `get` and `list`.
-- [ ] Whether they are gated behind configuration, off by default, so an
-      operator opts in rather than inheriting the capability silently.
-- [ ] What confirmation looks like. The existing confirmation pattern was
-      designed for "you will lose a tag", not "you will give someone else
-      administrator access".
-
-The safe default is read-only first, writes behind an explicit opt-in. This
-question should be settled before the code is written, not after.
+The gap against stape-io is therefore deliberate. If it is ever revisited, the
+starting position is `get` and `list` only, with writes behind configuration
+that is off by default.
 
 ## Sequence
 
@@ -90,7 +82,6 @@ question should be settled before the code is written, not after.
 3. The missing operations on existing resources, `revert` last since it is
    repetitive.
 4. Destinations.
-5. User permissions, read-only, only after the questions above are answered.
 
 ## TODO — per resource
 
@@ -104,8 +95,23 @@ For each resource, in this order:
 - [ ] README table entry.
 - [ ] `llms.txt` entry, so agents that read it learn the new tools.
 
+## Interaction with the tools/list token cost
+
+Measured 21 August 2026: the current 50 tools serialise to 62,379 bytes, about
+**15,600 tokens**, sent on every conversation before the user asks anything.
+This plan adds roughly 30 tools and takes that toward 25,000.
+
+That is affordable only if the per-tool cost comes down first. About 1,400
+tokens today are duplicate parameter descriptions — "The GTM account ID" is
+repeated 47 times, "The GTM container ID" 44 times, "The GTM workspace ID" 38
+times — and the largest tools carry long JSON-format prose inside their schemas
+that belongs in the best-practice resources instead.
+
+Trim that before the new tools land, not after.
+
 ## Not in scope
 
+- User permissions, for the reason above.
 - Changing the existing 50 tools.
 - Multiplexing tools behind an `action` parameter.
 - The stdio transport — see `planning/stdio-transport.md`.
