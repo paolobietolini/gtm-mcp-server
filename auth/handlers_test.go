@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
@@ -665,7 +666,8 @@ func TestServer_HandleRefreshTokenGrant_InvalidRefreshToken(t *testing.T) {
 	store := NewMemoryTokenStore()
 	defer store.Close()
 
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
+	var logs bytes.Buffer
+	logger := slog.New(slog.NewTextHandler(&logs, nil))
 	server := NewServer("http://localhost:8080", nil, store, logger, 1*time.Hour)
 
 	form := url.Values{}
@@ -684,6 +686,91 @@ func TestServer_HandleRefreshTokenGrant_InvalidRefreshToken(t *testing.T) {
 
 	if !strings.Contains(w.Body.String(), "Invalid refresh token") {
 		t.Error("expected Invalid refresh token error")
+	}
+	if want := "refresh_fp=" + tokenFingerprint("invalid-refresh-token"); !strings.Contains(logs.String(), want) {
+		t.Errorf("missing %q in logs: %s", want, logs.String())
+	}
+}
+
+func TestServer_HandleAuthorizationCodeGrant_LogsAccessTokenFingerprint(t *testing.T) {
+	store := NewMemoryTokenStore()
+	defer store.Close()
+
+	google, cleanup := newFakeGoogleProvider(t)
+	defer cleanup()
+
+	var logs bytes.Buffer
+	server := NewServer("http://localhost:8080", google, store,
+		slog.New(slog.NewTextHandler(&logs, nil)), 1*time.Hour)
+
+	code := runAuthorizeCallbackFlow(t, server, "").Query().Get("code")
+	form := url.Values{
+		"grant_type":    {"authorization_code"},
+		"code":          {code},
+		"code_verifier": {"verifier"},
+	}
+	w := tokenRequest(server, form)
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var response map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	accessToken, ok := response["access_token"].(string)
+	if !ok || accessToken == "" {
+		t.Fatalf("missing access token in response: %v", response)
+	}
+	if want := "token_fp=" + tokenFingerprint(accessToken); !strings.Contains(logs.String(), want) {
+		t.Errorf("missing %q in logs: %s", want, logs.String())
+	}
+}
+
+func TestServer_HandleRefreshTokenGrant_LogsTokenFingerprints(t *testing.T) {
+	store := NewMemoryTokenStore()
+	defer store.Close()
+
+	const oldAccessToken = "old-access"
+	const oldRefreshToken = "old-refresh"
+	if err := store.StoreToken(&TokenInfo{
+		AccessToken:      oldAccessToken,
+		RefreshToken:     oldRefreshToken,
+		ExpiresAt:        time.Now().Add(time.Hour),
+		RefreshExpiresAt: time.Now().Add(24 * time.Hour),
+		GoogleToken:      &oauth2.Token{AccessToken: "google-access", Expiry: time.Now().Add(time.Hour)},
+		ClientID:         "client-abc",
+		CreatedAt:        time.Now(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	var logs bytes.Buffer
+	server := NewServer("http://localhost:8080", nil, store,
+		slog.New(slog.NewTextHandler(&logs, nil)), 1*time.Hour)
+	w := tokenRequest(server, url.Values{
+		"grant_type":    {"refresh_token"},
+		"refresh_token": {oldRefreshToken},
+	})
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", w.Code, w.Body.String())
+	}
+
+	var response map[string]any
+	if err := json.Unmarshal(w.Body.Bytes(), &response); err != nil {
+		t.Fatal(err)
+	}
+	newAccessToken, ok := response["access_token"].(string)
+	if !ok || newAccessToken == "" {
+		t.Fatalf("missing access token in response: %v", response)
+	}
+	for _, want := range []string{
+		"old_token_fp=" + tokenFingerprint(oldAccessToken),
+		"token_fp=" + tokenFingerprint(newAccessToken),
+	} {
+		if !strings.Contains(logs.String(), want) {
+			t.Errorf("missing %q in logs: %s", want, logs.String())
+		}
 	}
 }
 

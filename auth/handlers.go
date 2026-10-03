@@ -435,7 +435,10 @@ func (s *Server) handleAuthorizationCodeGrant(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	s.logger.Info("issued access token", "client_id", codeState.ClientID)
+	s.logger.Info("issued access token",
+		"client_id", codeState.ClientID,
+		"token_fp", tokenFingerprint(tokenInfo.AccessToken),
+	)
 
 	// Return token response
 	s.tokenResponse(w, accessToken, refreshToken, int(s.accessTokenTTL.Seconds()))
@@ -452,7 +455,7 @@ func (s *Server) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request)
 	// Get existing token info
 	tokenInfo, err := s.store.GetTokenByRefresh(refreshToken)
 	if err != nil {
-		s.logger.Error("failed to get token by refresh", "error", err)
+		s.logger.Error("failed to get token by refresh", "error", err, "refresh_fp", tokenFingerprint(refreshToken))
 		s.tokenError(w, "invalid_grant", "Invalid refresh token")
 		return
 	}
@@ -508,7 +511,11 @@ func (s *Server) handleRefreshTokenGrant(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	s.logger.Info("refreshed access token", "client_id", tokenInfo.ClientID)
+	s.logger.Info("refreshed access token",
+		"client_id", tokenInfo.ClientID,
+		"old_token_fp", tokenFingerprint(tokenInfo.AccessToken),
+		"token_fp", tokenFingerprint(newAccessToken),
+	)
 
 	// Return token response with new refresh token
 	s.tokenResponse(w, newAccessToken, newRefreshToken, int(s.accessTokenTTL.Seconds()))
