@@ -23,7 +23,7 @@ service-account authentication for self-hosted automation.
 
 | Item | Current state |
 |---|---|
-| Version in `server.json` | `1.10.1` |
+| Version in `server.json` | `1.12.3` |
 | Transport | MCP Streamable HTTP |
 | Runtime tools | 64 GTM tools by default; 94 with `GTM_TOOL_GROUPS=all`, plus 2 utility tools |
 | MCP resources | 8 resource definitions |
@@ -478,6 +478,7 @@ When using the named volume, set `TOKEN_STORE_PATH=/data/tokens.json` in
 |---|---|---|
 | `PORT` | `8080` | HTTP listen port |
 | `BASE_URL` | `http://localhost:8080` | Canonical public URL used by OAuth metadata and callbacks |
+| `DASHBOARD_ENABLED` | `false` | Expose the public connection setup page at `/dashboard/` |
 | `GOOGLE_CLIENT_ID` | empty | Google OAuth web-client ID |
 | `GOOGLE_CLIENT_SECRET` | empty | Google OAuth web-client secret |
 | `ACCESS_TOKEN_TTL` | `8h` | Lifetime of MCP access tokens |
@@ -515,6 +516,16 @@ GTM_TOOL_GROUPS=accounts,workspaces,tags,triggers,variables
 ```
 
 The two connection utility tools remain available regardless of this setting.
+
+### Optional setup dashboard
+
+Set `DASHBOARD_ENABLED=true` and restart the server to expose `/dashboard/`.
+The page shows the canonical MCP endpoint, server version, authentication setup
+status, and connection instructions. It is disabled by default.
+
+The dashboard is public when enabled. It deliberately excludes tokens, sessions,
+account names, container data, and other GTM content. It reports server
+configuration only and does not verify the visitor's Google session.
 
 ## Releases and deployment
 
@@ -578,9 +589,6 @@ For a deep dive into the Google Tag Manager MCP server, read the [Deep Wiki](htt
   user-permission methods remain outside the product scope.
 - The server supports Streamable HTTP only. Stdio transport is planned but is
   not implemented.
-- The optional connection dashboard is under review in
-  [PR #107](https://github.com/paolobietolini/gtm-mcp-server/pull/107); it is not part of
-  `main`.
 - The hosted service processes OAuth tokens. Self-host the server when your
   policy requires control of the runtime and token store.
 - Some GTM resource families depend on container type or account entitlement.
