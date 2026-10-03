@@ -31,6 +31,7 @@ type TagInput struct {
 	Parameter          []Parameter        `json:"parameter,omitempty"`
 	HasParameter       bool               `json:"-"` // When true, Parameter was explicitly provided
 	Notes              string             `json:"notes,omitempty"`
+	HasNotes           bool               `json:"-"` // When true, Notes was explicitly provided
 	Paused             bool               `json:"paused,omitempty"`
 	HasPaused          bool               `json:"-"` // When true, Paused was explicitly provided
 	TagFiringOption    string             `json:"tagFiringOption,omitempty"`
@@ -55,6 +56,7 @@ type TriggerInput struct {
 	EventName         *Parameter  `json:"eventName,omitempty"`
 	Parameter         []Parameter `json:"parameter,omitempty"` // For trigger groups: member trigger references
 	Notes             string      `json:"notes,omitempty"`
+	HasNotes          bool        `json:"-"` // When true, Notes was explicitly provided
 }
 
 // Condition represents a filter condition for triggers.
@@ -66,10 +68,12 @@ type Condition struct {
 
 // VariableInput represents input for creating a variable.
 type VariableInput struct {
-	Name      string      `json:"name"`
-	Type      string      `json:"type"`
-	Parameter []Parameter `json:"parameter,omitempty"`
-	Notes     string      `json:"notes,omitempty"`
+	Name         string      `json:"name"`
+	Type         string      `json:"type"`
+	Parameter    []Parameter `json:"parameter,omitempty"`
+	HasParameter bool        `json:"-"` // When true, Parameter was explicitly provided
+	Notes        string      `json:"notes,omitempty"`
+	HasNotes     bool        `json:"-"` // When true, Notes was explicitly provided
 }
 
 // VersionInput represents input for creating a version.

@@ -10,17 +10,17 @@ import (
 
 // UpdateTriggerInput is the input for update_trigger tool.
 type UpdateTriggerInput struct {
-	AccountID             string `json:"accountId" jsonschema:"The GTM account ID"`
-	ContainerID           string `json:"containerId" jsonschema:"The GTM container ID"`
-	WorkspaceID           string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
-	TriggerID             string `json:"triggerId" jsonschema:"The trigger ID to update"`
-	Name                  string `json:"name" jsonschema:"Trigger name"`
-	Type                  string `json:"type" jsonschema:"Trigger type (e.g. pageview, customEvent, linkClick, triggerGroup)"`
-	FilterJSON            string `json:"filterJson,omitempty" jsonschema:"JSON conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
-	AutoEventFilterJSON   string `json:"autoEventFilterJson,omitempty" jsonschema:"JSON auto-event conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
-	CustomEventFilterJSON string `json:"customEventFilterJson,omitempty" jsonschema:"JSON custom-event conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
-	ParameterJSON         string `json:"parameterJson,omitempty" jsonschema:"JSON parameters; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
-	Notes                 string `json:"notes,omitempty" jsonschema:"Trigger notes (optional)"`
+	AccountID             string  `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID           string  `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID           string  `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	TriggerID             string  `json:"triggerId" jsonschema:"The trigger ID to update"`
+	Name                  string  `json:"name" jsonschema:"Trigger name"`
+	Type                  string  `json:"type" jsonschema:"Trigger type (e.g. pageview, customEvent, linkClick, triggerGroup)"`
+	FilterJSON            string  `json:"filterJson,omitempty" jsonschema:"JSON conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
+	AutoEventFilterJSON   string  `json:"autoEventFilterJson,omitempty" jsonschema:"JSON auto-event conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
+	CustomEventFilterJSON string  `json:"customEventFilterJson,omitempty" jsonschema:"JSON custom-event conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
+	ParameterJSON         string  `json:"parameterJson,omitempty" jsonschema:"JSON parameters; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
+	Notes                 *string `json:"notes,omitempty" jsonschema:"Trigger notes. Omit to preserve or pass an empty string to clear."`
 }
 
 // UpdateTriggerOutput is the output for update_trigger tool.
@@ -102,7 +102,10 @@ func registerUpdateTrigger(server *mcp.Server) {
 			AutoEventFilter:   autoEventFilter,
 			CustomEventFilter: customEventFilter,
 			Parameter:         params,
-			Notes:             input.Notes,
+			HasNotes:          input.Notes != nil,
+		}
+		if input.Notes != nil {
+			triggerInput.Notes = *input.Notes
 		}
 
 		trigger, err := wc.Client.UpdateTrigger(ctx, path, triggerInput)
@@ -124,6 +127,6 @@ func registerUpdateTrigger(server *mcp.Server) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "update_trigger",
-		Description: "Update a trigger with automatic fingerprint handling. Read gtm://best-practices/tool-input-formats for filters and trigger groups.",
+		Description: "Update a trigger while preserving omitted fields, with automatic fingerprint handling. Read gtm://best-practices/tool-input-formats for filters and trigger groups.",
 	}, handler)
 }
