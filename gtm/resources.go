@@ -88,7 +88,7 @@ func RegisterResources(server *mcp.Server) {
 	// gtm://best-practices - configuration best-practices index (static, no auth)
 	server.AddResource(&mcp.Resource{
 		Name:        "GTM Best Practices",
-		Description: "Opinionated rules for good GTM configuration: naming, safe edits, GA4/consent, server-side",
+		Description: "GTM configuration guidance: naming, safe edits, GA4/consent, server-side, and tool input formats",
 		MIMEType:    "text/markdown",
 		URI:         uriBestPractices,
 	}, handleBestPracticesIndexResource)
@@ -96,7 +96,7 @@ func RegisterResources(server *mcp.Server) {
 	// gtm://best-practices/{topic} - individual best-practices document
 	server.AddResourceTemplate(&mcp.ResourceTemplate{
 		Name:        "GTM Best Practices Topic",
-		Description: "A single best-practices document: naming-organization, safe-edit-workflow, ga4-consent, or server-side",
+		Description: "A best-practices topic, including safe-edit workflows and tool input formats",
 		MIMEType:    "text/markdown",
 		URITemplate: uriBestPracticesTopic,
 	}, handleBestPracticesTopicResource)

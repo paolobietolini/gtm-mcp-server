@@ -12,13 +12,20 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-
   goreleaser:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
+
+      - name: Validate release version
+        run: |
+          expected_tag="v$(jq -r '.version' server.json)"
+          if [[ "$GITHUB_REF_NAME" != "$expected_tag" ]]; then
+            echo "Tag $GITHUB_REF_NAME does not match server.json ($expected_tag)" >&2
+            exit 1
+          fi
 
       - uses: actions/setup-go@v7
         with:
@@ -30,3 +37,83 @@ jobs:
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy:
+    name: Deploy to production
+    needs: goreleaser
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: auto-deployment
+      url: https://mcp.gtmeditor.com
+    concurrency:
+      group: production-deployment
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    env:
+      DEPLOY_PATH: /opt/docker/gtm-mcp-server
+      HEALTH_URL: https://mcp.gtmeditor.com/health
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Configure SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          VPS_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 "$HOME/.ssh"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/deploy_key"
+          chmod 600 "$HOME/.ssh/deploy_key"
+          printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          chmod 644 "$HOME/.ssh/known_hosts"
+
+      - name: Sync release source
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          rsync -az --delete \
+            --exclude=.git \
+            --exclude=.github \
+            --exclude=.claude \
+            --exclude='.env*' \
+            --exclude='.mcpregistry_*' \
+            --exclude=/tmp/ \
+            --exclude=/planning/ \
+            --exclude=/.codex/ \
+            --exclude=/.agents/ \
+            --exclude=docker-compose.yml \
+            --exclude=go-sdk-main \
+            --exclude=gtm-mcp-server \
+            -e "ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes" \
+            ./ "$VPS_USER@$VPS_HOST:$DEPLOY_PATH/"
+
+      - name: Build and restart service
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+        run: |
+          ssh -i "$HOME/.ssh/deploy_key" -o IdentitiesOnly=yes \
+            "$VPS_USER@$VPS_HOST" \
+            "cd '$DEPLOY_PATH' && \
+              (docker image inspect gtm-mcp-server:latest >/dev/null 2>&1 && \
+               docker image tag gtm-mcp-server:latest gtm-mcp-server:rollback || true) && \
+              docker compose up -d --build"
+
+      - name: Verify deployed version
+        run: |
+          expected_version="$(jq -r '.version' server.json)"
+          for attempt in {1..24}; do
+            response="$(curl -fsS --max-time 10 "$HEALTH_URL" || true)"
+            actual_version="$(jq -r '.version // empty' <<< "$response" 2>/dev/null || true)"
+            if [[ "$actual_version" == "$expected_version" ]]; then
+              echo "Deployed version $actual_version is healthy"
+              exit 0
+            fi
+            echo "Waiting for version $expected_version (attempt $attempt/24)"
+            sleep 5
+          done
+          echo "Expected version $expected_version was not healthy before timeout" >&2
+          exit 1

@@ -1,902 +1,611 @@
 # GTM MCP Server
 
-[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
-[![Go](https://img.shields.io/badge/Go-00ADD8?logo=go&logoColor=white)](https://go.dev/)
-[![MCP](https://img.shields.io/badge/MCP-Model_Context_Protocol-8A2BE2)](https://modelcontextprotocol.io)
-[![Claude](https://img.shields.io/badge/Claude-Compatible-D97757?logo=anthropic&logoColor=white)](https://claude.ai)
-[![ChatGPT](https://img.shields.io/badge/ChatGPT-Compatible-74aa9c?logo=openai&logoColor=white)](https://chatgpt.com)
-[![Gemini](https://img.shields.io/badge/Gemini_CLI-Compatible-4285F4?logo=google&logoColor=white)](https://geminicli.com)
-[![Cursor](https://img.shields.io/badge/Cursor-Compatible-00A67E?logo=cursor&logoColor=white)](https://cursor.com)
-[![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://github.com/paolobietolini/gtm-mcp-server)
-[![GitHub stars](https://img.shields.io/github/stars/paolobietolini/gtm-mcp-server?style=social)](https://github.com/paolobietolini/gtm-mcp-server)
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
+[![Go](https://img.shields.io/badge/Go-1.26-00ADD8?logo=go&logoColor=white)](https://go.dev/)
+[![MCP](https://img.shields.io/badge/MCP-Streamable_HTTP-8A2BE2)](https://modelcontextprotocol.io/)
+[![Security Checks](https://github.com/paolobietolini/gtm-mcp-server/actions/workflows/security.yml/badge.svg)](https://github.com/paolobietolini/gtm-mcp-server/actions/workflows/security.yml)
+[![GitHub release](https://img.shields.io/github/v/release/paolobietolini/gtm-mcp-server)](https://github.com/paolobietolini/gtm-mcp-server/releases)
 
-**An AI assistant can control your Google Tag Manager containers.**
+GTM MCP Server connects MCP clients to the Google Tag Manager API. It can
+inspect containers, create and update workspace entities, create versions, and
+publish a selected version after explicit confirmation.
 
-The server connects an AI assistant to the Google Tag Manager API. You give
-instructions in usual language. The assistant creates tags, examines
-configurations, writes tracking plans, and publishes changes.
+Use the hosted server at:
 
-**URL:** `https://mcp.gtmeditor.com`
-
----
-
-## Table of Contents
-
-- [Supported AI Clients](#supported-ai-clients)
-- [What You Can Do](#what-you-can-do)
-- [Quick Start](#quick-start)
-  - [Claude (Web and Desktop)](#claude-web-and-desktop)
-  - [ChatGPT](#chatgpt)
-  - [Gemini CLI](#gemini-cli)
-  - [Cursor](#cursor)
-- [Functions](#functions)
-  - [Tag Control](#tag-control)
-  - [Trigger Control](#trigger-control)
-  - [Container Operations](#container-operations)
-  - [Server-Side Containers](#server-side-containers)
-  - [Community Template Gallery](#community-template-gallery)
-  - [AI Workflows](#ai-workflows)
-- [Examples of Use](#examples-of-use)
-- [How the Server Operates](#how-the-server-operates)
-- [Safety Functions](#safety-functions)
-- [Comparison with Other GTM MCP Servers](#comparison-with-other-gtm-mcp-servers)
-- [Self-Hosting](#self-hosting)
-  - [Service Account Mode (S2S)](#service-account-mode-s2s)
-  - [Docker Setup](#docker-setup)
-  - [Google Cloud Setup](#google-cloud-setup)
-- [Available Tools](#available-tools)
-- [Resources and Prompts](#resources-and-prompts)
-- [More Context for AI Assistants](#more-context-for-ai-assistants)
-- [Architecture](#architecture)
-- [Known Problems](#known-problems)
-- [Links](#links)
-- [Author](#author)
-- [License](#license)
-
----
-
-## Supported AI Clients
-
-| Client | Transport | Authentication | Status |
-|--------|-----------|----------------|--------|
-| [Claude](https://claude.ai) (Web and Desktop) | Streamable HTTP | OAuth 2.1 and PKCE | Supported |
-| [Claude Code](https://docs.anthropic.com/en/docs/claude-code) (CLI) | Streamable HTTP | OAuth 2.1 and PKCE | Supported |
-| [ChatGPT](https://chatgpt.com) | Streamable HTTP | OAuth 2.1 and PKCE | Supported |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | Streamable HTTP | OAuth 2.1, PKCE and DCR | Supported |
-| [Cursor](https://cursor.com) | Streamable HTTP | OAuth 2.1 and PKCE | Supported |
-
-The server does not require a specified client. Each MCP client that has OAuth
-2.1 with PKCE on an HTTP transport can connect to the server. This includes
-clients with Dynamic Client Registration (RFC 7591) and clients without it.
-
----
-
-## What You Can Do
-
-Give these instructions to your AI assistant:
-
-- *"List all my GTM containers"*
-- *"Create a GA4 event tag for form submissions"*
-- *"Examine this container for problems and duplicates"*
-- *"Write a tracking plan document for the marketing team"*
-- *"Set up ecommerce tracking for purchases"*
-- *"Publish the changes"*
-
-You do not use the GTM interface for these tasks. You do not copy
-configurations manually. You give the instruction in usual language.
-
----
-
-## Quick Start
-
-### Claude (Web and Desktop)
-
-For Claude.ai:
-
-1. Select **Settings**, then **Connectors**, then **Add Custom Connector**.
-2. Type this URL: `https://mcp.gtmeditor.com`
-3. Click **Add**.
-4. Sign in with your Google account.
-
-For Claude Code (CLI), use this command:
-
-```bash
-claude mcp add -t http gtm https://mcp.gtmeditor.com
+```text
+https://mcp.gtmeditor.com
 ```
 
-### ChatGPT
+The server supports browser-based Google OAuth for individual users and
+service-account authentication for self-hosted automation.
 
-1. Go to the [OpenAI Apps Platform](https://platform.openai.com/apps).
-2. Add an MCP integration with this URL: `https://mcp.gtmeditor.com`
-3. Give permission with your Google account.
+## Project status
+
+| Item | Current state |
+|---|---|
+| Version in `server.json` | `1.12.3` |
+| Transport | MCP Streamable HTTP |
+| Runtime tools | 64 GTM tools by default; 94 with `GTM_TOOL_GROUPS=all`, plus 2 utility tools |
+| MCP resources | 8 resource definitions |
+| MCP prompts | 6 prompts |
+| Official GTM API coverage | 101 of 106 methods |
+| Product parity target | 101 of 106 methods, reached |
+| Hosted endpoint | `https://mcp.gtmeditor.com` |
+
+The agreed API parity scope is complete. The project implements 101 methods
+from Google's 106-method GTM v2 discovery surface. The five
+`accounts.user_permissions` methods are intentionally excluded because granting
+and revoking GTM access needs a separate privilege-management design.
+
+Tool count and API-method count are different. Some tools provide local
+guidance, while some helpers cover more than one Google API call.
+
+## Connect an MCP client
+
+Add the hosted URL as a remote HTTP MCP server. The client should discover the
+OAuth metadata, open Google sign-in, and reconnect with the issued bearer
+token.
+
+### Claude Code
+
+```bash
+claude mcp add --transport http gtm https://mcp.gtmeditor.com
+```
 
 ### Gemini CLI
 
 ```bash
-gemini mcp add --transport http --url https://mcp.gtmeditor.com gtm
+gemini mcp add --transport http gtm https://mcp.gtmeditor.com
+```
+
+Gemini CLI can also use this `settings.json` entry:
+
+```json
+{
+  "mcpServers": {
+    "gtm": {
+      "httpUrl": "https://mcp.gtmeditor.com"
+    }
+  }
+}
 ```
 
 ### Cursor
 
-1. Open **Settings**, then **MCP**.
-2. Click **Add new MCP server**.
-3. Set the type to **URL**.
-4. Type this URL: `https://mcp.gtmeditor.com/authorize`
-5. Give permission with your Google account.
-
-As an alternative, add this configuration to your `.cursor/mcp.json` file:
+Add the following to `.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
     "gtm": {
-      "url": "https://mcp.gtmeditor.com/authorize"
+      "url": "https://mcp.gtmeditor.com"
     }
   }
 }
 ```
 
----
+### ChatGPT, Codex, and Claude web
 
-## Functions
+Add a custom or remote MCP connection in the client and use
+`https://mcp.gtmeditor.com` as the server URL. Product menus change more often
+than this server, so refer to the client's current MCP connection instructions
+if the label differs.
 
-### Tag Control
+After connecting, try:
 
-The server creates and changes all GTM tag types:
-
-- **GA4 configuration and events.** Set up Google Analytics 4 with the correct
-  measurement IDs.
-- **Ecommerce tracking.** Use purchase, add-to-cart, and view-item events.
-- **Custom HTML.** Add scripts, pixels, and custom code.
-- **Custom image.** Add tracking pixels with cache prevention.
-
-### Trigger Control
-
-The server creates triggers for these conditions:
-
-- Page views on all pages or on specified URLs
-- Custom dataLayer events
-- Clicks
-- Form submissions
-- Timers
-- Trigger groups for complex conditions
-
-### Container Operations
-
-- Read accounts, containers, and workspaces.
-- Create a version from the changes in a workspace.
-- Publish a version to make it live.
-- Put items in folders.
-- Enable or disable the built-in variables.
-
-### Server-Side Containers
-
-The server has full support for server-side GTM containers:
-
-- **Clients.** Create, change, and delete server-side clients. The GA4 client
-  is an example.
-- **Transformations.** Control event parameters with allow, exclude, and
-  augment rules.
-
-### Community Template Gallery
-
-The server imports templates from the Google Community Template Gallery. Give
-instructions such as these:
-
-- *"Import the iubenda cookie consent template"*
-- *"Add Cookiebot to my container"*
-- *"Set up Facebook Pixel with the gallery template"*
-
-The AI assistant finds the template and its GitHub repository. Then the
-assistant imports the template automatically.
-
-### AI Workflows
-
-**Container examination.** Give the instruction *"Examine my container for
-problems"*. The assistant examines the workspace for these conditions:
-
-- Names that do not agree
-- Tags that occur more than once
-- Triggers that no tag uses
-- Risks to security
-- Configurations that do not obey the best practices
-
-**Tracking plan.** Give the instruction *"Write a tracking plan"*. The
-assistant writes a markdown document with this content:
-
-- All events and their triggers
-- The necessary dataLayer values
-- The definitions of the variables
-- Notes about the implementation
-
-**GA4 recommendations.** Give the instruction *"Help me set up GA4 for
-ecommerce"*. The assistant recommends the tags, the triggers, the necessary
-variables, and the dataLayer code.
-
----
-
-## Examples of Use
-
-### Make a Complete Tracking Setup
-
-The assistant can make a full GA4 ecommerce implementation. Give the
-instruction *"Set up GA4 ecommerce tracking for my store"*. The assistant then
-does these steps:
-
-1. It creates 12 tags or more. These include the configuration tag and all the
-   ecommerce event tags.
-2. It creates one trigger for each dataLayer event.
-3. It creates dataLayer variables for the items, the currency, the value, and
-   the transaction ID.
-4. It obeys the Google recommendations for event names and parameters.
-
-### Add Consent Control
-
-You can connect privacy tools such as OneTrust to your tracking. Give the
-instruction *"Make GA4 fire only when the user gives consent for analytics"*.
-The assistant then does these steps:
-
-1. It creates the variables that read the consent.
-2. It creates the related triggers.
-3. It changes the applicable tags.
-
-### Change Many Items
-
-You can control containers that have many items. Give instructions such as
-these:
-
-- *"Add the prefix 'ecom -' to all ecommerce triggers"*
-- *"Change all tags to use a measurement ID variable"*
-
-The assistant can change or move many items in one operation.
-
-### Make Custom Variables
-
-You can make complex tracking logic. Give instructions such as these:
-
-- *"Create a variable that gives the local time"*
-- *"Add a custom parameter to the purchase tag"*
-
-The assistant makes custom JavaScript variables and dataLayer variables.
-
-### Use by an Agency
-
-- Control the containers of more than one client.
-- Use the same implementation for all clients.
-- Set up a new project quickly.
-- Make a version and publish the changes safely.
-
----
-
-## How the Server Operates
-
-The server connects AI assistants to the Google Tag Manager API. It uses the
-[Model Context Protocol](https://modelcontextprotocol.io). When you give an
-instruction, the server does these steps:
-
-1. It authenticates you with your Google account through OAuth 2.1.
-2. It reads the configuration of your container.
-3. It makes the changes that you request.
-4. It asks for your approval before a destructive operation.
-
-The server does not keep your Google password. The server uses tokens. You can
-cancel a token at any time from your Google account.
-
----
-
-## Safety Functions
-
-- The server asks for approval before a deletion or a publication.
-- The server changes only the workspace. No change is live until you publish
-  it.
-- The server makes a version before each publication.
-- The server writes a log of the changes.
-
----
-
-## Comparison with Other GTM MCP Servers
-
-More than one MCP server for Google Tag Manager is available. The most usual
-alternative is
-[stape-io/google-tag-manager-mcp-server](https://github.com/stape-io/google-tag-manager-mcp-server).
-The two projects are different in their design. This section gives the facts.
-It does not say that one project is better than the other. Use the facts to
-select the server that agrees with your conditions.
-
-The data is correct on 21 August 2026.
-
-### Design and Distribution
-
-| Item | This server | stape-io |
-|------|-------------|----------|
-| Language | Go | TypeScript |
-| Distribution | One binary, or a Docker image | npm packages, and a Cloudflare Worker |
-| Hosted server | `mcp.gtmeditor.com` | `gtm-mcp.stape.ai` |
-| Local operation | Self-hosted HTTP server | `npx` CLI on stdio, or a self-hosted worker |
-| Transports | Streamable HTTP | Streamable HTTP, and stdio |
-| License | BSD-3-Clause | Apache-2.0 |
-
-A local CLI on stdio keeps the credentials on your computer. This server does
-not have a stdio mode. If you must not send credentials to a server, the
-stape-io CLI obeys that condition and this server does not.
-
-### Tool Design
-
-| Item | This server | stape-io |
-|------|-------------|----------|
-| Number of tools | 50 | 18 |
-| Tool design | One tool for each operation | One tool for each resource, with an `action` parameter |
-| Example | `create_tag`, `list_tags`, `delete_tag` | `gtm_tag` with `action: "create"` |
-
-Each design has an effect. 50 tools use more of the tool budget of the model.
-Some clients also have a limit on the length of the server name plus the tool
-name. But each tool has a schema for one operation only, and the parameters
-that this operation needs are mandatory.
-
-18 tools use less of the tool budget. But one schema must serve six
-operations. Thus almost all parameters are optional, and the server examines
-them when it receives the request.
-
-### MCP Functions
-
-| Item | This server | stape-io |
-|------|-------------|----------|
-| Tools | Yes | Yes |
-| Resources | 16 | 0 |
-| Prompts | 6 | 0 |
-| Best-practice documents | 4, supplied as resources | 0 |
-
-This server supplies GTM rules as MCP resources at `gtm://best-practices`. An
-AI assistant can read these rules before it makes a change. The topics are
-names and organization, the safe-edit workflow, GA4 and consent, and
-server-side containers. The stape-io server supplies tools only.
-
-### Authentication
-
-| Item | This server | stape-io |
-|------|-------------|----------|
-| Authentication to the server | OAuth 2.1 authorization server in the project | Google OAuth on the hosted worker |
-| Dynamic Client Registration (RFC 7591) | Yes | Not supplied |
-| Client ID Metadata Documents | Yes | Not supplied |
-| Protected resource metadata (RFC 9728) | Yes | Not supplied |
-| Token persistence after a restart | Yes, with `TOKEN_STORE_PATH` | Not applicable to the CLI |
-| Machine-to-machine access | Yes, with an API key and a service account | Yes, with a service account key in the CLI |
-| Credentials for the local mode | Not applicable | Service account key, or refresh token |
-
-### Coverage of the GTM API
-
-The stape-io server has more of the GTM API. It has these resources, and this
-server does not have them:
-
-- Destinations
-- Environments
-- Google tag configurations (`gtag_config`)
-- User permissions
-- Zones
-- Version headers
-
-The stape-io server also has these operations, and this server does not have
-them: `container.combine`, `container.lookup`, `container.snippet`,
-`version.live`, `version.undelete`, `workspace.sync`, `workspace.quickPreview`,
-`workspace.resolveConflict`, and `revert` on the applicable resources.
-
-This server has these operations, and the stape-io server does not have them:
-
-- Import of a template from the Community Template Gallery
-- Parameter examples for tags and triggers (`get_tag_templates` and
-  `get_trigger_templates`)
-
-Both servers have accounts, containers, workspaces, tags, triggers, variables,
-built-in variables, folders, clients, transformations, templates, versions, and
-the status of a workspace.
-
-### Summary of the Differences
-
-- If you need the maximum coverage of the GTM API, or a local stdio mode,
-  examine the stape-io server.
-- If you need MCP resources and prompts, built-in best-practice documents, or
-  an OAuth authorization server with Dynamic Client Registration, examine this
-  server.
-
----
-
-## Self-Hosting
-
-You can operate your own instance of the server.
-
-### Service Account Mode (S2S)
-
-A self-hosted server can use a Google Service Account. Then all the members of
-your team have access through that one account. The members do not need their
-own GTM permissions.
-
-**Operation:**
-
-- The server authenticates to Google Tag Manager with the Service Account.
-- The members of the team connect with an API key that they share.
-- The AI clients do one OAuth sign-in to the server. All GTM operations then
-  use the Service Account.
-- Programs, scripts, and CI/CD systems do not use OAuth. They use the API key.
-
-**Setup:**
-
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/). Select
-   **IAM and Admin**, then **Service Accounts**. Create a Service Account.
-2. Go to [Google Tag Manager](https://tagmanager.google.com). Select
-   **Account**, then **Admin**, then **User Management**. Add the email address
-   of the Service Account as an **Account Administrator**.
-3. Download the JSON key file.
-4. Configure the server:
-
-```bash
-SERVICE_ACCOUNT_API_KEY=$(openssl rand -hex 32)   # give this key to your team
-GOOGLE_SERVICE_ACCOUNT_KEY_JSON=$(cat key.json)   # the content of the JSON file
-go run main.go
+```text
+List my GTM accounts, containers, and workspaces. Do not make changes.
 ```
 
-On Google Cloud Run, GKE, or Compute Engine, do not set
-`GOOGLE_SERVICE_ACCOUNT_KEY_JSON`. The server uses Workload Identity
-automatically.
+The Google account used during OAuth determines which GTM accounts the server
+can access.
 
-**Connection from Claude Code:**
+## Typical workflow
 
-Set the API key as a header. Claude Code then uses the S2S mode automatically.
+1. Call `list_accounts`, `list_containers`, and `list_workspaces` to discover
+   IDs. Do not guess IDs.
+2. Inspect the workspace with list/get tools or the `audit_container` prompt.
+3. Create or update tags, triggers, variables, templates, clients, or
+   transformations in the selected workspace.
+4. Call `get_workspace_status` and resolve conflicts before versioning.
+5. Call `create_version` to snapshot the workspace.
+6. Inspect the saved version with `get_version`.
+7. Call `publish_version` with `confirm: true` only when the selected version
+   is ready to go live.
+8. Verify the published state with `get_live_version`.
 
-```json
-{
-  "mcpServers": {
-    "gtm": {
-      "type": "http",
-      "url": "http://your-server:8080",
-      "headers": {
-        "Authorization": "Bearer your-api-key"
-      }
-    }
-  }
-}
+Example requests:
+
+- "Audit this workspace for duplicate tags and unused triggers."
+- "Create a GA4 purchase event tag, but do not publish it."
+- "Show the difference between the latest saved version and the live version."
+- "Generate a Markdown tracking plan from this workspace."
+- "Import the iubenda template from the Community Template Gallery."
+
+## Tools
+
+All GTM tools use the authenticated Google identity from the current MCP
+request. Inputs and outputs are structured JSON.
+
+### Utility
+
+| Tool | Purpose |
+|---|---|
+| `ping` | Test MCP connectivity |
+| `auth_status` | Check whether the current request is authenticated |
+
+### Accounts and containers
+
+| Tool | Purpose |
+|---|---|
+| `list_accounts` | List accessible GTM accounts |
+| `update_account` | Rename an account |
+| `list_containers` | List containers and their public IDs and settings |
+| `lookup_container` | Find a container by destination ID or GTM public tag ID |
+| `get_container_snippet` | Get a web install snippet or server-container configuration |
+| `create_container` | Create a web, app, AMP, or server container |
+| `update_container` | Rename a container while preserving its other settings |
+| `delete_container` | Permanently delete a container; requires `confirm: true` |
+| `combine_containers` | Merge a source container into a target; requires `confirm: true` |
+| `move_tag_id` | Move a tag ID into a new container; requires confirmation and terms acceptance |
+
+### Workspaces
+
+| Tool | Purpose |
+|---|---|
+| `list_workspaces` | List workspaces in a container |
+| `create_workspace` | Create a workspace |
+| `get_workspace` | Get workspace metadata and its current fingerprint |
+| `update_workspace` | Update selected workspace fields |
+| `delete_workspace` | Delete a workspace; requires `confirm: true` |
+| `quick_preview_workspace` | Compile an ephemeral preview without saving or publishing |
+| `get_workspace_status` | Show pending changes and merge conflicts |
+| `bulk_update_workspace` | Apply multiple entity changes; requires `confirm: true` |
+| `resolve_workspace_conflict` | Replace a conflict with a resolved entity; requires `confirm: true` |
+| `sync_workspace` | Synchronize with the latest container version; requires `confirm: true` |
+
+Bulk update and conflict resolution accept raw GTM Entity JSON so every entity
+type supported by the official API remains available.
+
+### Tags
+
+| Tool | Purpose |
+|---|---|
+| `list_tags` | List workspace tags |
+| `get_tag` | Get complete tag details |
+| `create_tag` | Create a tag |
+| `update_tag` | Update a tag with fingerprint-based concurrency control |
+| `delete_tag` | Delete a tag; requires `confirm: true` |
+
+### Triggers
+
+| Tool | Purpose |
+|---|---|
+| `list_triggers` | List workspace triggers |
+| `get_trigger` | Get complete trigger details |
+| `create_trigger` | Create a trigger |
+| `update_trigger` | Update a trigger with fingerprint-based concurrency control |
+| `delete_trigger` | Delete a trigger; requires `confirm: true` |
+
+For `update_trigger`, omit `filterJson`, `customEventFilterJson`,
+`autoEventFilterJson`, or `parameterJson` to preserve the current field. Pass
+the JSON string `"[]"` to clear a field, or a non-empty JSON array to replace
+it. For click, link-click, and form-submission triggers, use `filterJson` because
+GTM drops `autoEventFilter` for those trigger types.
+
+### Variables
+
+| Tool | Purpose |
+|---|---|
+| `list_variables` | List workspace variables |
+| `get_variable` | Get complete variable details |
+| `create_variable` | Create a variable |
+| `update_variable` | Update a variable with fingerprint-based concurrency control |
+| `delete_variable` | Delete a variable; requires `confirm: true` |
+
+### Folders and built-in variables
+
+| Tool | Purpose |
+|---|---|
+| `list_folders` | List workspace folders |
+| `get_folder` | Get complete folder metadata |
+| `create_folder` | Create a folder |
+| `update_folder` | Update a folder with fingerprint protection |
+| `delete_folder` | Delete a folder; requires `confirm: true` |
+| `get_folder_entities` | List tags, triggers, and variables assigned to a folder |
+| `move_entities_to_folder` | Move tags, triggers, and variables; requires `confirm: true` |
+| `revert_folder` | Discard workspace folder changes; requires `confirm: true` |
+| `list_built_in_variables` | List enabled built-in variables |
+| `enable_built_in_variables` | Enable built-in variable types |
+| `disable_built_in_variables` | Disable built-in variable types; requires `confirm: true` |
+
+Use `revert_workspace_entity` to discard changes to a built-in variable.
+
+### Zones
+
+| Tool | Purpose |
+|---|---|
+| `list_zones` | List all zones across every result page |
+| `get_zone` | Get boundary, child-container, and type-restriction configuration |
+| `create_zone` | Create a workspace zone |
+| `update_zone` | Update selected fields with fingerprint concurrency control |
+| `delete_zone` | Delete a zone; requires `confirm: true` |
+
+Use `revert_workspace_entity` to discard changes to a zone.
+
+### Environments
+
+The `environments` tool group is optional. Enable it with
+`GTM_TOOL_GROUPS=all` or add `environments` to an explicit group list.
+
+| Tool | Purpose |
+|---|---|
+| `list_environments` | List all container environments across every result page |
+| `get_environment` | Get environment configuration and authorization metadata |
+| `create_environment` | Create a user environment |
+| `update_environment` | Update selected fields with fingerprint concurrency control |
+| `reauthorize_environment` | Rotate the authorization code; requires `confirm: true` |
+| `delete_environment` | Delete a user environment; requires `confirm: true` |
+
+The Live and Latest environments are managed by GTM. Creation and deletion
+apply to user environments; GTM permits URL and debug updates on other types.
+
+### Destinations and Google tag configurations
+
+These tools are in the optional `destinations` and `gtag` groups.
+
+| Tool | Purpose |
+|---|---|
+| `list_destinations` | List Google tag destinations linked to a container |
+| `get_destination` | Get a destination by its link ID |
+| `link_destination` | Move a destination to a container; requires `confirm: true` |
+| `list_google_tag_configs` | List Google tag configurations in a workspace |
+| `get_google_tag_config` | Get a Google tag configuration |
+| `create_google_tag_config` | Create a Google tag configuration |
+| `update_google_tag_config` | Update a configuration with fingerprint protection |
+| `delete_google_tag_config` | Delete a configuration; requires `confirm: true` |
+
+Container combine, tag-ID move, and destination link operations do not copy or
+enable user permissions. Account permission management remains outside the
+current parity target.
+
+### Custom templates
+
+| Tool | Purpose |
+|---|---|
+| `list_templates` | List custom templates |
+| `get_template` | Get template metadata and template code |
+| `create_template` | Create a custom template from `.tpl` code |
+| `update_template` | Update template code |
+| `delete_template` | Delete an unused template; requires `confirm: true` |
+| `import_gallery_template` | Import a Community Template Gallery template |
+| `get_tag_templates` | Return compact GA4 and Custom HTML input examples |
+| `get_trigger_templates` | Return compact trigger input examples |
+
+The full JSON examples live in the
+`gtm://best-practices/tool-input-formats` resource so every tool listing does
+not repeat them.
+
+### Server-side containers
+
+| Tool | Purpose |
+|---|---|
+| `list_clients` | List server-container clients |
+| `get_client` | Get a client |
+| `create_client` | Create a client |
+| `update_client` | Update a client |
+| `delete_client` | Delete a client; requires `confirm: true` |
+| `list_transformations` | List transformations |
+| `get_transformation` | Get a transformation |
+| `create_transformation` | Create a transformation |
+| `update_transformation` | Update a transformation |
+| `delete_transformation` | Delete a transformation; requires `confirm: true` |
+
+Use `revert_workspace_entity` to discard changes to a client or transformation.
+
+### Versions and publication
+
+| Tool | Purpose |
+|---|---|
+| `list_versions` | List all saved version headers across every result page |
+| `get_latest_version_header` | Get the latest saved header, which may differ from live |
+| `get_version` | Get a saved version and its complete entity collections |
+| `get_live_version` | Get the currently published version and its entities |
+| `create_version` | Create a version from a conflict-free workspace |
+| `publish_version` | Publish a selected version; requires `confirm: true` |
+| `update_version` | Update a saved version's name or description |
+| `delete_version` | Soft-delete a version; requires `confirm: true` |
+| `undelete_version` | Restore a soft-deleted version; requires `confirm: true` |
+| `set_latest_version` | Make a version Latest without publishing; requires `confirm: true` |
+
+### Workspace reverts
+
+| Tool | Purpose |
+|---|---|
+| `revert_workspace_entity` | Discard workspace changes to a built-in variable, client, tag, template, transformation, trigger, variable, or zone; requires `confirm: true` |
+
+The tool fetches the current entity fingerprint before calling the matching
+official revert method. A successful result can have `existsAfterRevert: false`
+when the entity does not exist in the latest container version.
+
+## Safety model
+
+- Delete operations, publication, and disabling built-in variables require
+  `confirm: true`.
+- Update operations fetch the current resource fingerprint and use Google's
+  optimistic concurrency checks.
+- `create_version` first checks that the workspace has changes and no merge
+  conflicts.
+- Read tools distinguish latest saved state from published live state.
+- Google API errors are mapped to clearer not-found, permission, conflict, and
+  rate-limit failures. Retryable API failures use bounded backoff.
+- MCP request bodies are limited to 5 MiB. OAuth and dynamic registration
+  endpoints have stricter rate and body limits.
+
+Most entity edits affect a workspace and are not live until a version is
+published. Account and container operations act directly on those resources.
+Always review the target IDs and the generated version before publication.
+
+## Resources
+
+The server exposes two concrete resources and six URI templates:
+
+| URI | Content |
+|---|---|
+| `gtm://accounts` | Accessible accounts |
+| `gtm://accounts/{accountId}/containers` | Containers |
+| `gtm://accounts/{accountId}/containers/{containerId}/workspaces` | Workspaces |
+| `gtm://accounts/{accountId}/containers/{containerId}/workspaces/{workspaceId}/tags` | Tags |
+| `gtm://accounts/{accountId}/containers/{containerId}/workspaces/{workspaceId}/triggers` | Triggers |
+| `gtm://accounts/{accountId}/containers/{containerId}/workspaces/{workspaceId}/variables` | Variables |
+| `gtm://best-practices` | Best-practice topic index |
+| `gtm://best-practices/{topic}` | One embedded guidance document |
+
+Best-practice topics include naming and organization, safe edits, GA4 and
+consent, server-side containers, and detailed tool input formats.
+
+## Prompts
+
+| Prompt | Purpose |
+|---|---|
+| `audit_container` | Review tags, triggers, and variables for quality problems |
+| `generate_tracking_plan` | Build a Markdown tracking plan from a workspace |
+| `suggest_ga4_setup` | Recommend a GA4 structure from stated goals |
+| `find_gallery_template` | Guide Community Gallery discovery and import |
+| `best_practices_review` | Score a workspace against embedded guidance |
+| `plan_safe_edit` | Produce a staged edit/version/publish plan |
+
+Prompts prepare context and instructions for the model. They do not bypass tool
+authentication or mutation safeguards.
+
+## Authentication
+
+### Hosted OAuth
+
+The hosted server implements MCP OAuth discovery and Google authorization. It
+supports PKCE, Dynamic Client Registration, Client ID Metadata Documents,
+authorization-server metadata, and protected-resource metadata.
+
+The server never receives a Google password. It receives Google OAuth tokens
+after consent. A self-hosted operator can keep issued MCP and Google tokens
+across restarts by setting `TOKEN_STORE_PATH`; without that setting they remain
+in memory and disappear when the process stops.
+
+Expired MCP access tokens can be renewed transparently while their Google
+refresh credentials remain valid. `AUTH_AUTO_REFRESH_MAX_AGE` limits how long
+one bearer can be silently extended; its default is seven days.
+
+### Service-account mode
+
+Service-account mode gives every holder of one server API key the GTM access
+granted to the configured Google service account.
+
+1. Create a Google service account.
+2. Add its email address to the required GTM account with only the permissions
+   it needs.
+3. Set a strong `SERVICE_ACCOUNT_API_KEY` on this server.
+4. Set `GOOGLE_SERVICE_ACCOUNT_KEY_JSON` to the key JSON, or use Application
+   Default Credentials on Google Cloud.
+5. Configure the MCP client to send
+   `Authorization: Bearer <SERVICE_ACCOUNT_API_KEY>`.
+
+OAuth and service-account mode can run together. Requests with the configured
+API key use the service account; OAuth users keep their own Google identity and
+GTM permissions.
+
+## Self-hosting
+
+### Requirements
+
+- Go 1.26 or Docker
+- A Google Cloud project with the Tag Manager API enabled
+- A Google OAuth web client for user OAuth, or a Google service account for S2S
+- HTTPS and a stable public URL for remote OAuth deployments
+
+### Google OAuth setup
+
+Create an OAuth 2.0 Web application in Google Cloud and add this authorized
+redirect URI:
+
+```text
+https://your-host.example/oauth/callback
 ```
 
-**Access from a program:**
+The scheme and host must match `BASE_URL` exactly. For local development, use:
 
-An HTTP client can send requests to the server directly. A browser and an OAuth
-flow are not necessary.
-
-```bash
-curl -H "Authorization: Bearer your-api-key" \
-     -H "Content-Type: application/json" \
-     http://your-server:8080/mcp \
-     -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'
+```text
+http://localhost:8080/oauth/callback
 ```
 
-The file [`examples/gtm_agent.py`](examples/gtm_agent.py) contains a complete
-Python agent. The agent uses Claude and the API key to control GTM.
-
----
-
-### Docker Setup
+### Run from source
 
 ```bash
 git clone https://github.com/paolobietolini/gtm-mcp-server.git
 cd gtm-mcp-server
 
-# Make the .env file
-cat > .env << 'EOF'
+cat > .env <<'EOF'
+BASE_URL=http://localhost:8080
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
-JWT_SECRET=$(openssl rand -base64 32)
-BASE_URL=http://localhost:8080
+TOKEN_STORE_PATH=./data/tokens.json
 EOF
 
-# Start the server
-docker compose up -d
-
-# Add the server to Claude
-claude mcp add -t http gtm http://localhost:8080
+go run .
 ```
 
-#### Reverse Proxy (TRUST_PROXY)
+The repository reads `.env` and then `.env.local`; `.env.local` overrides
+`.env`. Both are ignored by Git.
 
-A reverse proxy can be in front of the server. Caddy, nginx, and Cloudflare are
-examples. Set `TRUST_PROXY=true` for this condition. The rate limiter then uses
-the real IP address of the client from the `X-Forwarded-For` header. If you do
-not set this variable, the rate limiter uses the address of the proxy.
-
-The rate limiter reads the **last** entry in the header. A proxy adds the
-address of its peer to the end of the header. Thus the last entry is the entry
-that your own proxy wrote. The entries before it come from the client, and a
-client can give false values for them. If the header occurs more than one time,
-the server reads the last entry of the last occurrence.
-
-This operation assumes one proxy between the client and the server. If you use
-two proxies, the last entry is the address of the proxy that is nearest to the
-client, not the address of the client. All clients behind that proxy then share
-one limit.
+### Run with Docker
 
 ```bash
-TRUST_PROXY=true
+docker build -t gtm-mcp-server .
+
+docker run --rm \
+  --name gtm-mcp-server \
+  -p 8080:8080 \
+  --env-file .env \
+  -v gtm-mcp-tokens:/data \
+  gtm-mcp-server
 ```
 
-The Docker Compose configuration sets this variable automatically, because the
-container operates behind Caddy.
+When using the named volume, set `TOKEN_STORE_PATH=/data/tokens.json` in
+`.env`.
 
-The proxy must also send the cookies of the browser to the server. The server
-sets a cookie at `/authorize` and reads it at `/oauth/callback`, to make certain
-that the same browser completes the operation that started it. A proxy that
-removes cookies stops all sign-in operations.
+### Configuration
 
-**Caution:** If you start the binary without a proxy, do not set this variable,
-or set it to `false`. If you set it to `true` without a proxy, a client can
-give a false IP address. The client can then get more requests than the rate
-limit permits.
+| Variable | Default | Purpose |
+|---|---|---|
+| `PORT` | `8080` | HTTP listen port |
+| `BASE_URL` | `http://localhost:8080` | Canonical public URL used by OAuth metadata and callbacks |
+| `DASHBOARD_ENABLED` | `false` | Expose the public connection setup page at `/dashboard/` |
+| `GOOGLE_CLIENT_ID` | empty | Google OAuth web-client ID |
+| `GOOGLE_CLIENT_SECRET` | empty | Google OAuth web-client secret |
+| `ACCESS_TOKEN_TTL` | `8h` | Lifetime of MCP access tokens |
+| `AUTH_AUTO_REFRESH_MAX_AGE` | `168h` | Maximum silent-renewal chain age |
+| `TOKEN_STORE_PATH` | empty | Optional persisted token-store file |
+| `SERVICE_ACCOUNT_API_KEY` | empty | Bearer API key that enables S2S mode |
+| `GOOGLE_SERVICE_ACCOUNT_KEY_JSON` | empty | Service-account JSON; omit when ADC is available |
+| `ALLOWED_HOSTS` | empty | Additional trusted hosts for Docker/internal URL resolution |
+| `TRUST_PROXY` | `false` | Trust the rightmost `X-Forwarded-For` hop for rate limiting |
+| `LOG_LEVEL` | `info` | Set `debug` for additional structured logs |
+| `GTM_TOOL_GROUPS` | current groups | Comma-separated tool families advertised through MCP |
 
-#### Docker-to-Docker Connections
+If OAuth and service-account credentials are both absent, the server starts in
+open mode. Use open mode only for isolated local development.
 
-A different container can connect to the MCP server with an internal Docker
-network name. Add the `ALLOWED_HOSTS` variable to your `.env` file for this
-condition:
+`TRUST_PROXY=true` is appropriate only when a trusted reverse proxy overwrites
+or appends `X-Forwarded-For`. The implementation uses the rightmost value. With
+multiple proxy hops, configure and test the trust boundary before relying on
+per-client rate limits.
 
-```bash
-ALLOWED_HOSTS=gtm-mcp:8080
+`ALLOWED_HOSTS` is a comma-separated allowlist used when the same server is
+reached through trusted internal Docker hostnames. Do not add arbitrary public
+hosts.
+
+`GTM_TOOL_GROUPS` controls schema size for clients that need only part of the
+API. Available groups are `accounts`, `workspaces`, `tags`, `triggers`,
+`variables`, `folders`, `builtins`, `zones`, `templates`, `server`, `guidance`,
+`environments`, `destinations`, `gtag`, `container-admin`, `folder-admin`, and
+`workspace-admin`, `version-admin`, and `reverts`. Leaving it unset preserves
+the established 64-tool surface. New parity groups are opt-in. Use `all` to
+include every current and future parity family, or select a subset:
+
+```text
+GTM_TOOL_GROUPS=accounts,workspaces,tags,triggers,variables
 ```
 
-The server then finds its URL dynamically, but only for the internal host names
-that you list. Other host names cannot change the URL. Thus an attacker cannot
-use the Host header to change the URL.
-
-#### Token Persistence (TOKEN_STORE_PATH)
-
-The server keeps the tokens in memory only, if you do not set
-`TOKEN_STORE_PATH`. Thus each restart of the server disconnects all users. Each
-user must then authenticate again.
-
-To keep the sessions after a restart, set `TOKEN_STORE_PATH` to a file on a
-persistent volume:
-
-```bash
-TOKEN_STORE_PATH=/data/tokens.json
-```
-
-The server writes the file with the permissions `0600`. The file contains
-refresh tokens. Thus you must keep the volume secret.
-
-Authorization codes are kept separately in memory for five minutes and are
-never valid as MCP bearer tokens. Unfinished sign-ins must restart after a
-server restart. When loading an older token file, the server discards untyped
-entries without a refresh token because they may be temporary authorization
-codes; existing issued sessions with refresh tokens remain usable.
-
-Refresh-token rotation is atomic. Clients must serialize refresh requests:
-if two requests use the same refresh token, only one succeeds and the other
-receives `invalid_grant`. With file persistence enabled, the server commits
-the replacement to disk before returning credentials; a failed write returns
-an error without consuming the previous credential.
-
-The directory must be writable by the user that operates the server. The Docker
-image operates as the user `appuser`. The image supplies the directory `/data`
-with the owner `appuser` and the mode `0700`. If the server makes the directory
-itself, the directory gets the same mode.
-
-**Caution:** The token store fails closed. If the server cannot make or read
-the file, the server stops at start-up. The server does not discard the
-sessions without a message.
-
-#### Bearer Renewal Cap (AUTH_AUTO_REFRESH_MAX_AGE)
-
-A client can send a bearer token that is expired. The server then refreshes the
-Google token and extends the same bearer token. The session continues, and the
-user does not sign in again.
-
-The server does not replace the bearer token in this operation. Thus the expiry
-time of the bearer token is not a limit. An expired bearer token is sufficient
-to get a new period, while the entry is in the store.
-
-`AUTH_AUTO_REFRESH_MAX_AGE` gives a limit to this sequence. The limit is the
-total age of the token. The default value is `168h`, which is 7 days.
-
-```env
-AUTH_AUTO_REFRESH_MAX_AGE=168h
-```
-
-After the limit, the server sends the response `401` and the `WWW-Authenticate`
-header of RFC 9728. The server does not extend the token. The client must then
-use the standard OAuth refresh grant. That grant replaces the two credentials
-and makes a new entry with a new age. Thus a correct client continues without a
-sign-in, and only the sequence of an unauthorized token stops.
-
-A client without the refresh grant must sign in again one time in each limit
-period. Without this limit, the client signs in again one time in each
-`ACCESS_TOKEN_TTL` period.
-
-To disable the limit, set the value to `0`. The renewal sequence then has no
-limit.
-
-The server writes the log event `auth_auto_refresh_capped` for each refusal.
-The event contains the client ID and the age of the refused sequence.
+The two connection utility tools remain available regardless of this setting.
 
 ### Optional setup dashboard
 
-Set `DASHBOARD_ENABLED=true` and restart the server to enable `/dashboard/`.
-The page shows the MCP endpoint, OAuth/service-account configuration, and
-connection instructions. It is disabled by default.
+Set `DASHBOARD_ENABLED=true` and restart the server to expose `/dashboard/`.
+The page shows the canonical MCP endpoint, server version, authentication setup
+status, and connection instructions. It is disabled by default.
 
-This is a public setup page when enabled. It exposes configuration booleans and
-the server version, but no tokens, sessions, account names, or GTM data. It does
-not verify the current user's Google authentication. Session management, activity history, and operational metrics are planned
-for later work.
+The dashboard is public when enabled. It deliberately excludes tokens, sessions,
+account names, container data, and other GTM content. It reports server
+configuration only and does not verify the visitor's Google session.
 
-### Google Cloud Setup
+## Releases and deployment
 
-1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2. Enable the **Tag Manager API**.
-3. Create **OAuth 2.0 credentials** for a web application.
-4. Add these redirect URIs:
-   ```
-   https://claude.ai/api/mcp/auth_callback
-   https://claude.com/api/mcp/auth_callback
-   https://chatgpt.com/connector_platform_oauth_redirect
-   https://your-domain.com/oauth/callback
-   ```
+`server.json` is the source of truth for the runtime version. It is embedded in
+the Go binary and returned by `/health`; there is no second version constant in
+Go code.
 
----
+To publish a release:
 
-## Available Tools
+1. Update `server.json`.
+2. Commit the release changes.
+3. Push a matching tag such as `v1.11.0`.
 
-### Read Operations
+The release workflow rejects a tag that does not match `server.json`, creates
+cross-platform archives with GoReleaser, and then deploys the tagged source to
+the production VPS. The deployment uses the GitHub environment
+`auto-deployment` and expects these secrets:
 
-| Tool | Description |
-|------|-------------|
-| `list_accounts` | Gives all the GTM accounts |
-| `list_containers` | Gives the containers in an account |
-| `list_workspaces` | Gives the workspaces in a container |
-| `list_tags` | Gives all the tags in a workspace |
-| `get_tag` | Gives the data of one tag |
-| `list_triggers` | Gives all the triggers |
-| `get_trigger` | Gives the data of one trigger |
-| `list_variables` | Gives all the variables |
-| `get_variable` | Gives the data of one variable |
-| `list_folders` | Gives the folders in a workspace |
-| `get_folder_entities` | Gives the tags, triggers, and variables in a folder |
-| `list_built_in_variables` | Gives the enabled built-in variables in a workspace |
+- `SSH_PRIVATE_KEY`
+- `VPS_KNOWN_HOSTS`
+- `VPS_HOST`
+- `VPS_USER`
 
-### Utility
+The workflow preserves server-only `.env`, `docker-compose.yml`, and token data,
+keeps a rollback image, rebuilds the service, and waits until `/health` reports
+the expected version.
 
-| Tool | Description |
-|------|-------------|
-| `ping` | Tests the connection to the server |
-| `auth_status` | Gives the status of the authentication |
+Recent commits on `main` can be newer than the latest tagged release. Check the
+[release page](https://github.com/paolobietolini/gtm-mcp-server/releases) when you need a
+reproducible published artifact.
 
-### Write Operations
-
-| Tool | Description |
-|------|-------------|
-| `update_account` | Changes the name of a GTM account |
-| `create_container` | Creates a container in an account |
-| `update_container` | Changes the name of a container. Keeps the usage context, the domain, and the notes |
-| `delete_container` | Deletes a container. Asks for approval |
-| `create_workspace` | Creates a workspace in a container |
-| `create_tag` | Creates a tag |
-| `update_tag` | Changes a tag |
-| `delete_tag` | Deletes a tag. Asks for approval |
-| `create_trigger` | Creates a trigger |
-| `update_trigger` | Changes a trigger |
-| `delete_trigger` | Deletes a trigger. Asks for approval |
-| `create_variable` | Creates a variable |
-| `update_variable` | Changes a variable |
-| `delete_variable` | Deletes a variable. Asks for approval |
-| `enable_built_in_variables` | Enables built-in variable types in a workspace |
-| `disable_built_in_variables` | Disables built-in variable types. Asks for approval |
-
-### Clearing trigger conditions
-
-For `update_trigger`, omit `filterJson`, `customEventFilterJson`,
-`autoEventFilterJson`, or `parameterJson` to preserve that field. Pass the JSON
-string `"[]"` to clear it, or a non-empty JSON array to replace it. Previously,
-`"[]"` silently preserved existing values; clients that send placeholder empty
-arrays should omit those fields instead. For click, link-click, and form
-triggers, use `filterJson` because GTM ignores `autoEventFilter`.
-
-### Server-Side Container Tools
-
-| Tool | Description |
-|------|-------------|
-| `list_clients` | Gives all the clients in a workspace |
-| `get_client` | Gives the data of one client |
-| `create_client` | Creates a client |
-| `update_client` | Changes a client |
-| `delete_client` | Deletes a client. Asks for approval |
-| `list_transformations` | Gives all the transformations in a workspace |
-| `get_transformation` | Gives the data of one transformation |
-| `create_transformation` | Creates a transformation |
-| `update_transformation` | Changes a transformation |
-| `delete_transformation` | Deletes a transformation. Asks for approval |
-
-### Publication
-
-| Tool | Description |
-|------|-------------|
-| `get_workspace_status` | Gives the changes and the merge conflicts before a version |
-| `list_versions` | Gives all the container versions with the counts of the items |
-| `create_version` | Creates a version from the changes in a workspace |
-| `publish_version` | Publishes a version. Asks for approval |
-
-### Templates
-
-| Tool | Description |
-|------|-------------|
-| `get_tag_templates` | Gives parameter examples for GA4 tags and HTML tags |
-| `get_trigger_templates` | Gives configuration examples for triggers |
-| `list_templates` | Gives the custom templates in a workspace |
-| `get_template` | Gives the data of one template with its code |
-| `create_template` | Creates a custom template from `.tpl` code |
-| `update_template` | Changes a custom template |
-| `delete_template` | Deletes a custom template. Asks for approval |
-| `import_gallery_template` | Imports a template from the Community Gallery |
-
----
-
-## Resources and Prompts
-
-### Resources
-
-The server gives access to GTM data through these URIs:
-
-```
-gtm://accounts
-gtm://accounts/{id}/containers
-gtm://accounts/{id}/containers/{id}/workspaces
-gtm://accounts/.../workspaces/{id}/tags
-gtm://accounts/.../workspaces/{id}/triggers
-gtm://accounts/.../workspaces/{id}/variables
-```
-
-The server also gives best-practice documents. These documents are markdown
-text. Authentication is not necessary to read them.
-
-```
-gtm://best-practices                        # The index of all the documents
-gtm://best-practices/naming-organization    # Names, folders, and unused items
-gtm://best-practices/safe-edit-workflow     # Workspace, difference, version, publication
-gtm://best-practices/ga4-consent            # GA4 patterns and consent mode v2
-gtm://best-practices/server-side            # Clients, transformations, PII, first-party domains
-```
-
-### Prompts
-
-| Prompt | Description |
-|--------|-------------|
-| `audit_container` | Examines a container against the best practices |
-| `best_practices_review` | Gives a result of pass, warning, or failure for each category, with the corrections |
-| `plan_safe_edit` | Gives the steps for a change that obeys the safe-edit workflow |
-| `generate_tracking_plan` | Writes a tracking plan in markdown |
-| `suggest_ga4_setup` | Gives recommendations for a GA4 implementation |
-| `find_gallery_template` | Gives the steps to find and import a Community Gallery template |
-
----
-
-## More Context for AI Assistants
-
-The server gives two resources that help an AI assistant. One resource is for
-each LLM or agent. The other resource is for Claude Code users. The server also
-gives GTM rules as MCP resources at `gtm://best-practices`. Each connected
-agent can read these rules before it makes a change.
-
-### llms.txt for Each LLM or Agent
-
-The server supplies an [`llms.txt`](https://mcp.gtmeditor.com/llms.txt) file.
-Each LLM or agent can read this file to get context. The file contains the GTM
-hierarchy, all the tools, the usual workflows, the safety rules, and the format
-of the GA4 parameters.
-
-```
-https://mcp.gtmeditor.com/llms.txt
-```
-
-The file obeys the [llms.txt](https://llmstxt.org/) standard. Agent systems
-with support for llms.txt read this file automatically. You can also read the
-file manually, or put it in a system prompt for your own integration.
-
-### Claude Code Skill
-
-Claude Code users can install the **GTM MCP skill**. The skill gives workflows,
-the patterns to obey, and the patterns to prevent.
-
-Use this command to install the skill:
+## Development
 
 ```bash
-curl -sL https://github.com/paolobietolini/gtm-mcp-server/archive/main.tar.gz | tar xz && \
-  mkdir -p ~/.claude/skills && \
-  cp -r gtm-mcp-server-main/skills/gtm-mcp ~/.claude/skills/ && \
-  rm -rf gtm-mcp-server-main
+go test ./... -count=1
+go vet ./...
+staticcheck ./...
+go run ./cmd/tool-schema-report
+go run ./cmd/tool-schema-report -groups tags,zones
 ```
 
-As an alternative, clone the repository and copy the directory:
+The schema report prints the GTM tool count, serialized `tools/list` size, token
+estimate, and largest definitions. The default GTM tool surface serializes to
+78,734 bytes for 64 tools. A regression test enforces an 80,000-byte ceiling so
+new parity work does not silently consume unlimited model context. The `all`
+group exposes 94 GTM tools and serializes to 115,748 bytes.
 
-```bash
-git clone https://github.com/paolobietolini/gtm-mcp-server.git
-cp -r gtm-mcp-server/skills/gtm-mcp ~/.claude/skills/
-```
+Pull requests run `govulncheck`, `gosec`, Gitleaks, Trivy, `staticcheck`, and
+CodeQL. Request-level GTM tests use local fake Google endpoints. Mutating live
+tests must use a disposable container and clean up their entities.
 
-The skill teaches Claude to find the IDs and to create tags with the correct
-parameters. It also teaches Claude to obey the publication workflow and to
-prevent the usual errors.
+See [ARCHITECTURE.md](ARCHITECTURE.md) for package boundaries, request flow,
+authentication internals, token persistence, and security invariants.
 
-### GTM API Skill
+For a deep dive into the Google Tag Manager MCP server, read the [Deep Wiki](https://deepwiki.com/paolobietolini/gtm-mcp-server).
 
-The **GTM API skill** gives more context about the API. It contains the
-parameter schemas, the validation rules, and request templates for all the
-entity types.
 
-For Claude Code:
+## Current limitations
 
-```bash
-curl -sL https://github.com/paolobietolini/gtm-api-for-llms/archive/main.tar.gz | tar xz && \
-  mkdir -p ~/.claude/skills && \
-  cp -r gtm-api-for-llms-main/skills/gtm-api ~/.claude/skills/ && \
-  rm -rf gtm-api-for-llms-main
-```
+- The 101-method GTM v2 API parity target is complete. The five account
+  user-permission methods remain outside the product scope.
+- The server supports Streamable HTTP only. Stdio transport is planned but is
+  not implemented.
+- The hosted service processes OAuth tokens. Self-host the server when your
+  policy requires control of the runtime and token store.
+- Some GTM resource families depend on container type or account entitlement.
 
-For OpenAI Codex:
+## Additional context
 
-```bash
-curl -sL https://github.com/paolobietolini/gtm-api-for-llms/archive/main.tar.gz | tar xz && \
-  mkdir -p ~/.codex/skills && \
-  cp -r gtm-api-for-llms-main/skills/gtm-api ~/.codex/skills/ && \
-  rm -rf gtm-api-for-llms-main
-```
-
-The [GTM API for LLMs](https://github.com/paolobietolini/gtm-api-for-llms)
-repository contains documentation for LLMs. It has request templates,
-validation rules, workflow algorithms, and the full schemas of all the GTM
-entity types. The server-side container types are included.
-
----
-
-## Architecture
-
-- **Protocol:** Model Context Protocol (MCP) on HTTP
-- **Authentication:** OAuth 2.1 with PKCE
-- **Standards:** RFC 8414, RFC 7591, RFC 9728
-
----
-
-## Known Problems
-
-### The GTM API removes `autoEventFilter`
-
-The `autoEventFilter` field sets the conditions for "Some Link Clicks" and
-"Some Form Submissions". The Google Tag Manager API removes this field without
-a message. This occurs when you create or change a `linkClick`, `click`, or
-`formSubmission` trigger through the API. The API sends the response `200 OK`
-with a new fingerprint, but it does not keep the `autoEventFilter` field.
-
-Tests at the HTTP level show this behavior. The request contains the correct
-JSON, but the response of Google does not contain the field. The `filter` field
-and the `customEventFilter` field operate correctly.
-
-**Alternative procedure:** Set the `autoEventFilter` conditions manually in the
-[GTM web interface](https://tagmanager.google.com). The MCP server can read a
-trigger that has an `autoEventFilter` field from the interface.
-
-**Status:** [#33](https://github.com/paolobietolini/gtm-mcp-server/issues/33)
-
----
-
-## Links
-
-- [GitHub Repository](https://github.com/paolobietolini/gtm-mcp-server)
-- [GTM API Reference](https://github.com/paolobietolini/gtm-api-for-llms)
-- [MCP Specification](https://modelcontextprotocol.io)
-
----
-
-## Author
-
-**Paolo Bietolini**
-
-mcp@paolobietolini.com
-
----
+- [`llms.txt`](llms.txt) is served at
+  [`https://mcp.gtmeditor.com/llms.txt`](https://mcp.gtmeditor.com/llms.txt).
+- [`skills/gtm-mcp/gtm-mcp.md`](skills/gtm-mcp/gtm-mcp.md) contains a Claude
+  Code skill with workflow guidance.
+- [`examples/gtm_agent.py`](examples/gtm_agent.py) demonstrates a programmatic
+  MCP client.
+- [Google Tag Manager API v2 reference](https://developers.google.com/tag-platform/tag-manager/api/reference/rest)
+- [Model Context Protocol](https://modelcontextprotocol.io/)
 
 ## License
 
-[BSD-3-Clause](LICENSE)
+BSD 3-Clause. See [LICENSE](LICENSE).
+
+Maintained by [Paolo Bietolini](https://github.com/paolobietolini).

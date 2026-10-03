@@ -35,7 +35,11 @@ Always discover IDs by listing — never guess or hardcode them.
 |------|---------|
 | `list_accounts` | List all GTM accounts the user has access to |
 | `list_containers` | List containers in an account (needs accountId) |
+| `lookup_container` | Find a container by destinationId or public tagId |
+| `get_container_snippet` | Get the web snippet or server container configuration |
 | `list_workspaces` | List workspaces in a container (needs accountId, containerId) |
+| `get_workspace` | Get workspace metadata and its fingerprint |
+| `quick_preview_workspace` | Compile an ephemeral preview without saving or publishing it |
 | `list_tags` | List all tags in a workspace |
 | `get_tag` | Get full tag details by ID |
 | `list_triggers` | List all triggers in a workspace |
@@ -43,7 +47,16 @@ Always discover IDs by listing — never guess or hardcode them.
 | `list_variables` | List all variables in a workspace |
 | `get_variable` | Get full variable details by ID |
 | `list_folders` | List folders in a workspace |
+| `get_folder` | Get complete folder metadata |
 | `get_folder_entities` | Get tags/triggers/variables in a specific folder |
+| `list_zones` | List zones in a workspace |
+| `get_zone` | Get a zone and its configuration |
+| `list_environments` | List container environments (optional `environments` group) |
+| `get_environment` | Get an environment and authorization metadata |
+| `list_destinations` | List Google tag destinations linked to a container |
+| `get_destination` | Get a destination by its link ID |
+| `list_google_tag_configs` | List workspace Google tag configurations |
+| `get_google_tag_config` | Get a Google tag configuration |
 | `list_built_in_variables` | List enabled built-in variables |
 | `get_workspace_status` | Check pending changes and merge conflicts |
 
@@ -63,9 +76,37 @@ Always discover IDs by listing — never guess or hardcode them.
 | `update_container` | Rename a container |
 | `delete_container` | Remove a container (requires `confirm: true`) |
 | `create_workspace` | Create a new workspace |
+| `update_workspace` | Update a workspace name or description |
+| `delete_workspace` | Delete a workspace and pending changes (requires `confirm: true`) |
+| `bulk_update_workspace` | Apply multiple entity changes (requires `confirm: true`) |
+| `resolve_workspace_conflict` | Replace a conflicting entity (requires `confirm: true`) |
+| `sync_workspace` | Synchronize with the latest version (requires `confirm: true`) |
+| `create_folder` | Create a workspace folder |
+| `update_folder` | Update a workspace folder |
+| `delete_folder` | Delete a workspace folder (requires `confirm: true`) |
+| `move_entities_to_folder` | Move entities into a folder (requires `confirm: true`) |
+| `revert_folder` | Discard workspace changes to a folder (requires `confirm: true`) |
+| `create_environment` | Create a user environment |
+| `update_environment` | Update a user environment with fingerprint protection |
+| `reauthorize_environment` | Rotate an environment authorization code (requires `confirm: true`) |
+| `delete_environment` | Delete a user environment (requires `confirm: true`) |
+| `link_destination` | Move a destination to a container (requires `confirm: true`) |
+| `create_google_tag_config` | Create a Google tag configuration |
+| `update_google_tag_config` | Update a Google tag configuration |
+| `delete_google_tag_config` | Delete a Google tag configuration (requires `confirm: true`) |
+| `combine_containers` | Merge one container into another (requires `confirm: true`) |
+| `move_tag_id` | Move a tag ID to a new container (requires confirmation and terms acceptance) |
+| `update_version` | Update a saved version's name or description |
+| `delete_version` | Soft-delete a saved version (requires `confirm: true`) |
+| `undelete_version` | Restore a deleted version (requires `confirm: true`) |
+| `set_latest_version` | Make a version Latest without publishing (requires `confirm: true`) |
+| `revert_workspace_entity` | Revert a built-in variable, client, tag, template, transformation, trigger, variable, or zone (requires `confirm: true`) |
 | `update_account` | Rename a GTM account |
 | `enable_built_in_variables` | Enable built-in variable types |
 | `disable_built_in_variables` | Disable built-in variable types (requires `confirm: true`) |
+| `create_zone` | Create a workspace zone |
+| `update_zone` | Update selected zone fields |
+| `delete_zone` | Delete a zone (requires `confirm: true`) |
 
 ### Server-Side Container Tools
 | Tool | Purpose |
@@ -87,7 +128,10 @@ Always discover IDs by listing — never guess or hardcode them.
 | `get_workspace_status` | Check pending changes and conflicts before versioning |
 | `create_version` | Create a version from workspace changes |
 | `publish_version` | Publish a version to go live (requires `confirm: true`) |
-| `list_versions` | List all container versions |
+| `list_versions` | List all container version headers, across all pages |
+| `get_latest_version_header` | Get the latest version header; latest is not necessarily live |
+| `get_version` | Get a saved version with all entity collections |
+| `get_live_version` | Get the published live version with all entity collections |
 
 ### Templates
 | Tool | Purpose |

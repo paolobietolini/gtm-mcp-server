@@ -14,9 +14,9 @@ type CreateTriggerInput struct {
 	WorkspaceID           string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
 	Name                  string `json:"name" jsonschema:"description:Trigger name"`
 	Type                  string `json:"type" jsonschema:"description:Trigger type (e.g. pageview, customEvent, linkClick, formSubmission, timer)"`
-	FilterJSON            string `json:"filterJson,omitempty" jsonschema:"description:Filter conditions as JSON array for pageview triggers. Condition types: equals\\, contains\\, doesNotContain\\, startsWith\\, endsWith\\, matchRegex. Each condition has type and parameter array with arg0 (variable) and arg1 (value). (optional)"`
-	AutoEventFilterJSON   string `json:"autoEventFilterJson,omitempty" jsonschema:"description:Auto-event filter as JSON array for click/form triggers. Condition types: equals\\, contains\\, doesNotContain\\, startsWith\\, endsWith\\, matchRegex. NOTE: for linkClick\\, click\\, and formSubmission triggers the GTM API silently drops autoEventFilter — use filterJson instead for these types. (optional)"`
-	CustomEventFilterJSON string `json:"customEventFilterJson,omitempty" jsonschema:"description:Custom event filter as JSON array for customEvent triggers. Condition types: equals\\, contains\\, doesNotContain\\, startsWith\\, endsWith\\, matchRegex. REQUIRED for customEvent type. Must contain exactly one condition matching the event name."`
+	FilterJSON            string `json:"filterJson,omitempty" jsonschema:"description:JSON conditions; see gtm://best-practices/tool-input-formats"`
+	AutoEventFilterJSON   string `json:"autoEventFilterJson,omitempty" jsonschema:"description:JSON auto-event conditions; see gtm://best-practices/tool-input-formats"`
+	CustomEventFilterJSON string `json:"customEventFilterJson,omitempty" jsonschema:"description:JSON custom-event conditions; required for customEvent; see gtm://best-practices/tool-input-formats"`
 	EventNameJSON         string `json:"eventNameJson,omitempty" jsonschema:"description:Event name as JSON object {type, value} for timer triggers (optional)"`
 	Notes                 string `json:"notes,omitempty" jsonschema:"description:Trigger notes (optional)"`
 }
@@ -103,6 +103,6 @@ func registerCreateTrigger(server *mcp.Server) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "create_trigger",
-		Description: "Create a new trigger in a GTM workspace. Common types: pageview, customEvent, linkClick, formSubmission, timer, scrollDepth. Filter condition types: equals, contains, doesNotContain, startsWith, endsWith, matchRegex. The doesNotContain type is automatically transformed to a negated contains condition for the GTM API.",
+		Description: "Create a workspace trigger. Read gtm://best-practices/tool-input-formats for condition and trigger-group shapes.",
 	}, handler)
 }

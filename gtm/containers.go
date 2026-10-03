@@ -9,11 +9,18 @@ import (
 
 // Container is a simplified representation of a GTM container.
 type Container struct {
-	ContainerID  string   `json:"containerId"`
-	Name         string   `json:"name"`
-	PublicID     string   `json:"publicId"`
-	UsageContext []string `json:"usageContext"`
-	Path         string   `json:"path"`
+	ContainerID       string   `json:"containerId"`
+	Name              string   `json:"name"`
+	PublicID          string   `json:"publicId"`
+	UsageContext      []string `json:"usageContext"`
+	Path              string   `json:"path"`
+	DomainName        []string `json:"domainName,omitempty"`
+	TagIDs            []string `json:"tagIds,omitempty"`
+	TaggingServerURLs []string `json:"taggingServerUrls,omitempty"`
+	Notes             string   `json:"notes,omitempty"`
+	Fingerprint       string   `json:"fingerprint,omitempty"`
+	TagManagerURL     string   `json:"tagManagerUrl,omitempty"`
+	Features          any      `json:"features,omitempty"`
 }
 
 // ListContainers returns all containers in an account.
@@ -33,13 +40,27 @@ func (c *Client) ListContainers(ctx context.Context, accountID string) ([]Contai
 func toContainers(containers []*tagmanager.Container) []Container {
 	result := make([]Container, 0, len(containers))
 	for _, c := range containers {
-		result = append(result, Container{
-			ContainerID:  c.ContainerId,
-			Name:         c.Name,
-			PublicID:     c.PublicId,
-			UsageContext: c.UsageContext,
-			Path:         c.Path,
-		})
+		result = append(result, toContainer(c))
+	}
+	return result
+}
+
+func toContainer(c *tagmanager.Container) Container {
+	result := Container{
+		ContainerID:       c.ContainerId,
+		Name:              c.Name,
+		PublicID:          c.PublicId,
+		UsageContext:      c.UsageContext,
+		Path:              c.Path,
+		DomainName:        c.DomainName,
+		TagIDs:            c.TagIds,
+		TaggingServerURLs: c.TaggingServerUrls,
+		Notes:             c.Notes,
+		Fingerprint:       c.Fingerprint,
+		TagManagerURL:     c.TagManagerUrl,
+	}
+	if c.Features != nil {
+		result.Features = c.Features
 	}
 	return result
 }
@@ -63,13 +84,8 @@ func (c *Client) UpdateContainer(ctx context.Context, accountID, containerID, na
 		return nil, mapGoogleError(err)
 	}
 
-	return &Container{
-		ContainerID:  updated.ContainerId,
-		Name:         updated.Name,
-		PublicID:     updated.PublicId,
-		UsageContext: updated.UsageContext,
-		Path:         updated.Path,
-	}, nil
+	result := toContainer(updated)
+	return &result, nil
 }
 
 // DeleteContainer deletes a container by path.

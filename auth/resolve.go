@@ -11,9 +11,10 @@ import (
 // This enables Docker-to-Docker contexts where the server is reached via
 // internal network aliases, while preventing host header injection.
 type URLResolver struct {
-	configuredURL  string
-	configuredHost string
-	allowedHosts   map[string]bool
+	configuredURL    string
+	configuredHost   string
+	configuredScheme string
+	allowedHosts     map[string]bool
 }
 
 // NewURLResolver creates a resolver that trusts the configured base URL's host
@@ -21,8 +22,10 @@ type URLResolver struct {
 func NewURLResolver(baseURL string, allowedHosts []string) *URLResolver {
 	parsed, _ := url.Parse(baseURL)
 	configuredHost := ""
+	configuredScheme := ""
 	if parsed != nil {
 		configuredHost = parsed.Host
+		configuredScheme = parsed.Scheme
 	}
 
 	allowed := make(map[string]bool, len(allowedHosts)+1)
@@ -34,9 +37,10 @@ func NewURLResolver(baseURL string, allowedHosts []string) *URLResolver {
 	}
 
 	return &URLResolver{
-		configuredURL:  baseURL,
-		configuredHost: configuredHost,
-		allowedHosts:   allowed,
+		configuredURL:    baseURL,
+		configuredHost:   configuredHost,
+		configuredScheme: configuredScheme,
+		allowedHosts:     allowed,
 	}
 }
 
@@ -54,9 +58,16 @@ func (u *URLResolver) Resolve(r *http.Request) string {
 		return u.configuredURL
 	}
 
-	// Host is trusted — build URL dynamically
+	// Host is trusted — build URL dynamically. X-Forwarded-Proto is unauthenticated
+	// (unlike X-Forwarded-For, no TrustProxy gate applies here), so for the
+	// configured host the configured scheme is the floor: a proxy that drops the
+	// header, or a request that suppresses it, cannot make an https deployment
+	// announce an http issuer.
 	scheme := "http"
-	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+	switch {
+	case r.TLS != nil, r.Header.Get("X-Forwarded-Proto") == "https":
+		scheme = "https"
+	case host == u.configuredHost && u.configuredScheme == "https":
 		scheme = "https"
 	}
 

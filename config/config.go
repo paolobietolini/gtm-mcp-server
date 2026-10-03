@@ -28,6 +28,9 @@ type Config struct {
 
 	// Logging
 	LogLevel string
+	// ToolGroups limits the GTM operation families advertised through MCP.
+	// Empty selects the backward-compatible default set.
+	ToolGroups []string
 
 	// Token configuration
 	AccessTokenTTL time.Duration
@@ -73,6 +76,7 @@ func Load() (*Config, error) {
 		GoogleRedirectURI:     getEnv("GOOGLE_REDIRECT_URI", ""),
 		JWTSecret:             getEnv("JWT_SECRET", ""),
 		LogLevel:              getEnv("LOG_LEVEL", "info"),
+		ToolGroups:            getEnvList("GTM_TOOL_GROUPS"),
 		AccessTokenTTL:        getEnvDuration("ACCESS_TOKEN_TTL", 8*time.Hour),
 		TokenStorePath:        getEnv("TOKEN_STORE_PATH", ""),
 		AllowedHosts:          getEnvList("ALLOWED_HOSTS"),

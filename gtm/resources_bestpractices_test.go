@@ -37,6 +37,7 @@ func TestBestPracticesTopicResource(t *testing.T) {
 		{"safe-edit-workflow", "Safe-Edit Workflow"},
 		{"ga4-consent", "GA4 and Consent"},
 		{"server-side", "Server-Side Container"},
+		{"tool-input-formats", "Tool Input Formats"},
 	}
 	for _, tt := range tests {
 		req := &mcp.ReadResourceRequest{

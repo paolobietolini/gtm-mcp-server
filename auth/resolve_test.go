@@ -124,3 +124,19 @@ func TestURLResolver_Resolve_MultipleAllowedHosts(t *testing.T) {
 		})
 	}
 }
+
+// A TLS-terminating proxy that does not set X-Forwarded-Proto leaves r.TLS nil
+// and the header empty, so an https deployment resolved http:// for its own
+// configured host — and the header is attacker-controlled, so a request could
+// force that on a proxy that does set it. The configured scheme is the floor.
+func TestURLResolver_Resolve_ConfiguredHostKeepsConfiguredScheme(t *testing.T) {
+	resolver := NewURLResolver("https://mcp.gtmeditor.com", nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Host = "mcp.gtmeditor.com"
+
+	got := resolver.Resolve(req)
+	if got != "https://mcp.gtmeditor.com" {
+		t.Errorf("a missing X-Forwarded-Proto downgraded the issuer to %s", got)
+	}
+}

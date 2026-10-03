@@ -19,9 +19,9 @@ type UpdateTagInput struct {
 	Type               string   `json:"type,omitempty" jsonschema:"description:Tag type. If omitted\\, existing type is preserved."`
 	FiringTriggerIDs   []string `json:"firingTriggerIds,omitempty" jsonschema:"description:Array of trigger IDs that fire this tag. If omitted\\, existing triggers are preserved."`
 	BlockingTriggerIDs []string `json:"blockingTriggerIds,omitempty" jsonschema:"description:Array of trigger IDs that block this tag. If omitted\\, existing blocking triggers are preserved."`
-	ParametersJSON     string   `json:"parametersJson,omitempty" jsonschema:"description:Tag parameters as JSON array. If omitted\\, existing parameters (pixel IDs\\, measurement IDs\\, etc.) are preserved."`
-	SetupTagJSON       string   `json:"setupTagJson,omitempty" jsonschema:"description:Setup tag sequencing as JSON array. Each element: {tagName: string\\, stopOnSetupFailure: bool}. Pass [] to clear. If omitted\\, existing setup tags are preserved."`
-	TeardownTagJSON    string   `json:"teardownTagJson,omitempty" jsonschema:"description:Teardown tag sequencing as JSON array. Each element: {tagName: string\\, stopTeardownOnFailure: bool}. Pass [] to clear. If omitted\\, existing teardown tags are preserved."`
+	ParametersJSON     string   `json:"parametersJson,omitempty" jsonschema:"description:JSON parameters; omit to preserve; see gtm://best-practices/tool-input-formats"`
+	SetupTagJSON       string   `json:"setupTagJson,omitempty" jsonschema:"description:JSON setup sequence; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
+	TeardownTagJSON    string   `json:"teardownTagJson,omitempty" jsonschema:"description:JSON teardown sequence; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
 	ConsentStatus      string   `json:"consentStatus,omitempty" jsonschema:"description:Consent status: notSet (default/clear)\\, notNeeded (no consent required)\\, needed (requires consent types to be granted before firing). If omitted\\, existing consent settings are preserved."`
 	ConsentTypes       string   `json:"consentTypes,omitempty" jsonschema:"description:Comma-separated consent types when consentStatus is needed (e.g. ad_storage\\,analytics_storage\\,ad_user_data\\,ad_personalization). Ignored when consentStatus is notSet or notNeeded."`
 	Notes              string   `json:"notes,omitempty" jsonschema:"description:Tag notes. If omitted\\, existing notes are preserved."`

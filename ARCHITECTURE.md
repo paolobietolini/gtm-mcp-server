@@ -57,7 +57,7 @@ Key design decisions:
 - **Token store: in memory, optionally file-backed.** No database. By default nothing is persisted, so a redeployment forces every user to re-authenticate. Setting `TOKEN_STORE_PATH` writes issued tokens to a JSON file (mode `0600`, in a directory created `0700`) so sessions survive a restart. It fails closed: if the file cannot be created or read, the server stops at start-up rather than silently discarding sessions. Only issued tokens are persisted — OAuth flow states (10-minute lifetime) and dynamically-registered clients are not, since they are short-lived or re-created by the client on reconnect.
 - **Auto-refresh in middleware.** When an access token expires but the refresh token is valid, middleware refreshes the Google token in-place and extends the access token TTL — the client's bearer stays valid without re-auth. `AUTH_AUTO_REFRESH_MAX_AGE` caps the total age of a silently renewed bearer (default `168h`), so an expired bearer cannot be extended indefinitely.
 - **PKCE required.** No client_secret needed from MCP clients. Code binding via SHA256 challenge.
-- **Federation state bound to the browser.** `/authorize` sets an opaque `HttpOnly; SameSite=Lax` cookie and records only its SHA-256 on the state row; the callback refuses any request whose cookie does not hash to it. Over https the cookie takes the `__Host-` prefix, so a browser accepts it only for this exact host — which is what stops a sibling subdomain, or a network attacker on plain http under the parent domain, from planting one. The prefix mandates `Path=/` and `Secure`, so a plain-http run keeps the unprefixed name scoped to `/oauth/callback`; the callback accepts only the name matching its own flow's issuer. Which regime applies is the stronger of the configured `BASE_URL` and the issuer resolved for the flow, so a request cannot lower it — `URLResolver` reads the scheme from an ungated `X-Forwarded-Proto`, and the attacker owns that header on the request that starts the flow. Without this, `state` is a bare server-side lookup key, and since dynamic client registration is open, an attacker could have a victim's Google code minted against the attacker's own registered `redirect_uri`.
+- **Federation state bound to the browser.** `/authorize` sets an opaque `HttpOnly; SameSite=Lax` cookie and records only its SHA-256 on the state row; the callback refuses any request whose cookie does not hash to it. Over https the cookie takes the `__Host-` prefix, so a browser accepts it only for this exact host — which is what stops a sibling subdomain, or a network attacker on plain http under the parent domain, from planting one. The prefix mandates `Path=/` and `Secure`, so a plain-http run keeps the unprefixed name scoped to `/oauth/callback`; the callback accepts only the name matching its own flow's issuer. Which regime applies is the stronger of the configured `BASE_URL` and the issuer resolved for the flow, so a request cannot lower it — `URLResolver` derives the scheme from `X-Forwarded-Proto`, which no `TrustProxy` gate covers, and the attacker owns that header on the request that starts the flow. For the configured host the resolver now treats the `BASE_URL` scheme as a floor, so an https deployment cannot be made to announce an `http` issuer either. Without this, `state` is a bare server-side lookup key, and since dynamic client registration is open, an attacker could have a victim's Google code minted against the attacker's own registered `redirect_uri`.
 - **RFC compliance.** RFC 8414 (server metadata), RFC 9728 (protected resource metadata), RFC 7591 (dynamic client registration).
 
 ### `gtm/`
@@ -160,6 +160,7 @@ Map response → tool output struct
 | `SERVICE_ACCOUNT_API_KEY` | For S2S | — | Shared API key for team access |
 | `GOOGLE_SERVICE_ACCOUNT_KEY_JSON` | For S2S | — | SA credentials (omit on GCP for Workload Identity) |
 | `LOG_LEVEL` | No | `info` | `debug` or `info` |
+| `GTM_TOOL_GROUPS` | No | current groups | Comma-separated MCP tool families, or `all` |
 
 ## Deployment
 
@@ -182,6 +183,7 @@ go test ./...          # All tests
 go test ./auth/ -v     # Auth package (OAuth flow, middleware, token store)
 go test ./gtm/ -v      # GTM package (error mapping)
 go test ./middleware/   # Rate limiting
+go run ./cmd/tool-schema-report  # Tool count, payload size, and largest schemas
 ```
 
 Test coverage focuses on:
@@ -191,6 +193,11 @@ Test coverage focuses on:
 - Error mapping (Google API errors → user-friendly messages)
 
 Integration tests (`auth/integration_test.go`) run the full OAuth flow with a mock Google token server.
+
+The default serialized `tools/list` result has an 80 KB regression budget.
+Parity PRs report their byte delta with `tool-schema-report`. If the default
+surface reaches that limit, introduce configurable tool groups before adding
+more tools instead of silently increasing every client's context cost.
 
 ## Key Invariants
 

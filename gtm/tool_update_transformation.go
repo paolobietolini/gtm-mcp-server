@@ -15,8 +15,8 @@ type UpdateTransformationInput struct {
 	WorkspaceID      string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
 	TransformationID string `json:"transformationId" jsonschema:"description:The transformation ID to update"`
 	Name             string `json:"name" jsonschema:"description:Transformation name"`
-	Type             string `json:"type,omitempty" jsonschema:"description:Transformation type (optional). Valid values: tf_exclude_params, tf_allow_params, tf_augment_event"`
-	ParametersJSON   string `json:"parametersJson,omitempty" jsonschema:"description:Transformation parameters as JSON array (optional)"`
+	Type             string `json:"type,omitempty" jsonschema:"description:One of tf_exclude_params, tf_allow_params, or tf_augment_event"`
+	ParametersJSON   string `json:"parametersJson,omitempty" jsonschema:"description:JSON parameter array; see gtm://best-practices/tool-input-formats"`
 	Notes            string `json:"notes,omitempty" jsonschema:"description:Transformation notes (optional)"`
 }
 
@@ -71,12 +71,7 @@ func registerUpdateTransformation(server *mcp.Server) {
 	}
 
 	mcp.AddTool(server, &mcp.Tool{
-		Name: "update_transformation",
-		Description: `Update an existing transformation. Automatically handles fingerprint for concurrency control. Server-side containers only.
-
-Type must be one of: tf_exclude_params, tf_allow_params, tf_augment_event. Table key and columns per type:
-- tf_allow_params: "allowedParamsTable" with column "allowedParams"
-- tf_exclude_params: "excludedParamsTable" with column "excludedParams"
-- tf_augment_event: "augmentEventTable" with columns "paramName" and "paramValue"`,
+		Name:        "update_transformation",
+		Description: "Update a server-side transformation with automatic fingerprint handling. See gtm://best-practices/tool-input-formats.",
 	}, handler)
 }

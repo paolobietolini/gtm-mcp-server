@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
-	tagmanager "google.golang.org/api/tagmanager/v2"
 )
 
 // ListVersionsInput is the input for list_versions tool.
@@ -48,27 +47,9 @@ func registerListVersions(server *mcp.Server) {
 
 		parent := fmt.Sprintf("accounts/%s/containers/%s", input.AccountID, input.ContainerID)
 
-		resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListContainerVersionsResponse, error) {
-			return client.Service.Accounts.Containers.VersionHeaders.List(parent).Context(ctx).Do()
-		})
+		versions, err := client.ListVersionHeaders(ctx, parent)
 		if err != nil {
-			return nil, ListVersionsOutput{}, mapGoogleError(err)
-		}
-
-		versions := make([]VersionInfo, 0)
-		if resp.ContainerVersionHeader != nil {
-			for _, v := range resp.ContainerVersionHeader {
-				versions = append(versions, VersionInfo{
-					VersionID:          v.ContainerVersionId,
-					Name:               v.Name,
-					Deleted:            v.Deleted,
-					NumTags:            v.NumTags,
-					NumTriggers:        v.NumTriggers,
-					NumVariables:       v.NumVariables,
-					NumCustomTemplates: v.NumCustomTemplates,
-					Path:               v.Path,
-				})
-			}
+			return nil, ListVersionsOutput{}, err
 		}
 
 		return nil, ListVersionsOutput{

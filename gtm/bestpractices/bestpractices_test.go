@@ -8,7 +8,7 @@ import (
 
 func TestTopicsReturnsAllTopics(t *testing.T) {
 	topics := Topics()
-	expected := []string{"index", "naming-organization", "safe-edit-workflow", "ga4-consent", "server-side"}
+	expected := []string{"index", "naming-organization", "safe-edit-workflow", "ga4-consent", "server-side", "tool-input-formats"}
 	if len(topics) != len(expected) {
 		t.Fatalf("expected %d topics, got %d: %v", len(expected), len(topics), topics)
 	}

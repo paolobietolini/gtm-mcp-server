@@ -1,5 +1,5 @@
 # Build stage (using Google mirror to avoid Docker Hub rate limits)
-FROM mirror.gcr.io/library/golang:1.25-alpine AS builder
+FROM mirror.gcr.io/library/golang:1.26-alpine AS builder
 
 WORKDIR /app
 
