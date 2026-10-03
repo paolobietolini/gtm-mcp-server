@@ -71,7 +71,9 @@ func formatAPIErrorDetail(apiErr *googleapi.Error) string {
 			detail += fmt.Sprintf("\n  reason=%s: %s", e.Reason, e.Message)
 		}
 	}
-	if apiErr.Body != "" {
+	// Only fall back to the raw body when Google returned no structured
+	// errors; otherwise it repeats the same message and wastes model tokens.
+	if len(apiErr.Errors) == 0 && apiErr.Body != "" {
 		detail += fmt.Sprintf("\n  body: %s", apiErr.Body)
 	}
 	return detail
