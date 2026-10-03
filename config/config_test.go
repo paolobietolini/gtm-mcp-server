@@ -35,6 +35,21 @@ func TestAutoRefreshMaxAge_HonoursEnv(t *testing.T) {
 	}
 }
 
+func TestDashboardOptIn(t *testing.T) {
+	for _, value := range []string{"", "false", "true"} {
+		t.Run(value, func(t *testing.T) {
+			t.Setenv("DASHBOARD_ENABLED", value)
+			cfg, err := Load()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cfg.DashboardEnabled != (value == "true") {
+				t.Fatalf("DASHBOARD_ENABLED=%q: %v", value, cfg.DashboardEnabled)
+			}
+		})
+	}
+}
+
 func TestToolGroupsFromEnvironment(t *testing.T) {
 	t.Setenv("GTM_TOOL_GROUPS", "accounts, zones, tags")
 	cfg, err := Load()
