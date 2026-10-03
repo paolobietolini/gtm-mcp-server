@@ -1,6 +1,7 @@
 package gtm
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"testing"
@@ -43,5 +44,8 @@ func TestToolSchemaBudget(t *testing.T) {
 	}
 	if len(payload) > maxBytes {
 		t.Fatalf("tools/list result is %d bytes, above %d; run go run ./cmd/tool-schema-report and introduce configurable tool groups", len(payload), maxBytes)
+	}
+	if bytes.Contains(payload, []byte(`"description":"description:`)) {
+		t.Fatal("tools/list contains a description with a literal description: prefix")
 	}
 }
