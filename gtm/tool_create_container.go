@@ -10,12 +10,12 @@ import (
 
 // CreateContainerInput is the input for create_container tool.
 type CreateContainerInput struct {
-	AccountID         string   `json:"accountId" jsonschema:"description:The GTM account ID"`
-	Name              string   `json:"name" jsonschema:"description:Container display name"`
-	UsageContext      []string `json:"usageContext" jsonschema:"description:Usage context for the container. Valid values: web, android, ios, amp, server"`
-	Notes             string   `json:"notes,omitempty" jsonschema:"description:Container notes (optional)"`
-	DomainName        []string `json:"domainName,omitempty" jsonschema:"description:List of domain names associated with the container (optional)"`
-	TaggingServerUrls []string `json:"taggingServerUrls,omitempty" jsonschema:"description:Server-side container URLs (for server containers only)"`
+	AccountID         string   `json:"accountId" jsonschema:"The GTM account ID"`
+	Name              string   `json:"name" jsonschema:"Container display name"`
+	UsageContext      []string `json:"usageContext" jsonschema:"Usage context for the container. Valid values: web, android, ios, amp, server"`
+	Notes             string   `json:"notes,omitempty" jsonschema:"Container notes (optional)"`
+	DomainName        []string `json:"domainName,omitempty" jsonschema:"List of domain names associated with the container (optional)"`
+	TaggingServerUrls []string `json:"taggingServerUrls,omitempty" jsonschema:"Server-side container URLs (for server containers only)"`
 }
 
 // CreateContainerOutput is the output for create_container tool.

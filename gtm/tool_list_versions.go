@@ -9,8 +9,8 @@ import (
 
 // ListVersionsInput is the input for list_versions tool.
 type ListVersionsInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
 }
 
 // ListVersionsOutput is the output for list_versions tool.

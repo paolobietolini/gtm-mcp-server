@@ -9,11 +9,11 @@ import (
 
 // DeleteClientInput is the input for delete_client tool.
 type DeleteClientInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	ClientID    string `json:"clientId" jsonschema:"description:The client ID to delete"`
-	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to confirm deletion. This is a safety guard."`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	ClientID    string `json:"clientId" jsonschema:"The client ID to delete"`
+	Confirm     bool   `json:"confirm" jsonschema:"Must be true to confirm deletion. This is a safety guard."`
 }
 
 // DeleteClientOutput is the output for delete_client tool.

@@ -9,9 +9,9 @@ import (
 )
 
 type DestinationInput struct {
-	AccountID         string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID       string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	DestinationLinkID string `json:"destinationLinkId" jsonschema:"description:The container-specific destination link ID returned by list_destinations"`
+	AccountID         string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID       string `json:"containerId" jsonschema:"The GTM container ID"`
+	DestinationLinkID string `json:"destinationLinkId" jsonschema:"The container-specific destination link ID returned by list_destinations"`
 }
 
 type ListDestinationsOutput struct {
@@ -23,10 +23,10 @@ type DestinationOutput struct {
 }
 
 type LinkDestinationInput struct {
-	AccountID     string `json:"accountId" jsonschema:"description:The receiving GTM account ID"`
-	ContainerID   string `json:"containerId" jsonschema:"description:The receiving GTM container ID"`
-	DestinationID string `json:"destinationId" jsonschema:"description:The destination ID to move to this container"`
-	Confirm       bool   `json:"confirm" jsonschema:"description:Must be true because linking moves the destination from its current container"`
+	AccountID     string `json:"accountId" jsonschema:"The receiving GTM account ID"`
+	ContainerID   string `json:"containerId" jsonschema:"The receiving GTM container ID"`
+	DestinationID string `json:"destinationId" jsonschema:"The destination ID to move to this container"`
+	Confirm       bool   `json:"confirm" jsonschema:"Must be true because linking moves the destination from its current container"`
 }
 
 func registerListDestinations(server *mcp.Server) {

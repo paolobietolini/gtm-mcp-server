@@ -10,9 +10,9 @@ import (
 
 // ListFoldersInput is the input for list_folders tool.
 type ListFoldersInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
 }
 
 // ListFoldersOutput is the output for list_folders tool.
@@ -22,10 +22,10 @@ type ListFoldersOutput struct {
 
 // GetFolderEntitiesInput is the input for get_folder_entities tool.
 type GetFolderEntitiesInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	FolderID    string `json:"folderId" jsonschema:"description:The folder ID"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	FolderID    string `json:"folderId" jsonschema:"The folder ID"`
 }
 
 // GetFolderEntitiesOutput is the output for get_folder_entities tool.
@@ -34,10 +34,10 @@ type GetFolderEntitiesOutput struct {
 }
 
 type FolderInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	FolderID    string `json:"folderId" jsonschema:"description:The folder ID"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	FolderID    string `json:"folderId" jsonschema:"The folder ID"`
 }
 
 type FolderOutput struct {
@@ -47,30 +47,30 @@ type FolderOutput struct {
 }
 
 type CreateFolderInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	Name        string `json:"name" jsonschema:"description:Folder display name"`
-	Notes       string `json:"notes,omitempty" jsonschema:"description:Optional folder notes"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	Name        string `json:"name" jsonschema:"Folder display name"`
+	Notes       string `json:"notes,omitempty" jsonschema:"Optional folder notes"`
 }
 
 type UpdateFolderInput struct {
 	FolderInput
-	Name  *string `json:"name,omitempty" jsonschema:"description:New name; omit to preserve"`
-	Notes *string `json:"notes,omitempty" jsonschema:"description:New notes; omit to preserve or pass empty to clear"`
+	Name  *string `json:"name,omitempty" jsonschema:"New name; omit to preserve"`
+	Notes *string `json:"notes,omitempty" jsonschema:"New notes; omit to preserve or pass empty to clear"`
 }
 
 type ConfirmFolderInput struct {
 	FolderInput
-	Confirm bool `json:"confirm" jsonschema:"description:Must be true to confirm the operation"`
+	Confirm bool `json:"confirm" jsonschema:"Must be true to confirm the operation"`
 }
 
 type MoveEntitiesToFolderInput struct {
 	FolderInput
-	TagIDs      []string `json:"tagIds,omitempty" jsonschema:"description:Tag IDs to move"`
-	TriggerIDs  []string `json:"triggerIds,omitempty" jsonschema:"description:Trigger IDs to move"`
-	VariableIDs []string `json:"variableIds,omitempty" jsonschema:"description:Variable IDs to move"`
-	Confirm     bool     `json:"confirm" jsonschema:"description:Must be true to confirm moving the entities"`
+	TagIDs      []string `json:"tagIds,omitempty" jsonschema:"Tag IDs to move"`
+	TriggerIDs  []string `json:"triggerIds,omitempty" jsonschema:"Trigger IDs to move"`
+	VariableIDs []string `json:"variableIds,omitempty" jsonschema:"Variable IDs to move"`
+	Confirm     bool     `json:"confirm" jsonschema:"Must be true to confirm moving the entities"`
 }
 
 type FolderActionOutput struct {

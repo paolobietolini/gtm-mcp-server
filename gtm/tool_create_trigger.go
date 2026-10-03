@@ -9,16 +9,16 @@ import (
 
 // CreateTriggerInput is the input for create_trigger tool.
 type CreateTriggerInput struct {
-	AccountID             string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID           string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID           string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	Name                  string `json:"name" jsonschema:"description:Trigger name"`
-	Type                  string `json:"type" jsonschema:"description:Trigger type (e.g. pageview, customEvent, linkClick, formSubmission, timer)"`
-	FilterJSON            string `json:"filterJson,omitempty" jsonschema:"description:JSON conditions; see gtm://best-practices/tool-input-formats"`
-	AutoEventFilterJSON   string `json:"autoEventFilterJson,omitempty" jsonschema:"description:JSON auto-event conditions; see gtm://best-practices/tool-input-formats"`
-	CustomEventFilterJSON string `json:"customEventFilterJson,omitempty" jsonschema:"description:JSON custom-event conditions; required for customEvent; see gtm://best-practices/tool-input-formats"`
-	EventNameJSON         string `json:"eventNameJson,omitempty" jsonschema:"description:Event name as JSON object {type, value} for timer triggers (optional)"`
-	Notes                 string `json:"notes,omitempty" jsonschema:"description:Trigger notes (optional)"`
+	AccountID             string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID           string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID           string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	Name                  string `json:"name" jsonschema:"Trigger name"`
+	Type                  string `json:"type" jsonschema:"Trigger type (e.g. pageview, customEvent, linkClick, formSubmission, timer)"`
+	FilterJSON            string `json:"filterJson,omitempty" jsonschema:"JSON conditions; see gtm://best-practices/tool-input-formats"`
+	AutoEventFilterJSON   string `json:"autoEventFilterJson,omitempty" jsonschema:"JSON auto-event conditions; see gtm://best-practices/tool-input-formats"`
+	CustomEventFilterJSON string `json:"customEventFilterJson,omitempty" jsonschema:"JSON custom-event conditions; required for customEvent; see gtm://best-practices/tool-input-formats"`
+	EventNameJSON         string `json:"eventNameJson,omitempty" jsonschema:"Event name as JSON object {type, value} for timer triggers (optional)"`
+	Notes                 string `json:"notes,omitempty" jsonschema:"Trigger notes (optional)"`
 }
 
 // CreateTriggerOutput is the output for create_trigger tool.

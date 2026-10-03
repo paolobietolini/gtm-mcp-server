@@ -9,8 +9,8 @@ import (
 
 // UpdateAccountInput is the input for update_account tool.
 type UpdateAccountInput struct {
-	AccountID string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	Name      string `json:"name" jsonschema:"description:New account display name"`
+	AccountID string `json:"accountId" jsonschema:"The GTM account ID"`
+	Name      string `json:"name" jsonschema:"New account display name"`
 }
 
 // UpdateAccountOutput is the output for update_account tool.

@@ -9,20 +9,20 @@ import (
 )
 
 type VersionLifecycleInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	VersionID   string `json:"versionId" jsonschema:"description:The container version ID"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	VersionID   string `json:"versionId" jsonschema:"The container version ID"`
 }
 
 type ConfirmVersionLifecycleInput struct {
 	VersionLifecycleInput
-	Confirm bool `json:"confirm" jsonschema:"description:Must be true to confirm the version state change"`
+	Confirm bool `json:"confirm" jsonschema:"Must be true to confirm the version state change"`
 }
 
 type UpdateVersionInput struct {
 	VersionLifecycleInput
-	Name        *string `json:"name,omitempty" jsonschema:"description:New version name; omit to preserve or pass empty to clear"`
-	Description *string `json:"description,omitempty" jsonschema:"description:New version description; omit to preserve or pass empty to clear"`
+	Name        *string `json:"name,omitempty" jsonschema:"New version name; omit to preserve or pass empty to clear"`
+	Description *string `json:"description,omitempty" jsonschema:"New version description; omit to preserve or pass empty to clear"`
 }
 
 type VersionLifecycleOutput struct {

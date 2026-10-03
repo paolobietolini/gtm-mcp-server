@@ -15,21 +15,21 @@ type ContainerAdminOutput struct {
 }
 
 type CombineContainersInput struct {
-	AccountID         string `json:"accountId" jsonschema:"description:The GTM account ID shared by both containers"`
-	ContainerID       string `json:"containerId" jsonschema:"description:The target container ID that remains after the combine"`
-	SourceContainerID string `json:"sourceContainerId" jsonschema:"description:The container ID merged into the target"`
-	SettingSource     string `json:"settingSource" jsonschema:"description:Which container settings to retain: current or other"`
-	Confirm           bool   `json:"confirm" jsonschema:"description:Must be true to confirm the irreversible container combine"`
+	AccountID         string `json:"accountId" jsonschema:"The GTM account ID shared by both containers"`
+	ContainerID       string `json:"containerId" jsonschema:"The target container ID that remains after the combine"`
+	SourceContainerID string `json:"sourceContainerId" jsonschema:"The container ID merged into the target"`
+	SettingSource     string `json:"settingSource" jsonschema:"Which container settings to retain: current or other"`
+	Confirm           bool   `json:"confirm" jsonschema:"Must be true to confirm the irreversible container combine"`
 }
 
 type MoveTagIDInput struct {
-	AccountID    string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID  string `json:"containerId" jsonschema:"description:The container currently holding the tag ID"`
-	TagID        string `json:"tagId" jsonschema:"description:The tag ID to remove from the current container"`
-	TagName      string `json:"tagName" jsonschema:"description:The name for the newly created container"`
-	CopySettings bool   `json:"copySettings,omitempty" jsonschema:"description:Copy tag settings to the newly created container"`
-	AcceptTerms  bool   `json:"acceptTerms" jsonschema:"description:Must be true to accept the terms copied to the new container"`
-	Confirm      bool   `json:"confirm" jsonschema:"description:Must be true to confirm moving the tag ID"`
+	AccountID    string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID  string `json:"containerId" jsonschema:"The container currently holding the tag ID"`
+	TagID        string `json:"tagId" jsonschema:"The tag ID to remove from the current container"`
+	TagName      string `json:"tagName" jsonschema:"The name for the newly created container"`
+	CopySettings bool   `json:"copySettings,omitempty" jsonschema:"Copy tag settings to the newly created container"`
+	AcceptTerms  bool   `json:"acceptTerms" jsonschema:"Must be true to accept the terms copied to the new container"`
+	Confirm      bool   `json:"confirm" jsonschema:"Must be true to confirm moving the tag ID"`
 }
 
 func registerCombineContainers(server *mcp.Server) {

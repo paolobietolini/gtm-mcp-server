@@ -10,14 +10,14 @@ import (
 
 // UpdateTransformationInput is the input for update_transformation tool.
 type UpdateTransformationInput struct {
-	AccountID        string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID      string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID      string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	TransformationID string `json:"transformationId" jsonschema:"description:The transformation ID to update"`
-	Name             string `json:"name" jsonschema:"description:Transformation name"`
-	Type             string `json:"type,omitempty" jsonschema:"description:One of tf_exclude_params, tf_allow_params, or tf_augment_event"`
-	ParametersJSON   string `json:"parametersJson,omitempty" jsonschema:"description:JSON parameter array; see gtm://best-practices/tool-input-formats"`
-	Notes            string `json:"notes,omitempty" jsonschema:"description:Transformation notes (optional)"`
+	AccountID        string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID      string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID      string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	TransformationID string `json:"transformationId" jsonschema:"The transformation ID to update"`
+	Name             string `json:"name" jsonschema:"Transformation name"`
+	Type             string `json:"type,omitempty" jsonschema:"One of tf_exclude_params, tf_allow_params, or tf_augment_event"`
+	ParametersJSON   string `json:"parametersJson,omitempty" jsonschema:"JSON parameter array; see gtm://best-practices/tool-input-formats"`
+	Notes            string `json:"notes,omitempty" jsonschema:"Transformation notes (optional)"`
 }
 
 // UpdateTransformationOutput is the output for update_transformation tool.

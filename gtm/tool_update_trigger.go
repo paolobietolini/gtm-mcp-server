@@ -10,17 +10,17 @@ import (
 
 // UpdateTriggerInput is the input for update_trigger tool.
 type UpdateTriggerInput struct {
-	AccountID             string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID           string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID           string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	TriggerID             string `json:"triggerId" jsonschema:"description:The trigger ID to update"`
-	Name                  string `json:"name" jsonschema:"description:Trigger name"`
-	Type                  string `json:"type" jsonschema:"description:Trigger type (e.g. pageview, customEvent, linkClick, triggerGroup)"`
-	FilterJSON            string `json:"filterJson,omitempty" jsonschema:"description:JSON conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
-	AutoEventFilterJSON   string `json:"autoEventFilterJson,omitempty" jsonschema:"description:JSON auto-event conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
-	CustomEventFilterJSON string `json:"customEventFilterJson,omitempty" jsonschema:"description:JSON custom-event conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
-	ParameterJSON         string `json:"parameterJson,omitempty" jsonschema:"description:JSON parameters; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
-	Notes                 string `json:"notes,omitempty" jsonschema:"description:Trigger notes (optional)"`
+	AccountID             string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID           string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID           string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	TriggerID             string `json:"triggerId" jsonschema:"The trigger ID to update"`
+	Name                  string `json:"name" jsonschema:"Trigger name"`
+	Type                  string `json:"type" jsonschema:"Trigger type (e.g. pageview, customEvent, linkClick, triggerGroup)"`
+	FilterJSON            string `json:"filterJson,omitempty" jsonschema:"JSON conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
+	AutoEventFilterJSON   string `json:"autoEventFilterJson,omitempty" jsonschema:"JSON auto-event conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
+	CustomEventFilterJSON string `json:"customEventFilterJson,omitempty" jsonschema:"JSON custom-event conditions; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
+	ParameterJSON         string `json:"parameterJson,omitempty" jsonschema:"JSON parameters; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
+	Notes                 string `json:"notes,omitempty" jsonschema:"Trigger notes (optional)"`
 }
 
 // UpdateTriggerOutput is the output for update_trigger tool.

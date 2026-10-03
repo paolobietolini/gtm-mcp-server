@@ -10,8 +10,8 @@ import (
 
 type BulkUpdateWorkspaceInput struct {
 	WorkspaceInput
-	ChangesJSON string `json:"changesJson" jsonschema:"description:JSON object containing a non-empty changes array of GTM Entity objects"`
-	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to apply all proposed workspace changes"`
+	ChangesJSON string `json:"changesJson" jsonschema:"JSON object containing a non-empty changes array of GTM Entity objects"`
+	Confirm     bool   `json:"confirm" jsonschema:"Must be true to apply all proposed workspace changes"`
 }
 
 type BulkUpdateWorkspaceOutput struct {
@@ -22,9 +22,9 @@ type BulkUpdateWorkspaceOutput struct {
 
 type ResolveWorkspaceConflictInput struct {
 	WorkspaceInput
-	Fingerprint string `json:"fingerprint" jsonschema:"description:Fingerprint of entityInWorkspace from the merge conflict"`
-	EntityJSON  string `json:"entityJson" jsonschema:"description:The fully resolved GTM Entity as JSON"`
-	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to replace the conflicting entity"`
+	Fingerprint string `json:"fingerprint" jsonschema:"Fingerprint of entityInWorkspace from the merge conflict"`
+	EntityJSON  string `json:"entityJson" jsonschema:"The fully resolved GTM Entity as JSON"`
+	Confirm     bool   `json:"confirm" jsonschema:"Must be true to replace the conflicting entity"`
 }
 
 type WorkspaceActionOutput struct {
@@ -34,7 +34,7 @@ type WorkspaceActionOutput struct {
 
 type SyncWorkspaceInput struct {
 	WorkspaceInput
-	Confirm bool `json:"confirm" jsonschema:"description:Must be true to synchronize the workspace"`
+	Confirm bool `json:"confirm" jsonschema:"Must be true to synchronize the workspace"`
 }
 
 type SyncWorkspaceOutput struct {

@@ -9,11 +9,11 @@ import (
 
 // DeleteTagInput is the input for delete_tag tool.
 type DeleteTagInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	TagID       string `json:"tagId" jsonschema:"description:The tag ID to delete"`
-	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to confirm deletion. This is a safety guard."`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	TagID       string `json:"tagId" jsonschema:"The tag ID to delete"`
+	Confirm     bool   `json:"confirm" jsonschema:"Must be true to confirm deletion. This is a safety guard."`
 }
 
 // DeleteTagOutput is the output for delete_tag tool.

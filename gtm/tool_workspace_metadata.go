@@ -9,9 +9,9 @@ import (
 )
 
 type WorkspaceInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
 }
 
 type WorkspaceOutput struct {
@@ -19,11 +19,11 @@ type WorkspaceOutput struct {
 }
 
 type UpdateWorkspaceInput struct {
-	AccountID   string  `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string  `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string  `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	Name        *string `json:"name,omitempty" jsonschema:"description:New workspace name; omit to preserve it"`
-	Description *string `json:"description,omitempty" jsonschema:"description:New description; omit to preserve or pass an empty string to clear"`
+	AccountID   string  `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string  `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string  `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	Name        *string `json:"name,omitempty" jsonschema:"New workspace name; omit to preserve it"`
+	Description *string `json:"description,omitempty" jsonschema:"New description; omit to preserve or pass an empty string to clear"`
 }
 
 type UpdateWorkspaceOutput struct {
@@ -33,10 +33,10 @@ type UpdateWorkspaceOutput struct {
 }
 
 type DeleteWorkspaceInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to confirm workspace deletion"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	Confirm     bool   `json:"confirm" jsonschema:"Must be true to confirm workspace deletion"`
 }
 
 type DeleteWorkspaceOutput struct {

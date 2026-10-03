@@ -9,14 +9,14 @@ import (
 )
 
 type EnvironmentInput struct {
-	AccountID     string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID   string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	EnvironmentID string `json:"environmentId" jsonschema:"description:The GTM environment ID"`
+	AccountID     string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID   string `json:"containerId" jsonschema:"The GTM container ID"`
+	EnvironmentID string `json:"environmentId" jsonschema:"The GTM environment ID"`
 }
 
 type EnvironmentContainerInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
 }
 
 type ListEnvironmentsOutput struct {
@@ -34,27 +34,27 @@ type EnvironmentMutationOutput struct {
 }
 
 type CreateEnvironmentInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	Name        string `json:"name" jsonschema:"description:Environment display name"`
-	Description string `json:"description,omitempty" jsonschema:"description:Optional environment description"`
-	URL         string `json:"url,omitempty" jsonschema:"description:Optional default preview URL"`
-	EnableDebug bool   `json:"enableDebug,omitempty" jsonschema:"description:Enable debugging by default"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	Name        string `json:"name" jsonschema:"Environment display name"`
+	Description string `json:"description,omitempty" jsonschema:"Optional environment description"`
+	URL         string `json:"url,omitempty" jsonschema:"Optional default preview URL"`
+	EnableDebug bool   `json:"enableDebug,omitempty" jsonschema:"Enable debugging by default"`
 }
 
 type UpdateEnvironmentInput struct {
 	EnvironmentInput
-	Name               *string `json:"name,omitempty" jsonschema:"description:New name; omit to preserve"`
-	Description        *string `json:"description,omitempty" jsonschema:"description:New description; omit to preserve or pass empty to clear"`
-	URL                *string `json:"url,omitempty" jsonschema:"description:New preview URL; omit to preserve or pass empty to clear"`
-	EnableDebug        *bool   `json:"enableDebug,omitempty" jsonschema:"description:New debug setting; omit to preserve"`
-	ContainerVersionID *string `json:"containerVersionId,omitempty" jsonschema:"description:Container version exposed by this environment; omit to preserve or pass empty to clear"`
-	WorkspaceID        *string `json:"workspaceId,omitempty" jsonschema:"description:Workspace exposed by this environment; omit to preserve or pass empty to clear"`
+	Name               *string `json:"name,omitempty" jsonschema:"New name; omit to preserve"`
+	Description        *string `json:"description,omitempty" jsonschema:"New description; omit to preserve or pass empty to clear"`
+	URL                *string `json:"url,omitempty" jsonschema:"New preview URL; omit to preserve or pass empty to clear"`
+	EnableDebug        *bool   `json:"enableDebug,omitempty" jsonschema:"New debug setting; omit to preserve"`
+	ContainerVersionID *string `json:"containerVersionId,omitempty" jsonschema:"Container version exposed by this environment; omit to preserve or pass empty to clear"`
+	WorkspaceID        *string `json:"workspaceId,omitempty" jsonschema:"Workspace exposed by this environment; omit to preserve or pass empty to clear"`
 }
 
 type ConfirmEnvironmentInput struct {
 	EnvironmentInput
-	Confirm bool `json:"confirm" jsonschema:"description:Must be true to confirm the operation"`
+	Confirm bool `json:"confirm" jsonschema:"Must be true to confirm the operation"`
 }
 
 type DeleteEnvironmentOutput struct {

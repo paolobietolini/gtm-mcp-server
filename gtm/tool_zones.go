@@ -10,10 +10,10 @@ import (
 )
 
 type ZoneInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	ZoneID      string `json:"zoneId" jsonschema:"description:The GTM zone ID"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	ZoneID      string `json:"zoneId" jsonschema:"The GTM zone ID"`
 }
 
 type ListZonesOutput struct {
@@ -31,33 +31,33 @@ type ZoneMutationOutput struct {
 }
 
 type CreateZoneInput struct {
-	AccountID                  string                    `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID                string                    `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID                string                    `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	Name                       string                    `json:"name" jsonschema:"description:Zone display name"`
-	Notes                      string                    `json:"notes,omitempty" jsonschema:"description:Optional zone notes"`
-	BoundaryConditionsJSON     string                    `json:"boundaryConditionsJson,omitempty" jsonschema:"description:JSON array of boundary conditions; see the trigger condition format"`
-	CustomEvaluationTriggerIDs []string                  `json:"customEvaluationTriggerIds,omitempty" jsonschema:"description:Trigger IDs that cause boundary evaluation"`
-	ChildContainers            []ZoneChildContainerInput `json:"childContainers,omitempty" jsonschema:"description:Containers governed as children of this zone"`
-	TypeRestriction            *ZoneTypeRestrictionInput `json:"typeRestriction,omitempty" jsonschema:"description:Optional tag type restriction settings"`
+	AccountID                  string                    `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID                string                    `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID                string                    `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	Name                       string                    `json:"name" jsonschema:"Zone display name"`
+	Notes                      string                    `json:"notes,omitempty" jsonschema:"Optional zone notes"`
+	BoundaryConditionsJSON     string                    `json:"boundaryConditionsJson,omitempty" jsonschema:"JSON array of boundary conditions; see the trigger condition format"`
+	CustomEvaluationTriggerIDs []string                  `json:"customEvaluationTriggerIds,omitempty" jsonschema:"Trigger IDs that cause boundary evaluation"`
+	ChildContainers            []ZoneChildContainerInput `json:"childContainers,omitempty" jsonschema:"Containers governed as children of this zone"`
+	TypeRestriction            *ZoneTypeRestrictionInput `json:"typeRestriction,omitempty" jsonschema:"Optional tag type restriction settings"`
 }
 
 type UpdateZoneInput struct {
-	AccountID                  string                     `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID                string                     `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID                string                     `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	ZoneID                     string                     `json:"zoneId" jsonschema:"description:The GTM zone ID"`
-	Name                       *string                    `json:"name,omitempty" jsonschema:"description:New name; omit to preserve"`
-	Notes                      *string                    `json:"notes,omitempty" jsonschema:"description:New notes; omit to preserve or pass empty to clear"`
-	BoundaryConditionsJSON     *string                    `json:"boundaryConditionsJson,omitempty" jsonschema:"description:JSON boundary conditions; omit to preserve or pass [] to clear"`
-	CustomEvaluationTriggerIDs *[]string                  `json:"customEvaluationTriggerIds,omitempty" jsonschema:"description:Trigger IDs; omit to preserve or pass [] to clear"`
-	ChildContainers            *[]ZoneChildContainerInput `json:"childContainers,omitempty" jsonschema:"description:Child containers; omit to preserve or pass [] to clear"`
-	TypeRestriction            *ZoneTypeRestrictionInput  `json:"typeRestriction,omitempty" jsonschema:"description:New tag type restriction settings; omit to preserve"`
+	AccountID                  string                     `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID                string                     `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID                string                     `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	ZoneID                     string                     `json:"zoneId" jsonschema:"The GTM zone ID"`
+	Name                       *string                    `json:"name,omitempty" jsonschema:"New name; omit to preserve"`
+	Notes                      *string                    `json:"notes,omitempty" jsonschema:"New notes; omit to preserve or pass empty to clear"`
+	BoundaryConditionsJSON     *string                    `json:"boundaryConditionsJson,omitempty" jsonschema:"JSON boundary conditions; omit to preserve or pass [] to clear"`
+	CustomEvaluationTriggerIDs *[]string                  `json:"customEvaluationTriggerIds,omitempty" jsonschema:"Trigger IDs; omit to preserve or pass [] to clear"`
+	ChildContainers            *[]ZoneChildContainerInput `json:"childContainers,omitempty" jsonschema:"Child containers; omit to preserve or pass [] to clear"`
+	TypeRestriction            *ZoneTypeRestrictionInput  `json:"typeRestriction,omitempty" jsonschema:"New tag type restriction settings; omit to preserve"`
 }
 
 type DeleteZoneInput struct {
 	ZoneInput
-	Confirm bool `json:"confirm" jsonschema:"description:Must be true to confirm zone deletion"`
+	Confirm bool `json:"confirm" jsonschema:"Must be true to confirm zone deletion"`
 }
 
 type DeleteZoneOutput struct {

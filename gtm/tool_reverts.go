@@ -10,9 +10,9 @@ import (
 
 type RevertWorkspaceEntityInput struct {
 	WorkspaceInput
-	ResourceType string `json:"resourceType" jsonschema:"description:Resource family: builtInVariable, client, tag, template, transformation, trigger, variable, or zone"`
-	ResourceID   string `json:"resourceId" jsonschema:"description:Entity ID, or the built-in variable type for builtInVariable"`
-	Confirm      bool   `json:"confirm" jsonschema:"description:Must be true to discard the entity's workspace changes"`
+	ResourceType string `json:"resourceType" jsonschema:"Resource family: builtInVariable, client, tag, template, transformation, trigger, variable, or zone"`
+	ResourceID   string `json:"resourceId" jsonschema:"Entity ID, or the built-in variable type for builtInVariable"`
+	Confirm      bool   `json:"confirm" jsonschema:"Must be true to discard the entity's workspace changes"`
 }
 
 type RevertWorkspaceEntityOutput struct {

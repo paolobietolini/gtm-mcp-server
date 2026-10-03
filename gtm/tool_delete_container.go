@@ -9,9 +9,9 @@ import (
 
 // DeleteContainerInput is the input for delete_container tool.
 type DeleteContainerInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	Confirm     bool   `json:"confirm" jsonschema:"description:Must be true to confirm deletion. This is a safety guard."`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	Confirm     bool   `json:"confirm" jsonschema:"Must be true to confirm deletion. This is a safety guard."`
 }
 
 // DeleteContainerOutput is the output for delete_container tool.

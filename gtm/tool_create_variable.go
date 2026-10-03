@@ -9,13 +9,13 @@ import (
 
 // CreateVariableInput is the input for create_variable tool.
 type CreateVariableInput struct {
-	AccountID      string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID    string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID    string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	Name           string `json:"name" jsonschema:"description:Variable name"`
-	Type           string `json:"type" jsonschema:"description:Variable type (e.g. c for Constant, v for Data Layer, k for Cookie, jsm for Custom JavaScript)"`
-	ParametersJSON string `json:"parametersJson,omitempty" jsonschema:"description:Variable parameters as JSON array (required for most types)"`
-	Notes          string `json:"notes,omitempty" jsonschema:"description:Variable notes (optional)"`
+	AccountID      string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID    string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID    string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	Name           string `json:"name" jsonschema:"Variable name"`
+	Type           string `json:"type" jsonschema:"Variable type (e.g. c for Constant, v for Data Layer, k for Cookie, jsm for Custom JavaScript)"`
+	ParametersJSON string `json:"parametersJson,omitempty" jsonschema:"Variable parameters as JSON array (required for most types)"`
+	Notes          string `json:"notes,omitempty" jsonschema:"Variable notes (optional)"`
 }
 
 // CreateVariableOutput is the output for create_variable tool.

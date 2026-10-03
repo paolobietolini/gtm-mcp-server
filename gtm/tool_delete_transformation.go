@@ -9,11 +9,11 @@ import (
 
 // DeleteTransformationInput is the input for delete_transformation tool.
 type DeleteTransformationInput struct {
-	AccountID        string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID      string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID      string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	TransformationID string `json:"transformationId" jsonschema:"description:The transformation ID to delete"`
-	Confirm          bool   `json:"confirm" jsonschema:"description:Must be true to confirm deletion. This is a safety guard."`
+	AccountID        string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID      string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID      string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	TransformationID string `json:"transformationId" jsonschema:"The transformation ID to delete"`
+	Confirm          bool   `json:"confirm" jsonschema:"Must be true to confirm deletion. This is a safety guard."`
 }
 
 // DeleteTransformationOutput is the output for delete_transformation tool.

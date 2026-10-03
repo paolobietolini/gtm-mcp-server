@@ -10,10 +10,10 @@ import (
 
 // CreateWorkspaceInput is the input for create_workspace tool.
 type CreateWorkspaceInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	Name        string `json:"name" jsonschema:"description:Workspace display name"`
-	Description string `json:"description,omitempty" jsonschema:"description:Workspace description (optional)"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	Name        string `json:"name" jsonschema:"Workspace display name"`
+	Description string `json:"description,omitempty" jsonschema:"Workspace description (optional)"`
 }
 
 // CreateWorkspaceOutput is the output for create_workspace tool.

@@ -25,13 +25,13 @@ type Zone struct {
 }
 
 type ZoneChildContainerInput struct {
-	PublicID string `json:"publicId" jsonschema:"description:Child container public ID such as GTM-ABC123"`
-	Nickname string `json:"nickname,omitempty" jsonschema:"description:Optional nickname inside the zone"`
+	PublicID string `json:"publicId" jsonschema:"Child container public ID such as GTM-ABC123"`
+	Nickname string `json:"nickname,omitempty" jsonschema:"Optional nickname inside the zone"`
 }
 
 type ZoneTypeRestrictionInput struct {
-	Enabled            bool     `json:"enabled" jsonschema:"description:Whether tag type restrictions are enabled"`
-	WhitelistedTypeIDs []string `json:"whitelistedTypeIds,omitempty" jsonschema:"description:Allowed tag template public IDs"`
+	Enabled            bool     `json:"enabled" jsonschema:"Whether tag type restrictions are enabled"`
+	WhitelistedTypeIDs []string `json:"whitelistedTypeIds,omitempty" jsonschema:"Allowed tag template public IDs"`
 }
 
 type ZoneCreateConfig struct {

@@ -11,21 +11,21 @@ import (
 
 // UpdateTagInput is the input for update_tag tool.
 type UpdateTagInput struct {
-	AccountID          string   `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID        string   `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID        string   `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	TagID              string   `json:"tagId" jsonschema:"description:The tag ID to update"`
-	Name               string   `json:"name,omitempty" jsonschema:"description:Tag name. If omitted\\, existing name is preserved."`
-	Type               string   `json:"type,omitempty" jsonschema:"description:Tag type. If omitted\\, existing type is preserved."`
-	FiringTriggerIDs   []string `json:"firingTriggerIds,omitempty" jsonschema:"description:Array of trigger IDs that fire this tag. If omitted\\, existing triggers are preserved."`
-	BlockingTriggerIDs []string `json:"blockingTriggerIds,omitempty" jsonschema:"description:Array of trigger IDs that block this tag. If omitted\\, existing blocking triggers are preserved."`
-	ParametersJSON     string   `json:"parametersJson,omitempty" jsonschema:"description:JSON parameters; omit to preserve; see gtm://best-practices/tool-input-formats"`
-	SetupTagJSON       string   `json:"setupTagJson,omitempty" jsonschema:"description:JSON setup sequence; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
-	TeardownTagJSON    string   `json:"teardownTagJson,omitempty" jsonschema:"description:JSON teardown sequence; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
-	ConsentStatus      string   `json:"consentStatus,omitempty" jsonschema:"description:Consent status: notSet (default/clear)\\, notNeeded (no consent required)\\, needed (requires consent types to be granted before firing). If omitted\\, existing consent settings are preserved."`
-	ConsentTypes       string   `json:"consentTypes,omitempty" jsonschema:"description:Comma-separated consent types when consentStatus is needed (e.g. ad_storage\\,analytics_storage\\,ad_user_data\\,ad_personalization). Ignored when consentStatus is notSet or notNeeded."`
-	Notes              string   `json:"notes,omitempty" jsonschema:"description:Tag notes. If omitted\\, existing notes are preserved."`
-	Paused             *bool    `json:"paused,omitempty" jsonschema:"description:Whether tag is paused. If omitted\\, existing paused state is preserved."`
+	AccountID          string   `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID        string   `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID        string   `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	TagID              string   `json:"tagId" jsonschema:"The tag ID to update"`
+	Name               string   `json:"name,omitempty" jsonschema:"Tag name. If omitted\\, existing name is preserved."`
+	Type               string   `json:"type,omitempty" jsonschema:"Tag type. If omitted\\, existing type is preserved."`
+	FiringTriggerIDs   []string `json:"firingTriggerIds,omitempty" jsonschema:"Array of trigger IDs that fire this tag. If omitted\\, existing triggers are preserved."`
+	BlockingTriggerIDs []string `json:"blockingTriggerIds,omitempty" jsonschema:"Array of trigger IDs that block this tag. If omitted\\, existing blocking triggers are preserved."`
+	ParametersJSON     string   `json:"parametersJson,omitempty" jsonschema:"JSON parameters; omit to preserve; see gtm://best-practices/tool-input-formats"`
+	SetupTagJSON       string   `json:"setupTagJson,omitempty" jsonschema:"JSON setup sequence; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
+	TeardownTagJSON    string   `json:"teardownTagJson,omitempty" jsonschema:"JSON teardown sequence; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
+	ConsentStatus      string   `json:"consentStatus,omitempty" jsonschema:"Consent status: notSet (default/clear)\\, notNeeded (no consent required)\\, needed (requires consent types to be granted before firing). If omitted\\, existing consent settings are preserved."`
+	ConsentTypes       string   `json:"consentTypes,omitempty" jsonschema:"Comma-separated consent types when consentStatus is needed (e.g. ad_storage\\,analytics_storage\\,ad_user_data\\,ad_personalization). Ignored when consentStatus is notSet or notNeeded."`
+	Notes              string   `json:"notes,omitempty" jsonschema:"Tag notes. If omitted\\, existing notes are preserved."`
+	Paused             *bool    `json:"paused,omitempty" jsonschema:"Whether tag is paused. If omitted\\, existing paused state is preserved."`
 }
 
 // UpdateTagOutput is the output for update_tag tool.

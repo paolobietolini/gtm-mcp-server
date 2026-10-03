@@ -9,9 +9,9 @@ import (
 )
 
 type GetVersionInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	VersionID   string `json:"versionId" jsonschema:"description:The saved container version ID"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	VersionID   string `json:"versionId" jsonschema:"The saved container version ID"`
 }
 
 type GetVersionOutput struct {
@@ -19,8 +19,8 @@ type GetVersionOutput struct {
 }
 
 type LookupContainerInput struct {
-	DestinationID string `json:"destinationId,omitempty" jsonschema:"description:A destination ID such as AW-123456; provide exactly one lookup field"`
-	TagID         string `json:"tagId,omitempty" jsonschema:"description:A GTM public ID such as GTM-ABC123; provide exactly one lookup field"`
+	DestinationID string `json:"destinationId,omitempty" jsonschema:"A destination ID such as AW-123456; provide exactly one lookup field"`
+	TagID         string `json:"tagId,omitempty" jsonschema:"A GTM public ID such as GTM-ABC123; provide exactly one lookup field"`
 }
 
 type LookupContainerOutput struct {

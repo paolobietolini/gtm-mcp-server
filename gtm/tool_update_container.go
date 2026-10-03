@@ -9,9 +9,9 @@ import (
 
 // UpdateContainerInput is the input for update_container tool.
 type UpdateContainerInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	Name        string `json:"name" jsonschema:"description:New container display name"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	Name        string `json:"name" jsonschema:"New container display name"`
 }
 
 // UpdateContainerOutput is the output for update_container tool.

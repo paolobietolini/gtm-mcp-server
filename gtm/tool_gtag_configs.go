@@ -10,10 +10,10 @@ import (
 )
 
 type GoogleTagConfigInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	ConfigID    string `json:"gtagConfigId" jsonschema:"description:The Google tag config ID"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	ConfigID    string `json:"gtagConfigId" jsonschema:"The Google tag config ID"`
 }
 
 type ListGoogleTagConfigsOutput struct {
@@ -27,22 +27,22 @@ type GoogleTagConfigOutput struct {
 }
 
 type CreateGoogleTagConfigInput struct {
-	AccountID      string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID    string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID    string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	Type           string `json:"type" jsonschema:"description:The Google tag configuration type"`
-	ParametersJSON string `json:"parametersJson,omitempty" jsonschema:"description:Google tag parameters as a JSON array; each parameter has type, key, value, list, or map fields"`
+	AccountID      string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID    string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID    string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	Type           string `json:"type" jsonschema:"The Google tag configuration type"`
+	ParametersJSON string `json:"parametersJson,omitempty" jsonschema:"Google tag parameters as a JSON array; each parameter has type, key, value, list, or map fields"`
 }
 
 type UpdateGoogleTagConfigInput struct {
 	GoogleTagConfigInput
-	Type           *string `json:"type,omitempty" jsonschema:"description:New config type; omit to preserve"`
-	ParametersJSON *string `json:"parametersJson,omitempty" jsonschema:"description:New parameters as a JSON array; omit to preserve or pass [] to clear"`
+	Type           *string `json:"type,omitempty" jsonschema:"New config type; omit to preserve"`
+	ParametersJSON *string `json:"parametersJson,omitempty" jsonschema:"New parameters as a JSON array; omit to preserve or pass [] to clear"`
 }
 
 type DeleteGoogleTagConfigInput struct {
 	GoogleTagConfigInput
-	Confirm bool `json:"confirm" jsonschema:"description:Must be true to confirm deletion"`
+	Confirm bool `json:"confirm" jsonschema:"Must be true to confirm deletion"`
 }
 
 type DeleteGoogleTagConfigOutput struct {

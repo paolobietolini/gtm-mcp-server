@@ -8,10 +8,10 @@ import (
 )
 
 type GetTriggerInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	TriggerID   string `json:"triggerId" jsonschema:"description:The trigger ID to retrieve"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	TriggerID   string `json:"triggerId" jsonschema:"The trigger ID to retrieve"`
 }
 type GetTriggerOutput struct {
 	Trigger Trigger `json:"trigger"`

@@ -8,10 +8,10 @@ import (
 )
 
 type GetVariableInput struct {
-	AccountID   string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	VariableID  string `json:"variableId" jsonschema:"description:The variable ID to retrieve"`
+	AccountID   string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	VariableID  string `json:"variableId" jsonschema:"The variable ID to retrieve"`
 }
 type GetVariableOutput struct {
 	Variable Variable `json:"variable"`

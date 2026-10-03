@@ -11,20 +11,20 @@ import (
 
 // CreateTagInput is the input for create_tag tool.
 type CreateTagInput struct {
-	AccountID          string   `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID        string   `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID        string   `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	Name               string   `json:"name" jsonschema:"description:Tag name"`
-	Type               string   `json:"type" jsonschema:"description:Tag type (e.g. gaawe for GA4, html for Custom HTML)"`
-	FiringTriggerIDs   []string `json:"firingTriggerIds" jsonschema:"description:Array of trigger IDs that fire this tag"`
-	BlockingTriggerIDs []string `json:"blockingTriggerIds,omitempty" jsonschema:"description:Array of trigger IDs that block this tag (optional)"`
-	ParametersJSON     string   `json:"parametersJson,omitempty" jsonschema:"description:JSON parameters; see gtm://best-practices/tool-input-formats"`
-	SetupTagJSON       string   `json:"setupTagJson,omitempty" jsonschema:"description:JSON setup sequence; see gtm://best-practices/tool-input-formats"`
-	TeardownTagJSON    string   `json:"teardownTagJson,omitempty" jsonschema:"description:JSON teardown sequence; see gtm://best-practices/tool-input-formats"`
-	ConsentStatus      string   `json:"consentStatus,omitempty" jsonschema:"description:Consent status: notSet (default)\\, notNeeded (no consent required)\\, needed (requires consent types to be granted before firing)."`
-	ConsentTypes       string   `json:"consentTypes,omitempty" jsonschema:"description:Comma-separated consent types when consentStatus is needed (e.g. ad_storage\\,analytics_storage\\,ad_user_data\\,ad_personalization). Ignored when consentStatus is notSet or notNeeded."`
-	Notes              string   `json:"notes,omitempty" jsonschema:"description:Tag notes (optional)"`
-	Paused             bool     `json:"paused,omitempty" jsonschema:"description:Whether tag is paused (optional)"`
+	AccountID          string   `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID        string   `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID        string   `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	Name               string   `json:"name" jsonschema:"Tag name"`
+	Type               string   `json:"type" jsonschema:"Tag type (e.g. gaawe for GA4, html for Custom HTML)"`
+	FiringTriggerIDs   []string `json:"firingTriggerIds" jsonschema:"Array of trigger IDs that fire this tag"`
+	BlockingTriggerIDs []string `json:"blockingTriggerIds,omitempty" jsonschema:"Array of trigger IDs that block this tag (optional)"`
+	ParametersJSON     string   `json:"parametersJson,omitempty" jsonschema:"JSON parameters; see gtm://best-practices/tool-input-formats"`
+	SetupTagJSON       string   `json:"setupTagJson,omitempty" jsonschema:"JSON setup sequence; see gtm://best-practices/tool-input-formats"`
+	TeardownTagJSON    string   `json:"teardownTagJson,omitempty" jsonschema:"JSON teardown sequence; see gtm://best-practices/tool-input-formats"`
+	ConsentStatus      string   `json:"consentStatus,omitempty" jsonschema:"Consent status: notSet (default)\\, notNeeded (no consent required)\\, needed (requires consent types to be granted before firing)."`
+	ConsentTypes       string   `json:"consentTypes,omitempty" jsonschema:"Comma-separated consent types when consentStatus is needed (e.g. ad_storage\\,analytics_storage\\,ad_user_data\\,ad_personalization). Ignored when consentStatus is notSet or notNeeded."`
+	Notes              string   `json:"notes,omitempty" jsonschema:"Tag notes (optional)"`
+	Paused             bool     `json:"paused,omitempty" jsonschema:"Whether tag is paused (optional)"`
 }
 
 // CreateTagOutput is the output for create_tag tool.

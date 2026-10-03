@@ -10,12 +10,12 @@ import (
 
 // UpdateTemplateInput is the input for update_template tool.
 type UpdateTemplateInput struct {
-	AccountID    string `json:"accountId" jsonschema:"description:The GTM account ID"`
-	ContainerID  string `json:"containerId" jsonschema:"description:The GTM container ID"`
-	WorkspaceID  string `json:"workspaceId" jsonschema:"description:The GTM workspace ID"`
-	TemplateID   string `json:"templateId" jsonschema:"description:The template ID to update"`
-	Name         string `json:"name,omitempty" jsonschema:"description:Internal template name (optional). Note: This is NOT the visible display name. The visible name comes from the displayName field inside the ___INFO___ section of templateData."`
-	TemplateData string `json:"templateData,omitempty" jsonschema:"description:New template code in .tpl format (optional)"`
+	AccountID    string `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID  string `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID  string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	TemplateID   string `json:"templateId" jsonschema:"The template ID to update"`
+	Name         string `json:"name,omitempty" jsonschema:"Internal template name (optional). Note: This is NOT the visible display name. The visible name comes from the displayName field inside the ___INFO___ section of templateData."`
+	TemplateData string `json:"templateData,omitempty" jsonschema:"New template code in .tpl format (optional)"`
 }
 
 // UpdateTemplateOutput is the output for update_template tool.
