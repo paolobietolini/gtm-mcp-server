@@ -73,8 +73,11 @@ func (c *Client) UpdateTag(ctx context.Context, path string, input *TagInput) (*
 	if input.HasParameter {
 		tag.Parameter = toAPIParams(input.Parameter)
 	}
-	if input.Notes != "" {
+	if input.HasNotes {
 		tag.Notes = input.Notes
+		if input.Notes == "" {
+			tag.ForceSendFields = append(tag.ForceSendFields, "Notes")
+		}
 	}
 	if input.HasPaused {
 		tag.Paused = input.Paused
@@ -227,6 +230,14 @@ func (c *Client) UpdateTrigger(ctx context.Context, path string, input *TriggerI
 		forceSendFields = append(forceSendFields, "Parameter")
 	}
 
+	notes := current.Notes
+	if input.HasNotes {
+		notes = input.Notes
+		if notes == "" {
+			forceSendFields = append(forceSendFields, "Notes")
+		}
+	}
+
 	trigger := &tagmanager.Trigger{
 		ForceSendFields:   forceSendFields,
 		Name:              input.Name,
@@ -235,7 +246,8 @@ func (c *Client) UpdateTrigger(ctx context.Context, path string, input *TriggerI
 		AutoEventFilter:   autoEventFilter,
 		CustomEventFilter: customEventFilter,
 		Parameter:         params,
-		Notes:             input.Notes,
+		Notes:             notes,
+		ParentFolderId:    current.ParentFolderId,
 		// Preserve trigger-specific fields from current trigger (exclude auto-generated ones)
 		CheckValidation:                current.CheckValidation,
 		WaitForTags:                    current.WaitForTags,
@@ -309,19 +321,31 @@ func (c *Client) CreateVariable(ctx context.Context, accountID, containerID, wor
 	}, nil
 }
 
-// UpdateVariable updates an existing variable. It fetches the current variable first to get the fingerprint.
+// UpdateVariable updates an existing variable. It starts from the current
+// resource because the GTM API uses PUT and omitted fields would otherwise be
+// erased.
 func (c *Client) UpdateVariable(ctx context.Context, path string, input *VariableInput) (*CreatedVariable, error) {
-	// Get current variable for fingerprint
+	// Get current variable for fingerprint and to preserve unset fields.
 	current, err := c.Service.Accounts.Containers.Workspaces.Variables.Get(path).Context(ctx).Do()
 	if err != nil {
 		return nil, mapGoogleError(err)
 	}
 
-	variable := &tagmanager.Variable{
-		Name:      input.Name,
-		Type:      input.Type,
-		Parameter: toAPIParams(input.Parameter),
-		Notes:     input.Notes,
+	variable := current
+	variable.Name = input.Name
+	variable.Type = input.Type
+	if input.HasParameter {
+		variable.Parameter = toAPIParams(input.Parameter)
+		if len(input.Parameter) == 0 {
+			variable.Parameter = []*tagmanager.Parameter{}
+			variable.ForceSendFields = append(variable.ForceSendFields, "Parameter")
+		}
+	}
+	if input.HasNotes {
+		variable.Notes = input.Notes
+		if input.Notes == "" {
+			variable.ForceSendFields = append(variable.ForceSendFields, "Notes")
+		}
 	}
 
 	result, err := c.Service.Accounts.Containers.Workspaces.Variables.Update(path, variable).Fingerprint(current.Fingerprint).Context(ctx).Do()

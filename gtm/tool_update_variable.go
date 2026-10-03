@@ -10,14 +10,14 @@ import (
 
 // UpdateVariableInput is the input for update_variable tool.
 type UpdateVariableInput struct {
-	AccountID      string `json:"accountId" jsonschema:"The GTM account ID"`
-	ContainerID    string `json:"containerId" jsonschema:"The GTM container ID"`
-	WorkspaceID    string `json:"workspaceId" jsonschema:"The GTM workspace ID"`
-	VariableID     string `json:"variableId" jsonschema:"The variable ID to update"`
-	Name           string `json:"name" jsonschema:"Variable name"`
-	Type           string `json:"type" jsonschema:"Variable type (e.g. c for Constant, v for Data Layer, k for Cookie, jsm for Custom JavaScript)"`
-	ParametersJSON string `json:"parametersJson,omitempty" jsonschema:"Variable parameters as JSON array (required for most types)"`
-	Notes          string `json:"notes,omitempty" jsonschema:"Variable notes (optional)"`
+	AccountID      string  `json:"accountId" jsonschema:"The GTM account ID"`
+	ContainerID    string  `json:"containerId" jsonschema:"The GTM container ID"`
+	WorkspaceID    string  `json:"workspaceId" jsonschema:"The GTM workspace ID"`
+	VariableID     string  `json:"variableId" jsonschema:"The variable ID to update"`
+	Name           string  `json:"name" jsonschema:"Variable name"`
+	Type           string  `json:"type" jsonschema:"Variable type (e.g. c for Constant, v for Data Layer, k for Cookie, jsm for Custom JavaScript)"`
+	ParametersJSON string  `json:"parametersJson,omitempty" jsonschema:"Variable parameters as JSON array; omit to preserve or pass [] to clear"`
+	Notes          *string `json:"notes,omitempty" jsonschema:"Variable notes. Omit to preserve or pass an empty string to clear."`
 }
 
 // UpdateVariableOutput is the output for update_variable tool.
@@ -47,17 +47,23 @@ func registerUpdateVariable(server *mcp.Server) {
 		path := BuildVariablePath(wc.AccountID, wc.ContainerID, wc.WorkspaceID, input.VariableID)
 
 		var params []Parameter
+		var hasParams bool
 		if input.ParametersJSON != "" {
+			hasParams = true
 			if err := json.Unmarshal([]byte(input.ParametersJSON), &params); err != nil {
 				return nil, UpdateVariableOutput{}, fmt.Errorf("invalid parametersJson: %w", err)
 			}
 		}
 
 		variableInput := &VariableInput{
-			Name:      input.Name,
-			Type:      input.Type,
-			Parameter: params,
-			Notes:     input.Notes,
+			Name:         input.Name,
+			Type:         input.Type,
+			Parameter:    params,
+			HasParameter: hasParams,
+			HasNotes:     input.Notes != nil,
+		}
+		if input.Notes != nil {
+			variableInput.Notes = *input.Notes
 		}
 
 		variable, err := wc.Client.UpdateVariable(ctx, path, variableInput)
@@ -74,6 +80,6 @@ func registerUpdateVariable(server *mcp.Server) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "update_variable",
-		Description: "Update an existing variable. Automatically handles fingerprint for concurrency control.",
+		Description: "Update an existing variable. Omitted parameters and notes are preserved. Automatically handles fingerprint for concurrency control.",
 	}, handler)
 }
