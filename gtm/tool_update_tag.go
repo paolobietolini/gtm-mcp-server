@@ -24,7 +24,7 @@ type UpdateTagInput struct {
 	TeardownTagJSON    string   `json:"teardownTagJson,omitempty" jsonschema:"JSON teardown sequence; omit to preserve\\, [] to clear; see gtm://best-practices/tool-input-formats"`
 	ConsentStatus      string   `json:"consentStatus,omitempty" jsonschema:"Consent status: notSet (default/clear)\\, notNeeded (no consent required)\\, needed (requires consent types to be granted before firing). If omitted\\, existing consent settings are preserved."`
 	ConsentTypes       string   `json:"consentTypes,omitempty" jsonschema:"Comma-separated consent types when consentStatus is needed (e.g. ad_storage\\,analytics_storage\\,ad_user_data\\,ad_personalization). Ignored when consentStatus is notSet or notNeeded."`
-	Notes              string   `json:"notes,omitempty" jsonschema:"Tag notes. If omitted\\, existing notes are preserved."`
+	Notes              *string  `json:"notes,omitempty" jsonschema:"Tag notes. Omit to preserve or pass an empty string to clear."`
 	Paused             *bool    `json:"paused,omitempty" jsonschema:"Whether tag is paused. If omitted\\, existing paused state is preserved."`
 }
 
@@ -104,7 +104,7 @@ func registerUpdateTag(server *mcp.Server) {
 			BlockingTriggerId:  input.BlockingTriggerIDs,
 			Parameter:          params,
 			HasParameter:       hasParams,
-			Notes:              input.Notes,
+			HasNotes:           input.Notes != nil,
 			Paused:             input.Paused != nil && *input.Paused,
 			HasPaused:          input.Paused != nil,
 			SetupTag:           setupTags,
@@ -116,6 +116,9 @@ func registerUpdateTag(server *mcp.Server) {
 			ConsentStatus:      input.ConsentStatus,
 			ConsentTypes:       consentTypes,
 			HasConsentSettings: input.ConsentStatus != "",
+		}
+		if input.Notes != nil {
+			tagInput.Notes = *input.Notes
 		}
 
 		tag, err := wc.Client.UpdateTag(ctx, path, tagInput)

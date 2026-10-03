@@ -31,6 +31,8 @@ type Tag struct {
 	TeardownTag       []TagSequenceRef    `json:"teardownTag,omitempty"`
 	ConsentSettings   *TagConsentSettings `json:"consentSettings,omitempty"`
 	Paused            bool                `json:"paused,omitempty"`
+	ParentFolderID    string              `json:"parentFolderId,omitempty"`
+	Notes             string              `json:"notes,omitempty"`
 	Path              string              `json:"path"`
 }
 
@@ -80,6 +82,8 @@ func toTag(t *tagmanager.Tag) Tag {
 		FiringTriggerID:   t.FiringTriggerId,
 		BlockingTriggerID: t.BlockingTriggerId,
 		Paused:            t.Paused,
+		ParentFolderID:    t.ParentFolderId,
+		Notes:             t.Notes,
 		Path:              t.Path,
 	}
 	for _, s := range t.SetupTag {

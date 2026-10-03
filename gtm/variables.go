@@ -9,11 +9,13 @@ import (
 
 // Variable is a simplified representation of a GTM variable.
 type Variable struct {
-	VariableID string `json:"variableId"`
-	Name       string `json:"name"`
-	Type       string `json:"type"`
-	Parameter  any    `json:"parameter,omitempty"`
-	Path       string `json:"path"`
+	VariableID     string `json:"variableId"`
+	Name           string `json:"name"`
+	Type           string `json:"type"`
+	Parameter      any    `json:"parameter,omitempty"`
+	ParentFolderID string `json:"parentFolderId,omitempty"`
+	Notes          string `json:"notes,omitempty"`
+	Path           string `json:"path"`
 }
 
 // ListVariables returns all variables in a workspace.
@@ -42,31 +44,29 @@ func (c *Client) GetVariable(ctx context.Context, accountID, containerID, worksp
 		return nil, mapGoogleError(err)
 	}
 
-	result := Variable{
-		VariableID: v.VariableId,
-		Name:       v.Name,
-		Type:       v.Type,
-		Path:       v.Path,
-	}
-	if len(v.Parameter) > 0 {
-		result.Parameter = v.Parameter
-	}
+	result := toVariable(v)
 	return &result, nil
 }
 
 func toVariables(variables []*tagmanager.Variable) []Variable {
 	result := make([]Variable, 0, len(variables))
 	for _, v := range variables {
-		variable := Variable{
-			VariableID: v.VariableId,
-			Name:       v.Name,
-			Type:       v.Type,
-			Path:       v.Path,
-		}
-		if len(v.Parameter) > 0 {
-			variable.Parameter = v.Parameter
-		}
-		result = append(result, variable)
+		result = append(result, toVariable(v))
 	}
 	return result
+}
+
+func toVariable(v *tagmanager.Variable) Variable {
+	variable := Variable{
+		VariableID:     v.VariableId,
+		Name:           v.Name,
+		Type:           v.Type,
+		ParentFolderID: v.ParentFolderId,
+		Notes:          v.Notes,
+		Path:           v.Path,
+	}
+	if len(v.Parameter) > 0 {
+		variable.Parameter = v.Parameter
+	}
+	return variable
 }
