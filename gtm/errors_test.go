@@ -16,6 +16,43 @@ func TestMapGoogleError_NilError(t *testing.T) {
 	}
 }
 
+func TestFormatAPIErrorDetail(t *testing.T) {
+	tests := []struct {
+		name string
+		err  *googleapi.Error
+		want string
+	}{
+		{
+			name: "structured errors omit duplicate raw body",
+			err: &googleapi.Error{
+				Message: "Resource not found",
+				Errors: []googleapi.ErrorItem{{
+					Reason:  "notFound",
+					Message: "Resource not found",
+				}},
+				Body: `{"error":{"message":"Resource not found"}}`,
+			},
+			want: "Resource not found\n  reason=notFound: Resource not found",
+		},
+		{
+			name: "unstructured errors retain raw body fallback",
+			err: &googleapi.Error{
+				Message: "Unexpected response",
+				Body:    "upstream proxy failure",
+			},
+			want: "Unexpected response\n  body: upstream proxy failure",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := formatAPIErrorDetail(tt.err); got != tt.want {
+				t.Fatalf("formatAPIErrorDetail() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestMapGoogleError_NotFound(t *testing.T) {
 	apiErr := &googleapi.Error{
 		Code:    404,
