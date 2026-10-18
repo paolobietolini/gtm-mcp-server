@@ -12,6 +12,9 @@ import (
 
 // Config holds all configuration for the GTM MCP Server.
 type Config struct {
+	// StatelessHTTP disables in-memory MCP HTTP sessions for load-balanced deployments.
+	StatelessHTTP bool
+
 	// Server configuration
 	Port    int
 	BaseURL string
@@ -69,6 +72,7 @@ func Load() (*Config, error) {
 
 	cfg := &Config{
 		DashboardEnabled:      getEnvBool("DASHBOARD_ENABLED", false),
+		StatelessHTTP:         getEnvBool("MCP_STATELESS_HTTP", false),
 		Port:                  getEnvInt("PORT", 8080),
 		BaseURL:               getEnv("BASE_URL", "http://localhost:8080"),
 		GoogleClientID:        getEnv("GOOGLE_CLIENT_ID", ""),

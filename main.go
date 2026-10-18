@@ -80,7 +80,7 @@ func main() {
 	// Create HTTP handler for MCP
 	mcpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		return server
-	}, nil)
+	}, &mcp.StreamableHTTPOptions{Stateless: cfg.StatelessHTTP})
 
 	// Set up HTTP routes
 	mux := http.NewServeMux()
