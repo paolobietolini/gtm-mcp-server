@@ -72,11 +72,21 @@ func main() {
 	registerTools(server, toolGroups)
 	logger.Info("registered GTM tool groups", "groups", toolGroups.Names())
 
-	// TODO(stdio): branch here on the configured transport. In stdio mode,
-	// inject a token source at auth.SATokenSourceKey via receiving middleware
-	// and call server.Run(ctx, &mcp.StdioTransport{}) instead of serving HTTP.
-	// getClient() already resolves credentials from the context, so no tool
-	// changes are needed.
+	// Stdio mode serves a single local client and skips HTTP, OAuth and the
+	// API key entirely; the process boundary is the trust boundary.
+	switch transport := transportFromArgs(os.Args[1:], cfg.Transport); transport {
+	case "stdio":
+		if err := runStdio(server, cfg, logger); err != nil {
+			logger.Error("stdio server error", "error", err)
+			os.Exit(1)
+		}
+		return
+	case "http":
+	default:
+		logger.Error("invalid MCP_TRANSPORT", "transport", transport, "allowed", "http, stdio")
+		os.Exit(1)
+	}
+
 	// Create HTTP handler for MCP
 	mcpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
 		return server

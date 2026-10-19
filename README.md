@@ -30,7 +30,7 @@ service-account authentication for self-hosted automation.
 | Item | Current state |
 |---|---|
 | Version in `server.json` | `1.12.3` |
-| Transport | MCP Streamable HTTP |
+| Transport | MCP Streamable HTTP, or stdio for local service-account use |
 | Runtime tools | 64 GTM tools by default; 94 with `GTM_TOOL_GROUPS=all`, plus 2 utility tools |
 | MCP resources | 8 resource definitions |
 | MCP prompts | 6 prompts |
@@ -407,6 +407,37 @@ granted to the configured Google service account.
 OAuth and service-account mode can run together. Requests with the configured
 API key use the service account; OAuth users keep their own Google identity and GTM permissions.
 
+### Stdio mode
+
+For a single local MCP client, the server can run over stdin/stdout instead of
+HTTP. The client starts the process when it needs GTM and stops it when the
+session ends, so no long-running server or API key is required. Stdio mode
+always uses service-account credentials:
+
+```sh
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json gtm-mcp-server --stdio
+```
+
+Claude Code example (`.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "gtm": {
+      "command": "/usr/local/bin/gtm-mcp-server",
+      "args": ["--stdio"],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "/path/to/sa.json",
+        "GTM_TOOL_GROUPS": "all"
+      }
+    }
+  }
+}
+```
+
+`MCP_TRANSPORT=stdio` is equivalent to the `--stdio` argument. Logs go to
+stderr; stdout carries only MCP messages.
+
 ## Self-hosting
 
 ### Requirements
@@ -470,6 +501,7 @@ When using the named volume, set `TOKEN_STORE_PATH=/data/tokens.json` in
 
 | Variable | Default | Purpose |
 |---|---|---|
+| `MCP_TRANSPORT` | `http` | `http` (Streamable HTTP) or `stdio`; the `--stdio` argument overrides it |
 | `PORT` | `8080` | HTTP listen port |
 | `BASE_URL` | `http://localhost:8080` | Canonical public URL used by OAuth metadata and callbacks |
 | `DASHBOARD_ENABLED` | `false` | Expose the public connection setup page at `/dashboard/` |

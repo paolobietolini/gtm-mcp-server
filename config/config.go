@@ -18,6 +18,11 @@ type Config struct {
 	// DashboardEnabled exposes a public setup page with configuration status only.
 	DashboardEnabled bool
 
+	// Transport selects how MCP is served: "http" (Streamable HTTP, the
+	// default) or "stdio" (one local client over stdin/stdout, authenticated
+	// with service account credentials).
+	Transport string
+
 	// Google OAuth configuration
 	GoogleClientID     string
 	GoogleClientSecret string
@@ -71,6 +76,7 @@ func Load() (*Config, error) {
 		DashboardEnabled:      getEnvBool("DASHBOARD_ENABLED", false),
 		Port:                  getEnvInt("PORT", 8080),
 		BaseURL:               getEnv("BASE_URL", "http://localhost:8080"),
+		Transport:             strings.ToLower(getEnv("MCP_TRANSPORT", "http")),
 		GoogleClientID:        getEnv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret:    getEnv("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURI:     getEnv("GOOGLE_REDIRECT_URI", ""),
