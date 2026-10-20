@@ -77,10 +77,8 @@ func main() {
 	// and call server.Run(ctx, &mcp.StdioTransport{}) instead of serving HTTP.
 	// getClient() already resolves credentials from the context, so no tool
 	// changes are needed.
-	// Create HTTP handler for MCP
-	mcpHandler := mcp.NewStreamableHTTPHandler(func(r *http.Request) *mcp.Server {
-		return server
-	}, nil)
+	// Create HTTP handler for MCP. Stateless is required for protocol 2026-07-28.
+	mcpHandler := newMCPHTTPHandler(server)
 
 	// Set up HTTP routes
 	mux := http.NewServeMux()
@@ -278,6 +276,28 @@ func main() {
 	}
 
 	logger.Info("server stopped")
+}
+
+// newMCPHTTPHandler serves MCP over stateless streamable HTTP.
+//
+// github.com/modelcontextprotocol/go-sdk v1.8.0 is the newest module release
+// and already negotiates protocol 2026-07-28, but a stateful
+// StreamableHTTPHandler rejects that version: non-discover calls return
+// HTTP 400 with "protocol version \"2026-07-28\" is not supported by this
+// server" and the SDK tells the operator to set StreamableHTTPOptions.Stateless.
+// ChatGPT speaks 2026-07-28 by calling server/discover and then tools/list
+// with no initialize session, so the handler has to be stateless.
+//
+// Nothing in this process keeps MCP session state. Bearer auth, the Google
+// token, and the token store are attached to each HTTP request by
+// auth.Middleware. Tools, resources, and prompts read that request context
+// on demand. No SubscribeHandler is registered, and no code sends
+// server-to-client requests or out-of-band notifications. Logging reads a
+// session id only when the SDK provides one.
+func newMCPHTTPHandler(server *mcp.Server) http.Handler {
+	return mcp.NewStreamableHTTPHandler(func(*http.Request) *mcp.Server {
+		return server
+	}, &mcp.StreamableHTTPOptions{Stateless: true})
 }
 
 // registerTools adds MCP tools to the server.
