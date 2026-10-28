@@ -22,7 +22,8 @@ type Config struct {
 	// default) or "stdio" (one local client over stdin/stdout, authenticated
 	// with service account credentials).
 	Transport string
-	// StatelessHTTP disables in-memory MCP HTTP sessions for load-balanced deployments.
+	// StatelessHTTP disables in-memory MCP HTTP sessions (the default). Required
+	// for MCP 2026-07-28 and for load-balanced deployments.
 	StatelessHTTP bool
 
 	// Google OAuth configuration
@@ -79,7 +80,7 @@ func Load() (*Config, error) {
 		Port:                  getEnvInt("PORT", 8080),
 		BaseURL:               getEnv("BASE_URL", "http://localhost:8080"),
 		Transport:             strings.ToLower(getEnv("MCP_TRANSPORT", "http")),
-		StatelessHTTP:         getEnvBool("MCP_STATELESS_HTTP", false),
+		StatelessHTTP:         getEnvBool("MCP_STATELESS_HTTP", true),
 		GoogleClientID:        getEnv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret:    getEnv("GOOGLE_CLIENT_SECRET", ""),
 		GoogleRedirectURI:     getEnv("GOOGLE_REDIRECT_URI", ""),
