@@ -68,14 +68,14 @@ func TestToolGroupsFromEnvironment(t *testing.T) {
 }
 
 func TestStatelessHTTPFromEnvironment(t *testing.T) {
-	for _, value := range []string{"", "false", "true", "1", "invalid"} {
+	for _, value := range []string{"", "false", "0", "true", "1", "invalid"} {
 		t.Run(value, func(t *testing.T) {
 			t.Setenv("MCP_STATELESS_HTTP", value)
 			cfg, err := Load()
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := value == "true" || value == "1"
+			want := value != "false" && value != "0"
 			if cfg.StatelessHTTP != want {
 				t.Fatalf("MCP_STATELESS_HTTP=%q: got %v, want %v", value, cfg.StatelessHTTP, want)
 			}
