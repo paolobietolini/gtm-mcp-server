@@ -51,10 +51,6 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
-    env:
-      DEPLOY_PATH: /opt/docker/gtm-mcp-server
-      HEALTH_URL: https://mcp.gtmeditor.com/health
-
     steps:
       - uses: actions/checkout@v7
 
@@ -69,51 +65,16 @@ jobs:
           printf '%s\n' "$VPS_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
           chmod 644 "$HOME/.ssh/known_hosts"
 
-      - name: Sync release source
+      # Production runs from a git checkout in /srv/gtm-mcp-server, the same
+      # one .deploy.sh fast-forwards, so deploy by moving that checkout to the
+      # released commit rather than copying files over it.
+      - name: Deploy released commit
         env:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_USER: ${{ secrets.VPS_USER }}
-        run: |
-          rsync -az --delete \
-            --exclude=.git \
-            --exclude=.github \
-            --exclude=.claude \
-            --exclude='.env*' \
-            --exclude='.mcpregistry_*' \
-            --exclude=/tmp/ \
-            --exclude=/planning/ \
-            --exclude=/.codex/ \
-            --exclude=/.agents/ \
-            --exclude=docker-compose.yml \
-            --exclude=go-sdk-main \
-            --exclude=gtm-mcp-server \
-            -e "ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes" \
-            ./ "$VPS_USER@$VPS_HOST:$DEPLOY_PATH/"
-
-      - name: Build and restart service
-        env:
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-        run: |
-          ssh -i "$HOME/.ssh/deploy_key" -o IdentitiesOnly=yes \
-            "$VPS_USER@$VPS_HOST" \
-            "cd '$DEPLOY_PATH' && \
-              (docker image inspect gtm-mcp-server:latest >/dev/null 2>&1 && \
-               docker image tag gtm-mcp-server:latest gtm-mcp-server:rollback || true) && \
-              docker compose up -d --build"
-
-      - name: Verify deployed version
         run: |
           expected_version="$(jq -r '.version' server.json)"
-          for attempt in {1..24}; do
-            response="$(curl -fsS --max-time 10 "$HEALTH_URL" || true)"
-            actual_version="$(jq -r '.version // empty' <<< "$response" 2>/dev/null || true)"
-            if [[ "$actual_version" == "$expected_version" ]]; then
-              echo "Deployed version $actual_version is healthy"
-              exit 0
-            fi
-            echo "Waiting for version $expected_version (attempt $attempt/24)"
-            sleep 5
-          done
-          echo "Expected version $expected_version was not healthy before timeout" >&2
-          exit 1
+          ssh -i "$HOME/.ssh/deploy_key" -o IdentitiesOnly=yes -o BatchMode=yes \
+            "$VPS_USER@$VPS_HOST" \
+            bash -s -- "$GITHUB_SHA" "$expected_version" \
+            < .github/scripts/deploy-remote.sh
