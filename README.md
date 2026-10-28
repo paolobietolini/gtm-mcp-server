@@ -501,10 +501,10 @@ When using the named volume, set `TOKEN_STORE_PATH=/data/tokens.json` in
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `MCP_TRANSPORT` | `http` | `http` (Streamable HTTP) or `stdio`; the `--stdio` argument overrides it |
-| `MCP_STATELESS_HTTP` | `false` | Disable in-memory MCP HTTP sessions; required for MCP `2026-07-28` |
 | `PORT` | `8080` | HTTP listen port |
 | `BASE_URL` | `http://localhost:8080` | Canonical public URL used by OAuth metadata and callbacks |
+| `MCP_TRANSPORT` | `http` | `http` (Streamable HTTP) or `stdio`; the `--stdio` argument overrides it |
+| `MCP_STATELESS_HTTP` | `false` | Disable in-memory MCP HTTP sessions; required for MCP `2026-07-28` |
 | `DASHBOARD_ENABLED` | `false` | Expose the public connection setup page at `/dashboard/` |
 | `GOOGLE_CLIENT_ID` | empty | Google OAuth web-client ID |
 | `GOOGLE_CLIENT_SECRET` | empty | Google OAuth web-client secret |
