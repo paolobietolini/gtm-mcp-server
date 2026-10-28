@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
@@ -24,9 +25,20 @@ func NewServiceAccountTokenSource(ctx context.Context, keyJSON string) (oauth2.T
 
 	creds, err := google.FindDefaultCredentials(ctx, GoogleScopes...)
 	if err != nil {
-		return nil, fmt.Errorf("no service account credentials found (set GOOGLE_SERVICE_ACCOUNT_KEY_JSON or use Workload Identity): %w", err)
+		return nil, fmt.Errorf("no service account credentials found (set GOOGLE_SERVICE_ACCOUNT_KEY_JSON or GOOGLE_APPLICATION_CREDENTIALS, or use Workload Identity): %w", err)
 	}
 	return creds.TokenSource, nil
+}
+
+// ServiceAccountTokenInfo returns the TokenInfo attached to requests served with
+// the shared service account, so auth_status reports them as authenticated.
+func ServiceAccountTokenInfo() *TokenInfo {
+	now := time.Now()
+	return &TokenInfo{
+		ClientID:  "service-account",
+		CreatedAt: now,
+		ExpiresAt: now.Add(24 * time.Hour * 365 * 10),
+	}
 }
 
 // GetSATokenSource retrieves the service account token source from context.

@@ -137,7 +137,7 @@ func main() {
 		if saErr != nil {
 			logger.Error("s2s_mode_failed",
 				"error", saErr,
-				"hint", "set GOOGLE_SERVICE_ACCOUNT_KEY_JSON or deploy on GCP for Workload Identity",
+				"hint", "set GOOGLE_SERVICE_ACCOUNT_KEY_JSON or GOOGLE_APPLICATION_CREDENTIALS, or deploy on GCP for Workload Identity",
 			)
 			os.Exit(1)
 		}
