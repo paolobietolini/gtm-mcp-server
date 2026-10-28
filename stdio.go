@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"gtm-mcp-server/auth"
 	"gtm-mcp-server/config"
@@ -52,12 +51,7 @@ func runStdio(server *mcp.Server, cfg *config.Config, logger *slog.Logger) error
 // request context, mirroring what auth.Middleware does for S2S HTTP requests,
 // so getClient() and auth_status work unchanged.
 func serviceAccountMiddleware(tokenSource oauth2.TokenSource) mcp.Middleware {
-	now := time.Now()
-	info := &auth.TokenInfo{
-		ClientID:  "service-account",
-		CreatedAt: now,
-		ExpiresAt: now.Add(24 * time.Hour * 365 * 10),
-	}
+	info := auth.ServiceAccountTokenInfo()
 	return func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 			ctx = context.WithValue(ctx, auth.SATokenSourceKey, tokenSource)
