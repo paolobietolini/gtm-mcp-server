@@ -11,7 +11,7 @@
                                ▼
 ┌─────────────────────────────────────────────────────────────────┐
 │                     Caddy (reverse proxy)                        │
-│  Auto-TLS · X-Forwarded-For · mcp.gtmeditor.com:443             │
+│  Auto-TLS · X-Forwarded-For · your-host:443                     │
 └──────────────────────────────┬──────────────────────────────────┘
                                │ :8080
                                ▼
@@ -150,31 +150,41 @@ Map response → tool output struct
 | Variable | Required | Default | Purpose |
 |----------|----------|---------|---------|
 | `PORT` | No | `8080` | Server listen port |
-| `BASE_URL` | No | `http://localhost:8080` | Public URL for OAuth redirects |
+| `BASE_URL` | No | `http://localhost:8080` | Public URL (no trailing slash); OAuth metadata and redirect URI `BASE_URL/oauth/callback` |
+| `MCP_TRANSPORT` | No | `http` | `http` or `stdio` |
+| `MCP_STATELESS_HTTP` | No | `true` | Stateless Streamable HTTP |
+| `DASHBOARD_ENABLED` | No | `false` | Public setup page at `/dashboard/` |
 | `GOOGLE_CLIENT_ID` | For OAuth | — | Google OAuth client |
 | `GOOGLE_CLIENT_SECRET` | For OAuth | — | Google OAuth secret |
-| `JWT_SECRET` | For OAuth | — | Token signing |
 | `ACCESS_TOKEN_TTL` | No | `8h` | Access token lifetime |
+| `AUTH_AUTO_REFRESH_MAX_AGE` | No | `168h` | Upper bound of the silent renewal chain |
+| `TOKEN_STORE_PATH` | No | — | File-backed token store |
 | `TRUST_PROXY` | No | `false` | Trust X-Forwarded-For for rate limiting |
 | `ALLOWED_HOSTS` | No | — | Additional trusted hosts for URL resolution |
 | `SERVICE_ACCOUNT_API_KEY` | For S2S | — | Shared API key for team access |
-| `GOOGLE_SERVICE_ACCOUNT_KEY_JSON` | For S2S | — | SA credentials (omit on GCP for Workload Identity) |
+| `GOOGLE_SERVICE_ACCOUNT_KEY_JSON` | For S2S | — | SA credentials as JSON (alternatively `GOOGLE_APPLICATION_CREDENTIALS`, or omit on GCP for Workload Identity) |
 | `LOG_LEVEL` | No | `info` | `debug` or `info` |
-| `GTM_TOOL_GROUPS` | No | current groups | Comma-separated MCP tool families, or `all` |
+| `GTM_TOOL_GROUPS` | No | 11 default groups | Comma-separated MCP tool families, or `all` |
+
+`JWT_SECRET` and `GOOGLE_REDIRECT_URI` are parsed by `config` but not used: MCP
+tokens are random opaque strings, and the redirect URI is always derived from
+`BASE_URL`. The README's configuration reference is the user-facing source of
+truth.
 
 ## Deployment
 
-Single Docker container behind Caddy. No external state (no DB, no Redis).
+Self-hosted only; there is no project-operated instance. The reference setup
+is a single Docker container behind Caddy, with no external state (no DB, no
+Redis). Caddy terminates TLS and provisions certificates automatically.
 
-```
-deploy.sh:
-  1. SCP source files to VPS
-  2. docker compose down && up --build
-  3. Health check (GET /health)
-  4. HTTPS verification (curl production URL)
-```
+OAuth mode must run as a single process: OAuth flow state, authorization
+codes, dynamically registered clients, and issued tokens live in that
+process's memory (tokens optionally also in `TOKEN_STORE_PATH`). Service-account
+mode keeps no such state and can be replicated.
 
-Caddy handles TLS certificate provisioning automatically via Let's Encrypt.
+The release workflow builds and publishes binaries with GoReleaser; it does not
+deploy anything. Step-by-step deployment instructions are in the README's
+Self-hosting section.
 
 ## Testing
 
