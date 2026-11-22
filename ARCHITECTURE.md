@@ -150,7 +150,7 @@ Map response → tool output struct
 | Variable | Required | Default | Purpose |
 |----------|----------|---------|---------|
 | `PORT` | No | `8080` | Server listen port |
-| `BASE_URL` | No | `http://localhost:8080` | Public URL (no trailing slash); OAuth metadata and redirect URI `BASE_URL/oauth/callback` |
+| `BASE_URL` | No | `http://localhost:8080` | Public URL (trailing slashes removed, must be absolute http/https); OAuth metadata and redirect URI `BASE_URL/oauth/callback` |
 | `MCP_TRANSPORT` | No | `http` | `http` or `stdio` |
 | `MCP_STATELESS_HTTP` | No | `true` | Stateless Streamable HTTP |
 | `DASHBOARD_ENABLED` | No | `false` | Public setup page at `/dashboard/` |
@@ -166,10 +166,13 @@ Map response → tool output struct
 | `LOG_LEVEL` | No | `info` | `debug` or `info` |
 | `GTM_TOOL_GROUPS` | No | 11 default groups | Comma-separated MCP tool families, or `all` |
 
-`JWT_SECRET` and `GOOGLE_REDIRECT_URI` are parsed by `config` but not used: MCP
-tokens are random opaque strings, and the redirect URI is always derived from
-`BASE_URL`. The README's configuration reference is the user-facing source of
-truth.
+`config.Load` fails fast: a variable that is set but cannot be parsed (a
+duration, boolean, or integer), an out-of-range `PORT`, a non-positive
+`ACCESS_TOKEN_TTL`, or a `BASE_URL` that is not an absolute http/https URL
+stops start-up with one error listing every problem. There is no `JWT_SECRET`
+or `GOOGLE_REDIRECT_URI`: MCP tokens are random opaque strings, and the
+redirect URI is always derived from `BASE_URL`. The README's configuration
+reference is the user-facing source of truth.
 
 ## Deployment
 

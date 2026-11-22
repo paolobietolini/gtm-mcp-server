@@ -2,26 +2,25 @@ package main
 
 import (
 	_ "embed"
-	"encoding/json"
 	"fmt"
 	"strings"
 )
 
-// Embed registry metadata so standalone binaries and Docker images use the
-// same version without depending on files in the runtime working directory.
+// The release version lives in the VERSION file at the repository root. It is
+// embedded so standalone binaries and Docker images report the same version
+// without depending on files in the runtime working directory, and the release
+// workflow rejects a tag that does not match it.
 //
-//go:embed server.json
-var serverMetadata []byte
+//go:embed VERSION
+var versionFile string
 
-func parseServerVersion(data []byte) (string, error) {
-	var metadata struct {
-		Version string `json:"version"`
+func parseServerVersion(data string) (string, error) {
+	version := strings.TrimSpace(data)
+	if version == "" {
+		return "", fmt.Errorf("VERSION must not be empty")
 	}
-	if err := json.Unmarshal(data, &metadata); err != nil {
-		return "", fmt.Errorf("parse server.json: %w", err)
+	if strings.ContainsAny(version, " \t\r\n") {
+		return "", fmt.Errorf("VERSION must contain a single version string, got %q", version)
 	}
-	if strings.TrimSpace(metadata.Version) == "" {
-		return "", fmt.Errorf("server.json version must not be empty")
-	}
-	return metadata.Version, nil
+	return version, nil
 }

@@ -34,9 +34,9 @@ func main() {
 	}))
 	slog.SetDefault(logger)
 
-	serverVersion, err := parseServerVersion(serverMetadata)
+	serverVersion, err := parseServerVersion(versionFile)
 	if err != nil {
-		logger.Error("invalid embedded server metadata", "error", err)
+		logger.Error("invalid embedded VERSION file", "error", err)
 		os.Exit(1)
 	}
 

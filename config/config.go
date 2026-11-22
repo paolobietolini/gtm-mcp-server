@@ -1,7 +1,9 @@
 package config
 
 import (
+	"errors"
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -26,13 +28,10 @@ type Config struct {
 	// for MCP 2026-07-28 and for load-balanced deployments.
 	StatelessHTTP bool
 
-	// Google OAuth configuration
+	// Google OAuth configuration. The redirect URI is always
+	// BaseURL + "/oauth/callback"; there is no separate setting for it.
 	GoogleClientID     string
 	GoogleClientSecret string
-	GoogleRedirectURI  string
-
-	// JWT configuration
-	JWTSecret string
 
 	// Logging
 	LogLevel string
@@ -69,38 +68,79 @@ type Config struct {
 
 // Load reads configuration from environment variables.
 // It first attempts to load from .env file if present, then .env.local for overrides.
+//
+// A value that is set but cannot be parsed is an error rather than a silent
+// fallback to the default: a typo such as TRUST_PROXY=yes or
+// ACCESS_TOKEN_TTL=7d would otherwise change behaviour without any signal.
+// All such errors are reported together so one start-up shows every problem.
 func Load() (*Config, error) {
 	// Load .env file if it exists (ignore error if not found)
 	_ = godotenv.Load()
 	// Load .env.local for local development overrides (takes precedence)
 	_ = godotenv.Overload(".env.local")
 
+	var p envParser
 	cfg := &Config{
-		DashboardEnabled:      getEnvBool("DASHBOARD_ENABLED", false),
-		Port:                  getEnvInt("PORT", 8080),
-		BaseURL:               getEnv("BASE_URL", "http://localhost:8080"),
+		DashboardEnabled:      p.boolean("DASHBOARD_ENABLED", false),
+		Port:                  p.integer("PORT", 8080),
+		BaseURL:               normalizeBaseURL(getEnv("BASE_URL", "http://localhost:8080")),
 		Transport:             strings.ToLower(getEnv("MCP_TRANSPORT", "http")),
-		StatelessHTTP:         getEnvBool("MCP_STATELESS_HTTP", true),
+		StatelessHTTP:         p.boolean("MCP_STATELESS_HTTP", true),
 		GoogleClientID:        getEnv("GOOGLE_CLIENT_ID", ""),
 		GoogleClientSecret:    getEnv("GOOGLE_CLIENT_SECRET", ""),
-		GoogleRedirectURI:     getEnv("GOOGLE_REDIRECT_URI", ""),
-		JWTSecret:             getEnv("JWT_SECRET", ""),
 		LogLevel:              getEnv("LOG_LEVEL", "info"),
 		ToolGroups:            getEnvList("GTM_TOOL_GROUPS"),
-		AccessTokenTTL:        getEnvDuration("ACCESS_TOKEN_TTL", 8*time.Hour),
+		AccessTokenTTL:        p.duration("ACCESS_TOKEN_TTL", 8*time.Hour),
 		TokenStorePath:        getEnv("TOKEN_STORE_PATH", ""),
 		AllowedHosts:          getEnvList("ALLOWED_HOSTS"),
 		ServiceAccountAPIKey:  getEnv("SERVICE_ACCOUNT_API_KEY", ""),
 		ServiceAccountKeyJSON: getEnv("GOOGLE_SERVICE_ACCOUNT_KEY_JSON", ""),
-		TrustProxy:            getEnvBool("TRUST_PROXY", false),
-		AutoRefreshMaxAge:     getEnvDuration("AUTH_AUTO_REFRESH_MAX_AGE", 7*24*time.Hour),
+		TrustProxy:            p.boolean("TRUST_PROXY", false),
+		AutoRefreshMaxAge:     p.duration("AUTH_AUTO_REFRESH_MAX_AGE", 7*24*time.Hour),
 	}
 
-	// Validation is deferred to when auth is actually needed
-	// This allows the server to start and respond to initialize/ping
-	// even without OAuth credentials configured
+	if cfg.Port < 1 || cfg.Port > 65535 {
+		p.fail("PORT=%d is out of range (1-65535)", cfg.Port)
+	}
+	if cfg.AccessTokenTTL <= 0 {
+		p.fail("ACCESS_TOKEN_TTL=%s must be positive", cfg.AccessTokenTTL)
+	}
+	if err := validateBaseURL(cfg.BaseURL); err != nil {
+		p.errs = append(p.errs, err)
+	}
 
+	// OAuth credentials are validated later, when auth is actually needed.
+	// This allows the server to start and respond to initialize/ping
+	// even without OAuth credentials configured.
+
+	if err := errors.Join(p.errs...); err != nil {
+		return nil, fmt.Errorf("invalid configuration: %w", err)
+	}
 	return cfg, nil
+}
+
+// normalizeBaseURL removes trailing slashes. Every OAuth URL the server
+// publishes (issuer, endpoints, redirect URI, WWW-Authenticate) is built as
+// BaseURL + "/path", so a trailing slash would produce "//path" and a
+// redirect URI that does not match the one registered with Google.
+func normalizeBaseURL(raw string) string {
+	return strings.TrimRight(strings.TrimSpace(raw), "/")
+}
+
+// validateBaseURL rejects values that cannot produce working OAuth metadata,
+// such as a bare hostname without a scheme.
+func validateBaseURL(baseURL string) error {
+	u, err := url.Parse(baseURL)
+	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
+		// Not echoed, like the case below: a malformed value may still
+		// contain credentials.
+		return errors.New("BASE_URL must be an absolute http:// or https:// URL such as https://gtm-mcp.example.com")
+	}
+	if u.User != nil || u.RawQuery != "" || u.Fragment != "" {
+		// The value is not echoed: it may contain a password.
+		return errors.New("BASE_URL must not contain credentials, a query, or a fragment")
+	}
+	return nil
 }
 
 // ValidateAuth checks if OAuth credentials are configured.
@@ -121,15 +161,6 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-func getEnvDuration(key string, defaultValue time.Duration) time.Duration {
-	if value := os.Getenv(key); value != "" {
-		if d, err := time.ParseDuration(value); err == nil {
-			return d
-		}
-	}
-	return defaultValue
-}
-
 func getEnvList(key string) []string {
 	if value := os.Getenv(key); value != "" {
 		var hosts []string
@@ -143,20 +174,51 @@ func getEnvList(key string) []string {
 	return nil
 }
 
-func getEnvBool(key string, defaultValue bool) bool {
-	if value := os.Getenv(key); value != "" {
-		if b, err := strconv.ParseBool(value); err == nil {
-			return b
-		}
-	}
-	return defaultValue
+// envParser reads typed environment variables and collects parse errors
+// instead of discarding them. An unset or empty variable takes its default.
+type envParser struct {
+	errs []error
 }
 
-func getEnvInt(key string, defaultValue int) int {
-	if value := os.Getenv(key); value != "" {
-		if intValue, err := strconv.Atoi(value); err == nil {
-			return intValue
-		}
+func (p *envParser) fail(format string, args ...any) {
+	p.errs = append(p.errs, fmt.Errorf(format, args...))
+}
+
+func (p *envParser) duration(key string, defaultValue time.Duration) time.Duration {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
 	}
-	return defaultValue
+	d, err := time.ParseDuration(value)
+	if err != nil {
+		p.fail("%s=%q is not a valid duration; use Go syntax such as 8h, 90m, or 168h", key, value)
+		return defaultValue
+	}
+	return d
+}
+
+func (p *envParser) boolean(key string, defaultValue bool) bool {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	b, err := strconv.ParseBool(value)
+	if err != nil {
+		p.fail("%s=%q is not a valid boolean; use true or false", key, value)
+		return defaultValue
+	}
+	return b
+}
+
+func (p *envParser) integer(key string, defaultValue int) int {
+	value := os.Getenv(key)
+	if value == "" {
+		return defaultValue
+	}
+	n, err := strconv.Atoi(value)
+	if err != nil {
+		p.fail("%s=%q is not a valid integer", key, value)
+		return defaultValue
+	}
+	return n
 }

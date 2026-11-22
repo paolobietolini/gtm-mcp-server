@@ -21,9 +21,9 @@ jobs:
 
       - name: Validate release version
         run: |
-          expected_tag="v$(jq -r '.version' server.json)"
+          expected_tag="v$(tr -d '[:space:]' < VERSION)"
           if [[ "$GITHUB_REF_NAME" != "$expected_tag" ]]; then
-            echo "Tag $GITHUB_REF_NAME does not match server.json ($expected_tag)" >&2
+            echo "Tag $GITHUB_REF_NAME does not match VERSION ($expected_tag)" >&2
             exit 1
           fi
 
