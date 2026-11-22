@@ -1138,12 +1138,9 @@ To publish a release:
 2. Commit the release changes.
 3. Push a matching tag such as `v1.13.0`.
 
-The release workflow rejects a tag that does not match `server.json` and
-creates cross-platform archives and a checksums file with GoReleaser. The
-workflow also contains a `deploy` job for the former hosted instance (GitHub
-environment `auto-deployment`, secrets `SSH_PRIVATE_KEY`, `VPS_KNOWN_HOSTS`,
-`VPS_HOST`, `VPS_USER`); it verifies `https://mcp.gtmeditor.com/health` and
-cannot succeed now that the instance is shut down.
+The release workflow rejects a tag that does not match `server.json`, then
+creates cross-platform archives and a checksums file with GoReleaser and
+attaches them to the GitHub release. It does not deploy anything.
 
 Recent commits on `main` can be newer than the latest tagged release. Check the
 [release page](https://github.com/paolobietolini/gtm-mcp-server/releases) when

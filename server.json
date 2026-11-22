@@ -4,14 +4,8 @@
   "title": "GTM MCP Server",
   "description": "Manage Google Tag Manager tags, triggers, variables, workspaces, and container versions.",
   "version": "1.13.0",
-  "remotes": [
-    {
-      "type": "streamable-http",
-      "url": "https://mcp.gtmeditor.com"
-    }
-  ],
   "repository": {
-    "url": "https://github.com/sprawz/gtm-mcp-server",
+    "url": "https://github.com/paolobietolini/gtm-mcp-server",
     "source": "github"
   }
 }

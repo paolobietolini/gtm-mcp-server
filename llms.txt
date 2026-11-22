@@ -2,9 +2,10 @@
 
 > AI-accessible API for Google Tag Manager. Create tags, audit containers, generate tracking plans, and publish changes — all through natural language.
 
-- URL: https://mcp.gtmeditor.com
-- Protocol: Model Context Protocol (MCP) over Streamable HTTP
-- Auth: OAuth 2.1 with PKCE (Google account)
+- URL: self-hosted; the MCP endpoint is the `BASE_URL` of your own deployment (there is no public hosted instance)
+- Protocol: Model Context Protocol (MCP) over Streamable HTTP, or stdio for a local process
+- Auth: OAuth 2.1 with PKCE (Google account), or a service-account API key sent as `Authorization: Bearer <key>`
+- Source and self-hosting guide: https://github.com/paolobietolini/gtm-mcp-server
 
 ## GTM Hierarchy
 
@@ -29,6 +30,8 @@ Key rules:
 Always discover IDs by listing — never guess or hardcode them.
 
 ## Tools
+
+The operator chooses which tool groups are enabled (`GTM_TOOL_GROUPS`). Some tools below belong to optional groups and may be absent: call only tools that appear in `tools/list`.
 
 ### Read Operations
 | Tool | Purpose |
@@ -242,5 +245,5 @@ Always call `get_tag_templates` for exact format — do not guess the parameter 
 ## Known Limitations
 
 - `autoEventFilter` on click/form triggers is silently dropped by the Google Tag Manager API (use the GTM web interface for those conditions)
-- Tokens are in-memory — server restarts require re-authentication
-- Rate limits: 10 req/s for OAuth endpoints, standard Google API quotas for GTM operations
+- OAuth tokens are kept in memory unless the operator sets `TOKEN_STORE_PATH`; without it, server restarts require re-authentication
+- Rate limits per client IP: 10 req/s for `/authorize`, `/oauth/callback`, and `/token`; 2 req/s for `/register`; standard Google API quotas for GTM operations
