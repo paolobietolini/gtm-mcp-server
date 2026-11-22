@@ -43,7 +43,7 @@ their own Google identity and GTM permissions) or with a Google service account
 
 | Item | Current state |
 |---|---|
-| Version in `server.json` | `1.13.0` |
+| Latest release | `1.13.0` (the `VERSION` file on `main` may be ahead) |
 | Transport | MCP Streamable HTTP, or stdio for local service-account use |
 | Runtime tools | 64 GTM tools by default; 94 with `GTM_TOOL_GROUPS=all`; plus 2 utility tools in both cases |
 | MCP resources | 8 resource definitions (2 resources, 6 URI templates) |
@@ -267,17 +267,23 @@ attached service account.
 
 Rules that avoid the most common mistakes:
 
-- `BASE_URL` is the public HTTPS URL users and clients reach, with **no
-  trailing slash** and no path. A trailing slash produces URLs such as
-  `https://gtm-mcp.example.com//oauth/callback`, which do not match the
+- `BASE_URL` is the public HTTPS URL users and clients reach: scheme and
+  host, no path, **no trailing slash**. Current `main` removes trailing
+  slashes and refuses to start if the value is not an absolute `http://` or
+  `https://` URL. Version 1.13.0 and earlier keep the slash and produce URLs
+  such as `https://gtm-mcp.example.com//oauth/callback`, which do not match the
   redirect URI registered with Google.
 - Do not put quotes around values. `docker run --env-file` passes quotes
   through as part of the value.
-- Values that cannot be parsed are **silently replaced by their defaults**:
-  durations (`ACCESS_TOKEN_TTL`, `AUTH_AUTO_REFRESH_MAX_AGE`) must use Go
-  duration syntax such as `8h`, `90m`, or `168h` (`7d` is not valid);
-  booleans accept `true`/`false` or `1`/`0`. An unknown name in
-  `GTM_TOOL_GROUPS` or `MCP_TRANSPORT` instead stops the server at startup.
+- Durations (`ACCESS_TOKEN_TTL`, `AUTH_AUTO_REFRESH_MAX_AGE`) use Go duration
+  syntax such as `8h`, `90m`, or `168h` (`7d` is not valid). Booleans accept
+  `true`/`false` or `1`/`0`. `PORT` must be an integer from 1 to 65535 and
+  `ACCESS_TOKEN_TTL` must be positive. On current `main`, a value that cannot
+  be parsed stops the server at startup with an error naming the variable.
+  **Version 1.13.0 and earlier silently use the default instead**, so with
+  those versions check the values carefully: `TRUST_PROXY=yes`, for example,
+  is treated as `false`. An unknown name in `GTM_TOOL_GROUPS` or
+  `MCP_TRANSPORT` stops the server in every version.
 - `TRUST_PROXY=true` is correct only with **exactly one** reverse proxy in
   front of the server that sets `X-Forwarded-For` (the setups below). Without
   a proxy, leave it `false`.
@@ -363,8 +369,9 @@ Notes for this setup:
   automatic certificate with your organization's certificate
   (`tls /path/to/cert.pem /path/to/key.pem`, mounted into the Caddy container)
   or use a Caddy DNS-challenge plugin.
-- Keep `PORT` unset (8080) inside the container: the image's `HEALTHCHECK`
-  always probes `http://localhost:8080/health`.
+- Keep `PORT` unset (8080) inside the container: the `Caddyfile` above
+  targets `gtm-mcp:8080`, and in version 1.13.0 and earlier the image's
+  `HEALTHCHECK` always probes port 8080 (current `main` follows `PORT`).
 - The image runs as the non-root user `appuser` and creates `/data` owned by
   that user with mode `700`. A named volume, as above, inherits that ownership
   on first use. If you bind-mount a host directory to `/data` instead, make it
@@ -1029,15 +1036,15 @@ All settings are environment variables, optionally loaded from `.env` and
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `PORT` | `8080` | HTTP listen port (all interfaces). Leave at `8080` in Docker |
-| `BASE_URL` | `http://localhost:8080` | Public URL of the server, no trailing slash. Used for OAuth metadata and as the base of the redirect URI `BASE_URL/oauth/callback` |
+| `PORT` | `8080` | HTTP listen port (all interfaces), 1–65535 |
+| `BASE_URL` | `http://localhost:8080` | Public URL of the server (scheme and host, no trailing slash). Used for OAuth metadata and as the base of the redirect URI `BASE_URL/oauth/callback` |
 | `MCP_TRANSPORT` | `http` | `http` (Streamable HTTP) or `stdio`; the `--stdio` argument overrides it |
 | `MCP_STATELESS_HTTP` | `true` | Disable in-memory MCP HTTP sessions; required for MCP `2026-07-28` |
 | `DASHBOARD_ENABLED` | `false` | Expose the public connection setup page at `/dashboard/` |
 | `GOOGLE_CLIENT_ID` | empty | Google OAuth web-client ID. With `GOOGLE_CLIENT_SECRET`, enables OAuth mode |
 | `GOOGLE_CLIENT_SECRET` | empty | Google OAuth web-client secret |
 | `ACCESS_TOKEN_TTL` | `8h` | Lifetime of MCP access tokens (Go duration) |
-| `AUTH_AUTO_REFRESH_MAX_AGE` | `168h` | Maximum age of a bearer token that is still renewed silently (Go duration) |
+| `AUTH_AUTO_REFRESH_MAX_AGE` | `168h` | Maximum age of a bearer token that is still renewed silently (Go duration). `0s` or a negative value removes the cap |
 | `TOKEN_STORE_PATH` | empty | File that persists issued tokens across restarts; empty keeps them in memory only. The directory is created with mode `0700` if missing |
 | `SERVICE_ACCOUNT_API_KEY` | empty | Bearer API key that enables service-account mode over HTTP |
 | `GOOGLE_SERVICE_ACCOUNT_KEY_JSON` | empty | Service-account key as a JSON string. Takes precedence over Application Default Credentials |
@@ -1047,8 +1054,8 @@ All settings are environment variables, optionally loaded from `.env` and
 | `LOG_LEVEL` | `info` | `debug` enables debug logs; any other value means `info` |
 | `GTM_TOOL_GROUPS` | 11 default groups | Comma-separated tool groups advertised through MCP, or `all` |
 
-`GOOGLE_REDIRECT_URI` and `JWT_SECRET` are read for backward compatibility but
-have no effect.
+`GOOGLE_REDIRECT_URI` and `JWT_SECRET` have no effect and can be removed from
+existing configurations (1.13.0 and earlier read them but never used them).
 
 Service-account credentials are looked up in this order:
 `GOOGLE_SERVICE_ACCOUNT_KEY_JSON`, then Application Default Credentials (the
@@ -1128,17 +1135,19 @@ The two utility tools, the resources, and the prompts are always available.
 
 ## Releases
 
-`server.json` is the source of truth for the runtime version. It is embedded in
-the Go binary and returned by `/health`; there is no second version constant in
-Go code.
+The `VERSION` file at the repository root is the source of truth for the
+runtime version. It contains only the version number (for example `1.13.0`),
+is embedded in the Go binary, and is returned by `/health`; there is no second
+version constant in Go code. Releases up to 1.13.0 kept the version in
+`server.json`, which has been removed.
 
 To publish a release:
 
-1. Update `server.json`.
+1. Update `VERSION`.
 2. Commit the release changes.
-3. Push a matching tag such as `v1.13.0`.
+3. Push a matching tag such as `v1.14.0`.
 
-The release workflow rejects a tag that does not match `server.json`, then
+The release workflow rejects a tag that does not match `VERSION`, then
 creates cross-platform archives and a checksums file with GoReleaser and
 attaches them to the GitHub release. It does not deploy anything.
 
