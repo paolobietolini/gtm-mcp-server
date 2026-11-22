@@ -7,23 +7,37 @@
 [![GitHub release](https://img.shields.io/github/v/release/paolobietolini/gtm-mcp-server)](https://github.com/paolobietolini/gtm-mcp-server/releases)
 
 ---
-> [!IMPORTANT]  
-> The hosted instance at https://mcp.gtmeditor.com will be shut down on November 30, 2026. See [#139](https://github.com/paolobietolini/gtm-mcp-server/issues/139) for details. Thanks to everyone who used it!
+> [!IMPORTANT]
+> The hosted instance at `mcp.gtmeditor.com` was shut down during the night of
+> 20–21 November 2026. There is no longer a public endpoint: to keep using the
+> server, [self-host it](#self-hosting). Remove `https://mcp.gtmeditor.com`
+> from every MCP client configuration. The domain is not being renewed, so a
+> future owner could serve something else at that address. See
+> [#139](https://github.com/paolobietolini/gtm-mcp-server/issues/139) for
+> background. Thanks to everyone who used it!
 
 ---
 GTM MCP Server connects MCP clients to the Google Tag Manager API. It can
 inspect containers, create and update workspace entities, create versions, and
 publish a selected version after explicit confirmation.
 
-Use the hosted server at:
+It authenticates either with browser-based Google OAuth (each user acts with
+their own Google identity and GTM permissions) or with a Google service account
+(one shared identity, for automation or a single local user).
 
-```text
-https://mcp.gtmeditor.com
-```
+## Contents
 
-
-The server supports browser-based Google OAuth for individual users and
-service-account authentication for self-hosted automation.
+- [Project status](#project-status)
+- [Choose a deployment mode](#choose-a-deployment-mode)
+- [Self-hosting](#self-hosting)
+- [Connect an MCP client](#connect-an-mcp-client)
+- [Typical workflow](#typical-workflow)
+- [Tools](#tools)
+- [Safety model](#safety-model)
+- [Resources](#resources) and [Prompts](#prompts)
+- [Configuration reference](#configuration-reference)
+- [Releases](#releases)
+- [Development](#development)
 
 ## Project status
 
@@ -31,38 +45,639 @@ service-account authentication for self-hosted automation.
 |---|---|
 | Version in `server.json` | `1.13.0` |
 | Transport | MCP Streamable HTTP, or stdio for local service-account use |
-| Runtime tools | 64 GTM tools by default; 94 with `GTM_TOOL_GROUPS=all`, plus 2 utility tools |
-| MCP resources | 8 resource definitions |
+| Runtime tools | 64 GTM tools by default; 94 with `GTM_TOOL_GROUPS=all`; plus 2 utility tools in both cases |
+| MCP resources | 8 resource definitions (2 resources, 6 URI templates) |
 | MCP prompts | 6 prompts |
 | Official GTM API coverage | 101 of 106 methods |
-| Hosted endpoint | `https://mcp.gtmeditor.com` |
+| Hosted endpoint | None. `mcp.gtmeditor.com` was shut down on 20–21 November 2026 |
 
-The project implements 101 methods from Google's 106-method GTM v2 discovery surface. The five `accounts.user_permissions` methods are intentionally excluded because granting and revoking GTM access are security-related and it shouldn't be manager by an LLM.
+The project implements 101 methods from Google's 106-method GTM v2 discovery
+surface. The five `accounts.user_permissions` methods are intentionally
+excluded: granting and revoking GTM access is security-sensitive and should not
+be managed by an LLM.
 
-## Connect an MCP client
+## Choose a deployment mode
 
-Add the hosted URL as a remote HTTP MCP server. The client should discover the OAuth metadata, open Google sign-in, and reconnect with the issued bearer
-token.
+| Mode | Who it is for | Google identity used | How the client authenticates |
+|---|---|---|---|
+| **stdio** | One person, on their own machine | A service account | None: the MCP client starts the binary as a local process |
+| **HTTP + OAuth** | Teams and agencies; every user keeps their own GTM permissions | Each user's own Google account | Browser sign-in with Google, handled by the MCP client |
+| **HTTP + service account** | Automation, CI, agents, or a team that deliberately shares one identity | One service account for every caller | Static header `Authorization: Bearer <SERVICE_ACCOUNT_API_KEY>` |
+| **HTTP + OAuth + service account** | Both of the above on one server | Per request: the API key selects the service account, any other bearer token is an OAuth user | Either of the two above |
 
-### Claude Code
+Where the client connects from matters for remote (HTTP) deployments:
+
+- **Claude Code, Cursor, VS Code, Gemini CLI, Codex CLI** and other local
+  clients connect from the user's machine. A hostname reachable only on your
+  corporate network or VPN works.
+- **Web connectors** (Claude on the web, ChatGPT) connect from the provider's
+  cloud. The server must be reachable from the public internet over HTTPS, and
+  these connectors use the OAuth flow, so run OAuth mode for them.
+
+## Self-hosting
+
+The steps below describe a production deployment on your own server (VPS,
+virtual machine, or on-premises host). Every value written as
+`gtm-mcp.example.com`, `PROJECT_ID`, or `<...>` is a placeholder to replace.
+
+### Requirements
+
+- One of the following:
+  - Docker with Docker Compose v2 (recommended), or
+  - a prebuilt binary from the
+    [release page](https://github.com/paolobietolini/gtm-mcp-server/releases)
+    (Linux, macOS, and Windows; amd64 and arm64), or
+  - Go 1.26 or later to build from source (`go.mod` declares `go 1.26.0`).
+- A Google Cloud project in which you can enable APIs and create credentials.
+- For OAuth mode: a dedicated hostname (for example `gtm-mcp.example.com`)
+  with HTTPS. The server listens on plain HTTP only, so TLS is terminated by a
+  reverse proxy in front of it.
+- For service-account mode: the right to add a user to the GTM accounts or
+  containers the server should manage.
+
+Constraints that follow from how the server works:
+
+- **Serve it at the root of its own hostname.** All routes (`/`,
+  `/authorize`, `/oauth/callback`, `/token`, `/register`, `/health`, and
+  `/.well-known/...`) are registered at the root. A path prefix such as
+  `https://example.com/gtm` is not supported.
+- **Run a single instance in OAuth mode.** MCP HTTP requests are stateless,
+  but OAuth state, authorization codes, registered clients, and issued tokens
+  live in the memory of one process (tokens can additionally be persisted to
+  one local file). A second replica does not know the tokens issued by the
+  first one, and users get random `401` responses. Service-account-only
+  deployments have no such state and can run several replicas.
+- **Persist the token store.** Without `TOKEN_STORE_PATH`, every restart or
+  redeploy signs all OAuth users out. Platforms with an ephemeral filesystem
+  that scale instances up and down (for example Cloud Run) are therefore a poor
+  fit for OAuth mode; they work for service-account mode.
+
+### Step 1: Enable the Tag Manager API
+
+In the Google Cloud console, open **APIs & Services → Library**, search for
+**Tag Manager API**, and click **Enable**. With the gcloud CLI:
 
 ```bash
-claude mcp add --transport http gtm https://mcp.gtmeditor.com
+gcloud services enable tagmanager.googleapis.com --project=PROJECT_ID
 ```
 
-### Gemini CLI
+No Google Cloud IAM role is needed to call the Tag Manager API. What a
+credential can do in GTM is decided only by GTM's own user management.
+
+### Step 2a: Create the OAuth client (OAuth mode)
+
+Skip this step if you use only service-account mode.
+
+1. In the Google Cloud console, open **Google Auth Platform** (formerly
+   "OAuth consent screen").
+2. **Branding**: set the app name users will see on the consent screen, a
+   user support email, and a developer contact email.
+3. **Audience**: choose who may sign in. This is the server's only sign-in
+   restriction: the server itself has no allowlist of users or domains.
+   - **Internal** (available only when the project belongs to a Google
+     Workspace or Cloud Identity organization): only members of your
+     organization can authorize. This is the recommended choice for a company.
+     If your Workspace administrator restricts third-party API access, they
+     may need to allow this app under **Security → API controls** in the
+     Workspace Admin console.
+   - **External, publishing status "Testing"**: only the test users you list
+     (at most 100) can authorize, and Google expires their authorization
+     seven days after consent. Users then have to sign in again each week.
+     Suitable only for a trial.
+   - **External, publishing status "In production"**: any Google account can
+     authorize. Until Google verifies the app, users may see an
+     "unverified app" warning and Google may cap the number of users. Check
+     the **Verification Center** page for your project's requirements.
+4. **Data Access** (recommended): declare the scopes the server requests, so
+   the consent screen and any verification request match what users see:
+
+   ```text
+   https://www.googleapis.com/auth/tagmanager.delete.containers
+   https://www.googleapis.com/auth/tagmanager.edit.containers
+   https://www.googleapis.com/auth/tagmanager.edit.containerversions
+   https://www.googleapis.com/auth/tagmanager.manage.accounts
+   https://www.googleapis.com/auth/tagmanager.publish
+   ```
+
+   These five scopes are hard-coded in the server and cannot be reduced by
+   configuration. What a user can actually do is still limited by that user's
+   GTM permissions.
+5. **Clients → Create client**:
+   - **Application type**: Web application.
+   - **Authorized JavaScript origins**: leave empty.
+   - **Authorized redirect URIs**: add exactly one URI, `BASE_URL` followed by
+     `/oauth/callback`:
+
+     ```text
+     https://gtm-mcp.example.com/oauth/callback
+     ```
+
+     For a server running on your own computer, add
+     `http://localhost:8080/oauth/callback` instead (or as well).
+6. Click **Create** and copy the **client ID** and **client secret**. Google
+   shows the secret only at creation time. Store both in your secret manager.
+
+Google's rules for the redirect URI, which explain most
+`redirect_uri_mismatch` errors:
+
+- It must match `BASE_URL + /oauth/callback` character for character: scheme,
+  host, port, and path. The server always builds it this way; there is no
+  separate setting for it.
+- It must use `https://`. Only `localhost` is allowed over `http://`.
+- The host cannot be a raw IP address, and its top-level domain must be on the
+  public suffix list. A name such as `gtm-mcp.example.com` that resolves only
+  inside your network is accepted; `gtm-mcp.corp.local` is not.
+- Changes in the console can take from a few minutes to a few hours to apply.
+
+### Step 2b: Create the service account (service-account mode and stdio)
+
+Skip this step if you use only OAuth mode.
+
+1. Create the service account:
+
+   ```bash
+   gcloud iam service-accounts create gtm-mcp \
+     --display-name="GTM MCP Server" \
+     --project=PROJECT_ID
+   ```
+
+   Its email address is `gtm-mcp@PROJECT_ID.iam.gserviceaccount.com`.
+2. Give it access in GTM: in Tag Manager open **Admin → User Management**
+   (account level, or container level for a single container), click **Add**,
+   enter the service account email, and grant the lowest permission that
+   covers your use: container **Read** for audits, **Edit** to change
+   workspaces, **Approve** to create versions, **Publish** to publish. Grant
+   account **Administrator** only if the server must create or delete
+   containers.
+3. Choose how the server obtains the service account credentials:
+   - **On Google Cloud** (Compute Engine, GKE, Cloud Run): attach the service
+     account to the workload. The server uses Application Default
+     Credentials, and no key file is needed.
+   - **Anywhere else**: create a JSON key:
+
+     ```bash
+     gcloud iam service-accounts keys create sa.json \
+       --iam-account=gtm-mcp@PROJECT_ID.iam.gserviceaccount.com
+     ```
+
+     Many organizations block key creation with the organization policy
+     `iam.disableServiceAccountKeyCreation` (enforced by default in newer
+     organizations). If the command is refused, ask your Google Cloud
+     administrator for an exception or run the server on Google Cloud with an
+     attached service account. Treat `sa.json` as a password: anyone holding
+     it has the service account's GTM permissions.
+4. For HTTP mode, generate the API key that clients will send:
+
+   ```bash
+   openssl rand -hex 32
+   ```
+
+   Anyone who has this key acts as the service account in GTM. Share it only
+   through a secret manager and rotate it by changing the value and
+   restarting the server.
+
+### Step 3: Write the configuration
+
+The server is configured only through environment variables. They can also be
+placed in a `.env` file; the full list is in the
+[configuration reference](#configuration-reference).
+
+OAuth mode for a team (`.env`):
+
+```dotenv
+BASE_URL=https://gtm-mcp.example.com
+GOOGLE_CLIENT_ID=<client-id>.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=<client-secret>
+TOKEN_STORE_PATH=/data/tokens.json
+TRUST_PROXY=true
+```
+
+Service-account mode (`.env`):
+
+```dotenv
+BASE_URL=https://gtm-mcp.example.com
+SERVICE_ACCOUNT_API_KEY=<output of openssl rand -hex 32>
+GOOGLE_APPLICATION_CREDENTIALS=/secrets/sa.json
+TRUST_PROXY=true
+```
+
+For both modes on one server, combine the two files. Omit
+`GOOGLE_APPLICATION_CREDENTIALS` when the server runs on Google Cloud with an
+attached service account.
+
+Rules that avoid the most common mistakes:
+
+- `BASE_URL` is the public HTTPS URL users and clients reach, with **no
+  trailing slash** and no path. A trailing slash produces URLs such as
+  `https://gtm-mcp.example.com//oauth/callback`, which do not match the
+  redirect URI registered with Google.
+- Do not put quotes around values. `docker run --env-file` passes quotes
+  through as part of the value.
+- Values that cannot be parsed are **silently replaced by their defaults**:
+  durations (`ACCESS_TOKEN_TTL`, `AUTH_AUTO_REFRESH_MAX_AGE`) must use Go
+  duration syntax such as `8h`, `90m`, or `168h` (`7d` is not valid);
+  booleans accept `true`/`false` or `1`/`0`. An unknown name in
+  `GTM_TOOL_GROUPS` or `MCP_TRANSPORT` instead stops the server at startup.
+- `TRUST_PROXY=true` is correct only with **exactly one** reverse proxy in
+  front of the server that sets `X-Forwarded-For` (the setups below). Without
+  a proxy, leave it `false`.
+- When neither OAuth nor an API key is configured, the server starts in
+  **open mode**: anyone who can reach it can call the MCP endpoint, and the
+  log shows `No authentication configured`. Never expose open mode beyond your
+  own machine.
+
+### Step 4: Run the server
+
+Pick one of the three options.
+
+#### Option A: Docker Compose with Caddy (recommended)
+
+Caddy terminates HTTPS and obtains certificates automatically. On the server:
 
 ```bash
-gemini mcp add --transport http gtm https://mcp.gtmeditor.com
+git clone https://github.com/paolobietolini/gtm-mcp-server.git
+cd gtm-mcp-server
+git checkout v1.13.0   # use the latest tag from the release page
 ```
 
-Gemini CLI can also use this `settings.json` entry:
+Create `.env` as in step 3 (with `TOKEN_STORE_PATH=/data/tokens.json` for
+OAuth mode). The repository's `.gitignore` already excludes `.env`,
+`docker-compose.yml`, and `Caddyfile`.
+
+Create `docker-compose.yml`:
+
+```yaml
+services:
+  gtm-mcp:
+    build: .
+    image: gtm-mcp-server:local
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - gtm-mcp-data:/data
+      # Service-account mode with a key file only:
+      # - ./secrets/sa.json:/secrets/sa.json:ro
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      - gtm-mcp
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+volumes:
+  gtm-mcp-data:
+  caddy-data:
+  caddy-config:
+```
+
+Create `Caddyfile`:
+
+```caddyfile
+gtm-mcp.example.com {
+	reverse_proxy gtm-mcp:8080
+}
+```
+
+Start it:
+
+```bash
+docker compose up -d --build
+docker compose logs -f gtm-mcp
+```
+
+Notes for this setup:
+
+- The `gtm-mcp` service publishes no port; only Caddy is reachable from
+  outside.
+- Caddy can obtain a public certificate only when `gtm-mcp.example.com`
+  resolves publicly to this machine and ports 80 and 443 are reachable from the
+  internet. For a host reachable only internally, replace the site block's
+  automatic certificate with your organization's certificate
+  (`tls /path/to/cert.pem /path/to/key.pem`, mounted into the Caddy container)
+  or use a Caddy DNS-challenge plugin.
+- Keep `PORT` unset (8080) inside the container: the image's `HEALTHCHECK`
+  always probes `http://localhost:8080/health`.
+- The image runs as the non-root user `appuser` and creates `/data` owned by
+  that user with mode `700`. A named volume, as above, inherits that ownership
+  on first use. If you bind-mount a host directory to `/data` instead, make it
+  owned by the container user's UID.
+- A mounted `sa.json` must be readable by the container user. Find its UID
+  with `docker compose run --rm --no-deps --entrypoint id gtm-mcp`, then run
+  `sudo chown <uid> secrets/sa.json && chmod 400 secrets/sa.json`.
+- To upgrade: `git fetch --tags && git checkout <new tag> && docker compose up -d --build`.
+  Tokens survive in the `gtm-mcp-data` volume.
+
+If you already run a reverse proxy on the host, skip Caddy and publish the
+server on the loopback interface only:
+
+```bash
+docker build -t gtm-mcp-server:local .
+
+docker run -d \
+  --name gtm-mcp-server \
+  --restart unless-stopped \
+  -p 127.0.0.1:8080:8080 \
+  --env-file .env \
+  -v gtm-mcp-data:/data \
+  gtm-mcp-server:local
+```
+
+#### Option B: Prebuilt binary with systemd
+
+```bash
+VERSION=1.13.0   # latest version from the release page
+ARCH=amd64       # or arm64
+curl -fsSLO "https://github.com/paolobietolini/gtm-mcp-server/releases/download/v${VERSION}/gtm-mcp-server_${VERSION}_linux_${ARCH}.tar.gz"
+curl -fsSLO "https://github.com/paolobietolini/gtm-mcp-server/releases/download/v${VERSION}/gtm-mcp-server_${VERSION}_checksums.txt"
+sha256sum --check --ignore-missing "gtm-mcp-server_${VERSION}_checksums.txt"
+tar -xzf "gtm-mcp-server_${VERSION}_linux_${ARCH}.tar.gz"
+sudo install -m 0755 gtm-mcp-server /usr/local/bin/gtm-mcp-server
+```
+
+Create a system user, a data directory, and the configuration file:
+
+```bash
+sudo useradd --system --home-dir /var/lib/gtm-mcp --shell /usr/sbin/nologin gtm-mcp
+sudo install -d -o gtm-mcp -g gtm-mcp -m 0700 /var/lib/gtm-mcp
+sudo install -d -o root -g gtm-mcp -m 0750 /etc/gtm-mcp
+sudoedit /etc/gtm-mcp/gtm-mcp.env
+sudo chown root:gtm-mcp /etc/gtm-mcp/gtm-mcp.env
+sudo chmod 0640 /etc/gtm-mcp/gtm-mcp.env
+```
+
+Use the content from step 3 in `/etc/gtm-mcp/gtm-mcp.env`, with
+`TOKEN_STORE_PATH=/var/lib/gtm-mcp/tokens.json` and, for a key file,
+`GOOGLE_APPLICATION_CREDENTIALS=/etc/gtm-mcp/sa.json` (owner `root:gtm-mcp`,
+mode `0640`).
+
+Create `/etc/systemd/system/gtm-mcp.service`:
+
+```ini
+[Unit]
+Description=GTM MCP Server
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=gtm-mcp
+Group=gtm-mcp
+WorkingDirectory=/var/lib/gtm-mcp
+EnvironmentFile=/etc/gtm-mcp/gtm-mcp.env
+ExecStart=/usr/local/bin/gtm-mcp-server
+Restart=on-failure
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/lib/gtm-mcp
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable --now gtm-mcp
+journalctl -u gtm-mcp -f
+```
+
+The binary listens on `PORT` (default 8080) on all interfaces. Put a reverse
+proxy in front of it (see below) and block direct access to that port with
+your firewall.
+
+#### Option C: From source
+
+Requires Go 1.26 or later.
+
+```bash
+git clone https://github.com/paolobietolini/gtm-mcp-server.git
+cd gtm-mcp-server
+git checkout v1.13.0   # or stay on main for unreleased changes
+go build -o gtm-mcp-server .
+./gtm-mcp-server
+```
+
+The server reads `.env` from the current working directory, then
+`.env.local`. Variables already set in the process environment take
+precedence over `.env`, and `.env.local` overrides both. Both files are ignored
+by Git. For quick local testing, `go run .` with this `.env` is enough:
+
+```dotenv
+BASE_URL=http://localhost:8080
+GOOGLE_CLIENT_ID=<client-id>.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=<client-secret>
+TOKEN_STORE_PATH=./data/tokens.json
+```
+
+#### Reverse proxy requirements
+
+Any reverse proxy works if it:
+
+- forwards every path of the hostname to the server unchanged;
+- passes the `Authorization` header through;
+- does not buffer responses: the MCP endpoint can answer with a
+  `text/event-stream` (Server-Sent Events) response;
+- allows request bodies up to 5 MiB, the server's own limit;
+- sets `X-Forwarded-For` (required for per-client rate limits with
+  `TRUST_PROXY=true`).
+
+Caddy does all of this with the two-line `reverse_proxy` configuration above.
+For nginx:
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name gtm-mcp.example.com;
+
+    ssl_certificate     /etc/ssl/gtm-mcp/fullchain.pem;
+    ssl_certificate_key /etc/ssl/gtm-mcp/privkey.pem;
+
+    client_max_body_size 5m;
+
+    location / {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 1h;
+    }
+}
+```
+
+`X-Forwarded-For $remote_addr` overwrites any value sent by the client, which
+is what the server expects with one proxy hop. If a load balancer or CDN sits
+in front of this proxy, the rightmost `X-Forwarded-For` entry is that
+intermediary's address, so all users share one rate-limit bucket: configure
+your proxy to restore the real client address first.
+
+### Step 5: Verify the deployment
+
+1. Health check, which needs no authentication:
+
+   ```bash
+   curl -sS https://gtm-mcp.example.com/health
+   ```
+
+   Expected: `{"service":"gtm-mcp-server","status":"healthy","version":"1.13.0"}`.
+2. OAuth metadata (OAuth mode):
+
+   ```bash
+   curl -sS https://gtm-mcp.example.com/.well-known/oauth-protected-resource
+   ```
+
+   `resource` must be `https://gtm-mcp.example.com/` and
+   `authorization_servers` must contain `https://gtm-mcp.example.com`. If they
+   show `http://` or another host, `BASE_URL` is wrong.
+3. Unauthenticated MCP request:
+
+   ```bash
+   curl -sS -i -X POST https://gtm-mcp.example.com/
+   ```
+
+   Expected: `HTTP/... 401` with the header
+   `WWW-Authenticate: Bearer resource_metadata="https://gtm-mcp.example.com/.well-known/oauth-protected-resource"`.
+   Any other status means the server is running in open mode.
+4. API key (service-account mode):
+
+   ```bash
+   curl -sS https://gtm-mcp.example.com/ \
+     -H "Authorization: Bearer $SERVICE_ACCOUNT_API_KEY" \
+     -H "Content-Type: application/json" \
+     -H "Accept: application/json, text/event-stream" \
+     -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{},"clientInfo":{"name":"curl","version":"1.0"}}}'
+   ```
+
+   Expected: a JSON-RPC result containing `"serverInfo":{"name":"gtm-mcp-server",...}`,
+   possibly wrapped in an SSE `data:` line. This checks the API key only, not
+   the Google credentials.
+5. Startup log lines to look for (JSON on stderr):
+   - `OAuth configured` and `token persistence enabled` in OAuth mode;
+   - `s2s_mode_enabled` with `credential_source` `key_json` or
+     `workload_identity` (the latter also covers `GOOGLE_APPLICATION_CREDENTIALS`)
+     in service-account mode. If the credentials cannot be loaded, the server
+     logs `s2s_mode_failed` and exits.
+6. End-to-end: connect a client (next section) and ask it to *"List my GTM
+   accounts. Do not make changes."* An empty list means the authenticated
+   Google identity has no GTM access yet (step 2b, item 2, for a service
+   account). An error saying the Tag Manager API is disabled or has not been
+   used in the project means step 1 was skipped for the project that owns the
+   OAuth client or service account.
+
+### Operating notes
+
+- **Token file.** `TOKEN_STORE_PATH` holds every user's MCP tokens and Google
+  OAuth tokens, including Google refresh tokens, as plain JSON (file mode
+  `0600`, written atomically). Treat it like a password database: restrict
+  access to the host, and exclude it from unencrypted backups. Deleting it
+  signs everyone out.
+- **Revoking a user.** A user can revoke the app's access at
+  <https://myaccount.google.com/permissions>. The server can then no longer
+  refresh that user's Google token, so their GTM calls fail and they must sign
+  in again. Removing a user from GTM's User Management removes their GTM
+  access regardless of what the server holds.
+- **Session lifetime.** MCP access tokens last `ACCESS_TOKEN_TTL` (8 hours by
+  default). After expiry the server renews them silently while the Google
+  refresh token is valid, for at most `AUTH_AUTO_REFRESH_MAX_AGE` (7 days)
+  after issue; then the client must complete a refresh, or a new sign-in.
+- **Rate limits.** `/authorize`, `/oauth/callback`, and `/token` allow 10
+  requests per second per client IP (burst 20); `/register` allows 2 per
+  second (burst 5).
+- **Logs.** Set `LOG_LEVEL=debug` for per-request authentication details.
+  Authentication logs identify tokens by a fingerprint, not by their value.
+
+### Stdio mode (single local user)
+
+For one person on their own machine, the MCP client can start the server as a
+local process over stdin/stdout. No HTTP server, OAuth client, reverse proxy,
+or API key is involved. Stdio mode always uses service-account credentials
+(step 2b): `GOOGLE_SERVICE_ACCOUNT_KEY_JSON`, or a key file named by
+`GOOGLE_APPLICATION_CREDENTIALS`, or Application Default Credentials.
+
+Install the binary (Option B above, first block only), then test it:
+
+```sh
+GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json gtm-mcp-server --stdio
+```
+
+The process waits for MCP messages on stdin; stop it with `Ctrl+C`.
+
+Claude Code example (`.mcp.json`):
 
 ```json
 {
   "mcpServers": {
     "gtm": {
-      "httpUrl": "https://mcp.gtmeditor.com"
+      "command": "/usr/local/bin/gtm-mcp-server",
+      "args": ["--stdio"],
+      "env": {
+        "GOOGLE_APPLICATION_CREDENTIALS": "/path/to/sa.json",
+        "GTM_TOOL_GROUPS": "all"
+      }
+    }
+  }
+}
+```
+
+`MCP_TRANSPORT=stdio` is equivalent to the `--stdio` argument. Logs go to
+stderr; stdout carries only MCP messages. The server also reads `.env` from the
+directory the client starts it in.
+
+### Optional setup dashboard
+
+Set `DASHBOARD_ENABLED=true` and restart the server to expose `/dashboard/`.
+The page shows the canonical MCP endpoint, server version, authentication setup
+status, and connection instructions. It is disabled by default.
+
+The dashboard is public when enabled. It deliberately excludes tokens,
+sessions, account names, container data, and other GTM content. It reports
+server configuration only and does not verify the visitor's Google session.
+
+## Connect an MCP client
+
+The MCP endpoint is your `BASE_URL` itself, for example
+`https://gtm-mcp.example.com`. In OAuth mode the client discovers the OAuth
+metadata, opens Google sign-in in the browser, and reconnects with the issued
+bearer token. In service-account mode the client sends the API key in the
+`Authorization` header on every request.
+
+### Claude Code
+
+```bash
+# OAuth mode
+claude mcp add --transport http gtm https://gtm-mcp.example.com
+
+# Service-account mode
+claude mcp add --transport http gtm https://gtm-mcp.example.com \
+  --header "Authorization: Bearer <SERVICE_ACCOUNT_API_KEY>"
+```
+
+### Gemini CLI
+
+```bash
+gemini mcp add --transport http gtm https://gtm-mcp.example.com
+```
+
+Or in `settings.json` (remove `headers` for OAuth mode):
+
+```json
+{
+  "mcpServers": {
+    "gtm": {
+      "httpUrl": "https://gtm-mcp.example.com",
+      "headers": {
+        "Authorization": "Bearer <SERVICE_ACCOUNT_API_KEY>"
+      }
     }
   }
 }
@@ -70,24 +685,43 @@ Gemini CLI can also use this `settings.json` entry:
 
 ### Cursor
 
-Add the following to `.cursor/mcp.json`:
+Add the following to `.cursor/mcp.json` (remove `headers` for OAuth mode):
 
 ```json
 {
   "mcpServers": {
     "gtm": {
-      "url": "https://mcp.gtmeditor.com"
+      "url": "https://gtm-mcp.example.com",
+      "headers": {
+        "Authorization": "Bearer <SERVICE_ACCOUNT_API_KEY>"
+      }
     }
   }
 }
 ```
 
-### ChatGPT, Codex, and Claude web
+### VS Code
 
-Add a custom or remote MCP connection in the client and use
-`https://mcp.gtmeditor.com` as the server URL. Product menus change more often
-than this server, so refer to the client's current MCP connection instructions
-if the label differs.
+Add the following to `.vscode/mcp.json` (OAuth mode):
+
+```json
+{
+  "servers": {
+    "gtm": {
+      "type": "http",
+      "url": "https://gtm-mcp.example.com"
+    }
+  }
+}
+```
+
+### ChatGPT, Codex, and Claude on the web
+
+Add a custom or remote MCP connection in the client and use your `BASE_URL` as
+the server URL. Web connectors require a server reachable from the public
+internet and OAuth mode. Product menus change more often than this server, so
+refer to the client's current MCP connection instructions if the label
+differs.
 
 After connecting, try:
 
@@ -95,8 +729,8 @@ After connecting, try:
 List my GTM accounts, containers, and workspaces. Do not make changes.
 ```
 
-The Google account used during OAuth determines which GTM accounts the server
-can access.
+The Google identity used (the account chosen at sign-in, or the service
+account) determines which GTM accounts the server can access.
 
 ## Typical workflow
 
@@ -125,7 +759,12 @@ Example requests:
 All GTM tools use the authenticated Google identity from the current MCP
 request. Inputs and outputs are structured JSON.
 
+Tools marked *opt-in* belong to a tool group that is not enabled by default.
+Enable it through `GTM_TOOL_GROUPS` (see [Tool groups](#tool-groups)).
+
 ### Utility
+
+Always available, regardless of `GTM_TOOL_GROUPS`.
 
 | Tool | Purpose |
 |---|---|
@@ -144,8 +783,8 @@ request. Inputs and outputs are structured JSON.
 | `create_container` | Create a web, app, AMP, or server container |
 | `update_container` | Rename a container while preserving its other settings |
 | `delete_container` | Permanently delete a container; requires `confirm: true` |
-| `combine_containers` | Merge a source container into a target; requires `confirm: true` |
-| `move_tag_id` | Move a tag ID into a new container; requires confirmation and terms acceptance |
+| `combine_containers` | Merge a source container into a target; requires `confirm: true`. *Opt-in: `container-admin`* |
+| `move_tag_id` | Move a tag ID into a new container; requires confirmation and terms acceptance. *Opt-in: `container-admin`* |
 
 ### Workspaces
 
@@ -158,9 +797,9 @@ request. Inputs and outputs are structured JSON.
 | `delete_workspace` | Delete a workspace; requires `confirm: true` |
 | `quick_preview_workspace` | Compile an ephemeral preview without saving or publishing |
 | `get_workspace_status` | Show pending changes and merge conflicts |
-| `bulk_update_workspace` | Apply multiple entity changes; requires `confirm: true` |
-| `resolve_workspace_conflict` | Replace a conflict with a resolved entity; requires `confirm: true` |
-| `sync_workspace` | Synchronize with the latest container version; requires `confirm: true` |
+| `bulk_update_workspace` | Apply multiple entity changes; requires `confirm: true`. *Opt-in: `workspace-admin`* |
+| `resolve_workspace_conflict` | Replace a conflict with a resolved entity; requires `confirm: true`. *Opt-in: `workspace-admin`* |
+| `sync_workspace` | Synchronize with the latest container version; requires `confirm: true`. *Opt-in: `workspace-admin`* |
 
 Bulk update and conflict resolution accept raw GTM Entity JSON so every entity
 type supported by the official API remains available.
@@ -206,18 +845,19 @@ GTM drops `autoEventFilter` for those trigger types.
 | Tool | Purpose |
 |---|---|
 | `list_folders` | List workspace folders |
-| `get_folder` | Get complete folder metadata |
-| `create_folder` | Create a folder |
-| `update_folder` | Update a folder with fingerprint protection |
-| `delete_folder` | Delete a folder; requires `confirm: true` |
 | `get_folder_entities` | List tags, triggers, and variables assigned to a folder |
-| `move_entities_to_folder` | Move tags, triggers, and variables; requires `confirm: true` |
-| `revert_folder` | Discard workspace folder changes; requires `confirm: true` |
+| `get_folder` | Get complete folder metadata. *Opt-in: `folder-admin`* |
+| `create_folder` | Create a folder. *Opt-in: `folder-admin`* |
+| `update_folder` | Update a folder with fingerprint protection. *Opt-in: `folder-admin`* |
+| `delete_folder` | Delete a folder; requires `confirm: true`. *Opt-in: `folder-admin`* |
+| `move_entities_to_folder` | Move tags, triggers, and variables; requires `confirm: true`. *Opt-in: `folder-admin`* |
+| `revert_folder` | Discard workspace folder changes; requires `confirm: true`. *Opt-in: `folder-admin`* |
 | `list_built_in_variables` | List enabled built-in variables |
 | `enable_built_in_variables` | Enable built-in variable types |
 | `disable_built_in_variables` | Disable built-in variable types; requires `confirm: true` |
 
-Use `revert_workspace_entity` to discard changes to a built-in variable.
+Use `revert_workspace_entity` (opt-in group `reverts`) to discard changes to a
+built-in variable.
 
 ### Zones
 
@@ -229,12 +869,12 @@ Use `revert_workspace_entity` to discard changes to a built-in variable.
 | `update_zone` | Update selected fields with fingerprint concurrency control |
 | `delete_zone` | Delete a zone; requires `confirm: true` |
 
-Use `revert_workspace_entity` to discard changes to a zone.
+Use `revert_workspace_entity` (opt-in group `reverts`) to discard changes to a
+zone.
 
 ### Environments
 
-The `environments` tool group is optional. Enable it with
-`GTM_TOOL_GROUPS=all` or add `environments` to an explicit group list.
+All tools in this section are *opt-in* (group `environments`).
 
 | Tool | Purpose |
 |---|---|
@@ -250,7 +890,8 @@ apply to user environments; GTM permits URL and debug updates on other types.
 
 ### Destinations and Google tag configurations
 
-These tools are in the optional `destinations` and `gtag` groups.
+All tools in this section are *opt-in*: the destination tools are in group
+`destinations`, the Google tag configuration tools in group `gtag`.
 
 | Tool | Purpose |
 |---|---|
@@ -299,7 +940,8 @@ not repeat them.
 | `update_transformation` | Update a transformation |
 | `delete_transformation` | Delete a transformation; requires `confirm: true` |
 
-Use `revert_workspace_entity` to discard changes to a client or transformation.
+Use `revert_workspace_entity` (opt-in group `reverts`) to discard changes to a
+client or transformation.
 
 ### Versions and publication
 
@@ -311,12 +953,14 @@ Use `revert_workspace_entity` to discard changes to a client or transformation.
 | `get_live_version` | Get the currently published version and its entities |
 | `create_version` | Create a version from a conflict-free workspace |
 | `publish_version` | Publish a selected version; requires `confirm: true` |
-| `update_version` | Update a saved version's name or description |
-| `delete_version` | Soft-delete a version; requires `confirm: true` |
-| `undelete_version` | Restore a soft-deleted version; requires `confirm: true` |
-| `set_latest_version` | Make a version Latest without publishing; requires `confirm: true` |
+| `update_version` | Update a saved version's name or description. *Opt-in: `version-admin`* |
+| `delete_version` | Soft-delete a version; requires `confirm: true`. *Opt-in: `version-admin`* |
+| `undelete_version` | Restore a soft-deleted version; requires `confirm: true`. *Opt-in: `version-admin`* |
+| `set_latest_version` | Make a version Latest without publishing; requires `confirm: true`. *Opt-in: `version-admin`* |
 
 ### Workspace reverts
+
+*Opt-in* (group `reverts`).
 
 | Tool | Purpose |
 |---|---|
@@ -335,9 +979,11 @@ when the entity does not exist in the latest container version.
 - `create_version` first checks that the workspace has changes and no merge
   conflicts.
 - Read tools distinguish latest saved state from published live state.
-- Google API errors are mapped to clearer not-found, permission, conflict, and rate-limit failures. Retryable API failures use bounded backoff.
-- MCP request bodies are limited to 5 MiB. OAuth and dynamic registration
-  endpoints have stricter rate and body limits.
+- Google API errors are mapped to clearer not-found, permission, conflict, and
+  rate-limit failures. Retryable API failures use bounded backoff.
+- MCP request bodies are limited to 5 MiB. `/token` and `/register` accept at
+  most 1 MiB and, with the other OAuth endpoints, are rate limited per client
+  IP.
 
 Most entity edits affect a workspace and are not live until a version is
 published. Account and container operations act directly on those resources.
@@ -345,7 +991,8 @@ Always review the target IDs and the generated version before publication.
 
 ## Resources
 
-The server exposes two concrete resources and six URI templates:
+The server exposes two concrete resources and six URI templates. Resources and
+prompts are always available, regardless of `GTM_TOOL_GROUPS`.
 
 | URI | Content |
 |---|---|
@@ -372,214 +1019,135 @@ consent, server-side containers, and detailed tool input formats.
 | `best_practices_review` | Score a workspace against embedded guidance |
 | `plan_safe_edit` | Produce a staged edit/version/publish plan |
 
-Prompts prepare context and instructions for the model. They do not bypass tool authentication or mutation safeguards.
+Prompts prepare context and instructions for the model. They do not bypass tool
+authentication or mutation safeguards.
 
-## Authentication
+## Configuration reference
 
-### Hosted OAuth
-
-The hosted server implements MCP OAuth discovery and Google authorization. It
-supports PKCE, Dynamic Client Registration, Client ID Metadata Documents,
-authorization-server metadata, and protected-resource metadata.
-
-The server never receives a Google password. It receives Google OAuth tokens
-after consent. A self-hosted operator can keep issued MCP and Google tokens
-across restarts by setting `TOKEN_STORE_PATH`; without that setting they remain in memory and disappear when the process stops.
-
-Expired MCP access tokens can be renewed transparently while their Google
-refresh credentials remain valid. `AUTH_AUTO_REFRESH_MAX_AGE` limits how long
-one bearer can be silently extended; its default is seven days.
-
-### Service-account mode
-
-Service-account mode gives every holder of one server API key the GTM access
-granted to the configured Google service account.
-
-1. Create a Google service account.
-2. Add its email address to the required GTM account with only the permissions
-   it needs.
-3. Set a strong `SERVICE_ACCOUNT_API_KEY` on this server.
-4. Set `GOOGLE_SERVICE_ACCOUNT_KEY_JSON` to the key JSON, or use Application
-   Default Credentials on Google Cloud.
-5. Configure the MCP client to send
-   `Authorization: Bearer <SERVICE_ACCOUNT_API_KEY>`.
-
-OAuth and service-account mode can run together. Requests with the configured
-API key use the service account; OAuth users keep their own Google identity and GTM permissions.
-
-### Stdio mode
-
-For a single local MCP client, the server can run over stdin/stdout instead of
-HTTP. The client starts the process when it needs GTM and stops it when the
-session ends, so no long-running server or API key is required. Stdio mode
-always uses service-account credentials:
-
-```sh
-GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json gtm-mcp-server --stdio
-```
-
-Claude Code example (`.mcp.json`):
-
-```json
-{
-  "mcpServers": {
-    "gtm": {
-      "command": "/usr/local/bin/gtm-mcp-server",
-      "args": ["--stdio"],
-      "env": {
-        "GOOGLE_APPLICATION_CREDENTIALS": "/path/to/sa.json",
-        "GTM_TOOL_GROUPS": "all"
-      }
-    }
-  }
-}
-```
-
-`MCP_TRANSPORT=stdio` is equivalent to the `--stdio` argument. Logs go to
-stderr; stdout carries only MCP messages.
-
-## Self-hosting
-
-### Requirements
-
-- Go 1.26 or Docker
-- A Google Cloud project with the Tag Manager API enabled
-- A Google OAuth web client for user OAuth, or a Google service account for S2S
-- HTTPS and a stable public URL for remote OAuth deployments
-
-### Google OAuth setup
-
-Create an OAuth 2.0 Web application in Google Cloud and add this authorized
-redirect URI:
-
-```text
-https://your-host.example/oauth/callback
-```
-
-The scheme and host must match `BASE_URL` exactly. For local development, use:
-
-```text
-http://localhost:8080/oauth/callback
-```
-
-### Run from source
-
-```bash
-git clone https://github.com/paolobietolini/gtm-mcp-server.git
-cd gtm-mcp-server
-
-cat > .env <<'EOF'
-BASE_URL=http://localhost:8080
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=your-client-secret
-TOKEN_STORE_PATH=./data/tokens.json
-EOF
-
-go run .
-```
-
-The repository reads `.env` and then `.env.local`; `.env.local` overrides
-`.env`. Both are ignored by Git.
-
-### Run with Docker
-
-```bash
-docker build -t gtm-mcp-server .
-
-docker run --rm \
-  --name gtm-mcp-server \
-  -p 8080:8080 \
-  --env-file .env \
-  -v gtm-mcp-tokens:/data \
-  gtm-mcp-server
-```
-
-When using the named volume, set `TOKEN_STORE_PATH=/data/tokens.json` in
-`.env`.
-
-### Configuration
+All settings are environment variables, optionally loaded from `.env` and
+`.env.local` (see [Option C](#option-c-from-source) for precedence).
 
 | Variable | Default | Purpose |
 |---|---|---|
-| `PORT` | `8080` | HTTP listen port |
-| `BASE_URL` | `http://localhost:8080` | Canonical public URL used by OAuth metadata and callbacks |
+| `PORT` | `8080` | HTTP listen port (all interfaces). Leave at `8080` in Docker |
+| `BASE_URL` | `http://localhost:8080` | Public URL of the server, no trailing slash. Used for OAuth metadata and as the base of the redirect URI `BASE_URL/oauth/callback` |
 | `MCP_TRANSPORT` | `http` | `http` (Streamable HTTP) or `stdio`; the `--stdio` argument overrides it |
 | `MCP_STATELESS_HTTP` | `true` | Disable in-memory MCP HTTP sessions; required for MCP `2026-07-28` |
 | `DASHBOARD_ENABLED` | `false` | Expose the public connection setup page at `/dashboard/` |
-| `GOOGLE_CLIENT_ID` | empty | Google OAuth web-client ID |
+| `GOOGLE_CLIENT_ID` | empty | Google OAuth web-client ID. With `GOOGLE_CLIENT_SECRET`, enables OAuth mode |
 | `GOOGLE_CLIENT_SECRET` | empty | Google OAuth web-client secret |
-| `ACCESS_TOKEN_TTL` | `8h` | Lifetime of MCP access tokens |
-| `AUTH_AUTO_REFRESH_MAX_AGE` | `168h` | Maximum silent-renewal chain age |
-| `TOKEN_STORE_PATH` | empty | Optional persisted token-store file |
-| `SERVICE_ACCOUNT_API_KEY` | empty | Bearer API key that enables S2S mode |
-| `GOOGLE_SERVICE_ACCOUNT_KEY_JSON` | empty | Service-account JSON; omit when ADC is available |
-| `ALLOWED_HOSTS` | empty | Additional trusted hosts for Docker/internal URL resolution |
-| `TRUST_PROXY` | `false` | Trust the rightmost `X-Forwarded-For` hop for rate limiting |
-| `LOG_LEVEL` | `info` | Set `debug` for additional structured logs |
-| `GTM_TOOL_GROUPS` | current groups | Comma-separated tool families advertised through MCP |
+| `ACCESS_TOKEN_TTL` | `8h` | Lifetime of MCP access tokens (Go duration) |
+| `AUTH_AUTO_REFRESH_MAX_AGE` | `168h` | Maximum age of a bearer token that is still renewed silently (Go duration) |
+| `TOKEN_STORE_PATH` | empty | File that persists issued tokens across restarts; empty keeps them in memory only. The directory is created with mode `0700` if missing |
+| `SERVICE_ACCOUNT_API_KEY` | empty | Bearer API key that enables service-account mode over HTTP |
+| `GOOGLE_SERVICE_ACCOUNT_KEY_JSON` | empty | Service-account key as a JSON string. Takes precedence over Application Default Credentials |
+| `GOOGLE_APPLICATION_CREDENTIALS` | empty | Standard Google variable: path to a service-account key file, used through Application Default Credentials |
+| `ALLOWED_HOSTS` | empty | Comma-separated extra `host[:port]` values trusted for URL resolution (Docker-internal names) |
+| `TRUST_PROXY` | `false` | Use the rightmost `X-Forwarded-For` entry as the client IP for rate limiting |
+| `LOG_LEVEL` | `info` | `debug` enables debug logs; any other value means `info` |
+| `GTM_TOOL_GROUPS` | 11 default groups | Comma-separated tool groups advertised through MCP, or `all` |
 
-If OAuth and service-account credentials are both absent, the server starts in
-open mode. Use open mode only for isolated local development.
+`GOOGLE_REDIRECT_URI` and `JWT_SECRET` are read for backward compatibility but
+have no effect.
+
+Service-account credentials are looked up in this order:
+`GOOGLE_SERVICE_ACCOUNT_KEY_JSON`, then Application Default Credentials (the
+file in `GOOGLE_APPLICATION_CREDENTIALS`, then the file created by
+`gcloud auth application-default login`, then the service account attached on
+Google Cloud). In HTTP mode they are loaded
+only when `SERVICE_ACCOUNT_API_KEY` is set; in stdio mode they are always
+required.
+
+### HTTP sessions
 
 Streamable HTTP is stateless by default: the server keeps no in-memory MCP
-session and ignores `Mcp-Session-Id`, so requests can reach any replica or
-survive a restart. This is required for MCP `2026-07-28` tool requests; legacy
-MCP `2025-11-25` clients remain supported. Stateless mode does not disable
-authentication: send credentials on every MCP request. Set
+session and ignores `Mcp-Session-Id`, so MCP requests survive a restart. This
+is required for MCP `2026-07-28` tool requests; legacy MCP `2025-11-25`
+clients remain supported. Stateless mode does not disable authentication:
+clients send credentials on every MCP request. OAuth tokens are still held by
+a single process (see [Self-hosting](#self-hosting)). Set
 `MCP_STATELESS_HTTP=false` only if a client depends on HTTP sessions or the
 GET event stream; this server makes no server-to-client requests.
 
+### Proxies and hosts
+
 `TRUST_PROXY=true` is appropriate only when a trusted reverse proxy overwrites
-or appends `X-Forwarded-For`. The implementation uses the rightmost value. With
-multiple proxy hops, configure and test the trust boundary before relying on
-per-client rate limits.
+or appends `X-Forwarded-For`. The implementation uses the rightmost value,
+which assumes exactly one proxy hop. With several hops, configure and test the
+trust boundary before relying on per-client rate limits.
 
 `ALLOWED_HOSTS` is a comma-separated allowlist used when the same server is
-reached through trusted internal Docker hostnames. Do not add arbitrary public hosts.
+reached through trusted internal Docker hostnames (for example
+`gtm-mcp:8080`). For a request whose `Host` header is on the list, OAuth
+metadata is built from that host instead of `BASE_URL`. Do not add arbitrary
+public hosts.
+
+### Tool groups
 
 `GTM_TOOL_GROUPS` controls schema size for clients that need only part of the
-API. Available groups are `accounts`, `workspaces`, `tags`, `triggers`,
-`variables`, `folders`, `builtins`, `zones`, `templates`, `server`, `guidance`,
-`environments`, `destinations`, `gtag`, `container-admin`, `folder-admin`, and
-`workspace-admin`, `version-admin`, and `reverts`. Leaving it unset preserves
-the established 64-tool surface. New parity groups are opt-in. Use `all` to
-include every current and future parity family, or select a subset:
+API. Names are case-insensitive; an unknown name stops the server at startup.
+
+| Group | Enabled by default | GTM tools |
+|---|---|---|
+| `accounts` | yes | 8 |
+| `workspaces` | yes | 13 (workspaces plus `list_versions`, `get_latest_version_header`, `get_version`, `get_live_version`, `create_version`, `publish_version`) |
+| `tags` | yes | 5 |
+| `triggers` | yes | 5 |
+| `variables` | yes | 5 |
+| `folders` | yes | 2 |
+| `builtins` | yes | 3 |
+| `zones` | yes | 5 |
+| `templates` | yes | 6 |
+| `server` | yes | 10 |
+| `guidance` | yes | 2 |
+| `environments` | no | 6 |
+| `destinations` | no | 3 |
+| `gtag` | no | 5 |
+| `container-admin` | no | 2 |
+| `folder-admin` | no | 6 |
+| `workspace-admin` | no | 3 |
+| `version-admin` | no | 4 |
+| `reverts` | no | 1 |
+
+Leaving the variable unset enables the 11 default groups (64 tools). An
+explicit list **replaces** the defaults instead of adding to them, so to keep
+the defaults and add one opt-in group, list them all:
+
+```text
+GTM_TOOL_GROUPS=accounts,workspaces,tags,triggers,variables,folders,builtins,zones,templates,server,guidance,environments
+```
+
+Use `all` to enable every group (94 tools), including groups added in future
+versions. A subset is also valid:
 
 ```text
 GTM_TOOL_GROUPS=accounts,workspaces,tags,triggers,variables
 ```
 
-The two connection utility tools remain available regardless of this setting.
+The two utility tools, the resources, and the prompts are always available.
 
-### Optional setup dashboard
+## Releases
 
-Set `DASHBOARD_ENABLED=true` and restart the server to expose `/dashboard/`.
-The page shows the canonical MCP endpoint, server version, authentication setup status, and connection instructions. It is disabled by default.
-
-The dashboard is public when enabled. It deliberately excludes tokens, sessions, account names, container data, and other GTM content. It reports server configuration only and does not verify the visitor's Google session.
-
-## Releases and deployment
-
-`server.json` is the source of truth for the runtime version. It is embedded in the Go binary and returned by `/health`; there is no second version constant in Go code.
+`server.json` is the source of truth for the runtime version. It is embedded in
+the Go binary and returned by `/health`; there is no second version constant in
+Go code.
 
 To publish a release:
 
 1. Update `server.json`.
 2. Commit the release changes.
-3. Push a matching tag such as `v1.11.0`.
+3. Push a matching tag such as `v1.13.0`.
 
-The release workflow rejects a tag that does not match `server.json`, creates
-cross-platform archives with GoReleaser, and then deploys the tagged source to the production VPS. The deployment uses the GitHub environment
-`auto-deployment` and expects these secrets:
+The release workflow rejects a tag that does not match `server.json` and
+creates cross-platform archives and a checksums file with GoReleaser. The
+workflow also contains a `deploy` job for the former hosted instance (GitHub
+environment `auto-deployment`, secrets `SSH_PRIVATE_KEY`, `VPS_KNOWN_HOSTS`,
+`VPS_HOST`, `VPS_USER`); it verifies `https://mcp.gtmeditor.com/health` and
+cannot succeed now that the instance is shut down.
 
-- `SSH_PRIVATE_KEY`
-- `VPS_KNOWN_HOSTS`
-- `VPS_HOST`
-- `VPS_USER`
-
-The workflow preserves server-only `.env`, `docker-compose.yml`, and token data, keeps a rollback image, rebuilds the service, and waits until `/health`reports the expected version.
-
-Recent commits on `main` can be newer than the latest tagged release. Check the [release page](https://github.com/paolobietolini/gtm-mcp-server/releases) when you need a reproducible published artifact.
+Recent commits on `main` can be newer than the latest tagged release. Check the
+[release page](https://github.com/paolobietolini/gtm-mcp-server/releases) when
+you need a reproducible published artifact.
 
 ## Development
 
@@ -604,13 +1172,13 @@ tests must use a disposable container and clean up their entities.
 See [ARCHITECTURE.md](ARCHITECTURE.md) for package boundaries, request flow,
 authentication internals, token persistence, and security invariants.
 
-For a deep dive into the Google Tag Manager MCP server, read the [Deep Wiki](https://deepwiki.com/paolobietolini/gtm-mcp-server).
-
+For a deep dive into the Google Tag Manager MCP server, read the
+[Deep Wiki](https://deepwiki.com/paolobietolini/gtm-mcp-server).
 
 ## Additional context
 
-- [`llms.txt`](llms.txt) is served at
-  [`https://mcp.gtmeditor.com/llms.txt`](https://mcp.gtmeditor.com/llms.txt).
+- [`llms.txt`](llms.txt) is embedded in the binary and served by every
+  instance at `<BASE_URL>/llms.txt`.
 - [`skills/gtm-mcp/gtm-mcp.md`](skills/gtm-mcp/gtm-mcp.md) contains a Claude
   Code skill with workflow guidance.
 - [`examples/gtm_agent.py`](examples/gtm_agent.py) demonstrates a programmatic
