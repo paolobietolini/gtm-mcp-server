@@ -25,6 +25,7 @@ dist/
 
 # Binary
 gtm-mcp-server
+/bin/
 
 # Deployment
 deploy.sh

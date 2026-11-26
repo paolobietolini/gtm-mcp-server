@@ -6,6 +6,7 @@
 - Protocol: Model Context Protocol (MCP) over Streamable HTTP, or stdio for a local process
 - Auth: OAuth 2.1 with PKCE (Google account), or a service-account API key sent as `Authorization: Bearer <key>`
 - Source and self-hosting guide: https://github.com/paolobietolini/gtm-mcp-server
+- Without a server: the `gtm` command-line tool in the same repository
 
 ## GTM Hierarchy
 
