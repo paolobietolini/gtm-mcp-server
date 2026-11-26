@@ -42,6 +42,13 @@ func (c *Client) PublishVersion(ctx context.Context, accountID, containerID, ver
 		return nil, mapGoogleError(err)
 	}
 
+	if result == nil || result.ContainerVersion == nil {
+		if result != nil && result.CompilerError {
+			return nil, fmt.Errorf("version %s was not published: compiler error", versionID)
+		}
+		return nil, fmt.Errorf("version %s was not published: the API returned no version", versionID)
+	}
+
 	return &PublishedVersion{
 		VersionID: result.ContainerVersion.ContainerVersionId,
 		Name:      result.ContainerVersion.Name,
