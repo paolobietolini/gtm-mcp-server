@@ -35,7 +35,7 @@ var generated = map[string][]string{
 	serverDocsDir + "/safe-edit-workflow.md":  {"gtm-safe-edit"},
 	serverDocsDir + "/ga4-consent.md":         {"gtm-container-audit", "gtm-ga4-consent", "gtm-tracking-plan"},
 	serverDocsDir + "/server-side.md":         {"gtm-container-audit", "gtm-server-side"},
-	serverDocsDir + "/tool-input-formats.md":  {"gtm-mcp"},
+	serverDocsDir + "/tool-input-formats.md":  {"gtm-cli", "gtm-mcp"},
 	sharedDir + "/container-export.md": {
 		"gtm-container-audit", "gtm-ga4-consent", "gtm-safe-edit", "gtm-server-side", "gtm-tracking-plan",
 	},
