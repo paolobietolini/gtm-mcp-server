@@ -25,10 +25,10 @@ type DeleteTagOutput struct {
 func registerDeleteTag(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input DeleteTagInput) (*mcp.CallToolResult, DeleteTagOutput, error) {
 		// Safety guard: require explicit confirmation
-		if !input.Confirm {
+		if err := CheckConfirm(OpDeleteTag, input.Confirm); err != nil {
 			return nil, DeleteTagOutput{
 				Success: false,
-				Message: "Deletion requires confirm: true. This is a safety guard to prevent accidental deletions.",
+				Message: err.Error(),
 			}, nil
 		}
 
