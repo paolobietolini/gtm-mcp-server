@@ -2,6 +2,7 @@ package gtm
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -50,32 +51,19 @@ func registerCreateVersion(server *mcp.Server) {
 			return nil, CreateVersionOutput{}, err
 		}
 
-		// Check workspace status first
-		status, err := client.GetWorkspaceStatus(ctx, input.AccountID, input.ContainerID, input.WorkspaceID)
-		if err != nil {
-			return nil, CreateVersionOutput{}, err
-		}
-
-		if !status.HasChanges {
-			return nil, CreateVersionOutput{
-				Success: false,
-				Message: "No changes in workspace to create version from",
-			}, nil
-		}
-
-		if status.HasConflicts {
-			return nil, CreateVersionOutput{
-				Success: false,
-				Message: fmt.Sprintf("Workspace has %d conflicts that must be resolved before creating a version", status.ConflictCount),
-			}, nil
-		}
-
 		versionInput := &VersionInput{
 			Name:  input.Name,
 			Notes: input.Notes,
 		}
 
-		version, err := client.CreateVersion(ctx, input.AccountID, input.ContainerID, input.WorkspaceID, versionInput)
+		version, err := client.CreateVersionFromWorkspace(ctx, input.AccountID, input.ContainerID, input.WorkspaceID, versionInput)
+		var blocked *VersionBlockedError
+		if errors.As(err, &blocked) {
+			return nil, CreateVersionOutput{
+				Success: false,
+				Message: blocked.Error(),
+			}, nil
+		}
 		if err != nil {
 			return nil, CreateVersionOutput{}, err
 		}
@@ -96,10 +84,10 @@ func registerCreateVersion(server *mcp.Server) {
 func registerPublishVersion(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input PublishVersionInput) (*mcp.CallToolResult, PublishVersionOutput, error) {
 		// Safety guard: require explicit confirmation
-		if !input.Confirm {
+		if err := CheckConfirm(OpPublishVersion, input.Confirm); err != nil {
 			return nil, PublishVersionOutput{
 				Success: false,
-				Message: "Publishing requires confirm: true. WARNING: This will make the version live on your website.",
+				Message: err.Error(),
 			}, nil
 		}
 

@@ -25,10 +25,10 @@ type DeleteTriggerOutput struct {
 func registerDeleteTrigger(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input DeleteTriggerInput) (*mcp.CallToolResult, DeleteTriggerOutput, error) {
 		// Safety guard: require explicit confirmation
-		if !input.Confirm {
+		if err := CheckConfirm(OpDeleteTrigger, input.Confirm); err != nil {
 			return nil, DeleteTriggerOutput{
 				Success: false,
-				Message: "Deletion requires confirm: true. This is a safety guard to prevent accidental deletions.",
+				Message: err.Error(),
 			}, nil
 		}
 
