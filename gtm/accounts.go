@@ -16,14 +16,16 @@ type Account struct {
 
 // ListAccounts returns all GTM accounts accessible to the authenticated user.
 func (c *Client) ListAccounts(ctx context.Context) ([]Account, error) {
-	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListAccountsResponse, error) {
-		return c.Service.Accounts.List().Context(ctx).Do()
+	items, err := listAll(ctx, func(token string) (*tagmanager.ListAccountsResponse, error) {
+		return c.Service.Accounts.List().PageToken(token).Context(ctx).Do()
+	}, func(r *tagmanager.ListAccountsResponse) ([]*tagmanager.Account, string) {
+		return r.Account, r.NextPageToken
 	})
 	if err != nil {
-		return nil, mapGoogleError(err)
+		return nil, err
 	}
 
-	return toAccounts(resp.Account), nil
+	return toAccounts(items), nil
 }
 
 // UpdateAccount renames a GTM account. It fetches the current account first to get the fingerprint.

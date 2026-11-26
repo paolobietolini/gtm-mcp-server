@@ -37,11 +37,8 @@ func registerUpdateVariable(server *mcp.Server) {
 		if input.VariableID == "" {
 			return nil, UpdateVariableOutput{}, fmt.Errorf("variableId is required")
 		}
-		if input.Name == "" {
-			return nil, UpdateVariableOutput{}, fmt.Errorf("name is required")
-		}
-		if input.Type == "" {
-			return nil, UpdateVariableOutput{}, fmt.Errorf("type is required")
+		if err := ValidateVariableInput(input.Name, input.Type); err != nil {
+			return nil, UpdateVariableOutput{}, err
 		}
 
 		path := BuildVariablePath(wc.AccountID, wc.ContainerID, wc.WorkspaceID, input.VariableID)

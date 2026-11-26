@@ -14,8 +14,8 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"gtm-mcp-server/gtm"
-	"gtm-mcp-server/skills"
+	"github.com/paolobietolini/gtm-mcp-server/gtm"
+	"github.com/paolobietolini/gtm-mcp-server/skills"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -27,6 +27,7 @@ var update = flag.Bool("update", false, "rewrite copied skill references from th
 // skills directory, skill:// resources), so shared content is duplicated and
 // checked here. The server reads only the canonical file.
 var copies = map[string][]string{
+	"gtm-mcp/references/tool-input-formats.md":        {"gtm-cli"},
 	"gtm-safe-edit/references/naming-organization.md": {"gtm-container-audit", "gtm-tracking-plan"},
 	"gtm-ga4-consent/references/ga4-consent.md":       {"gtm-container-audit", "gtm-tracking-plan"},
 	"gtm-server-side/references/server-side.md":       {"gtm-container-audit"},

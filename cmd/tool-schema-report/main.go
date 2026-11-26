@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"gtm-mcp-server/gtm"
+	"github.com/paolobietolini/gtm-mcp-server/gtm"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )

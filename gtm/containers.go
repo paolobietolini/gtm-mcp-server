@@ -27,14 +27,16 @@ type Container struct {
 func (c *Client) ListContainers(ctx context.Context, accountID string) ([]Container, error) {
 	parent := fmt.Sprintf("accounts/%s", accountID)
 
-	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListContainersResponse, error) {
-		return c.Service.Accounts.Containers.List(parent).Context(ctx).Do()
+	items, err := listAll(ctx, func(token string) (*tagmanager.ListContainersResponse, error) {
+		return c.Service.Accounts.Containers.List(parent).PageToken(token).Context(ctx).Do()
+	}, func(r *tagmanager.ListContainersResponse) ([]*tagmanager.Container, string) {
+		return r.Container, r.NextPageToken
 	})
 	if err != nil {
-		return nil, mapGoogleError(err)
+		return nil, err
 	}
 
-	return toContainers(resp.Container), nil
+	return toContainers(items), nil
 }
 
 func toContainers(containers []*tagmanager.Container) []Container {

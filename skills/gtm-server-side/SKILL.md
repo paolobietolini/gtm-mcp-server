@@ -13,7 +13,8 @@ approval before publishing.
 
 | Source | How |
 |--------|-----|
-| Live access | `list_clients`, `list_transformations`, `list_tags`, `list_triggers`, `list_variables`, `get_template` |
+| MCP tools | `list_clients`, `list_transformations`, `list_tags`, `list_triggers`, `list_variables`, `get_template` |
+| `gtm` CLI | Tags, triggers and variables only (see gtm-cli). Clients, transformations and templates need MCP tools or an export |
 | Export JSON | Read [container-export.md](references/container-export.md) first |
 | Neither | Ask for an export of the server container |
 

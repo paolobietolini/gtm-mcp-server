@@ -10,7 +10,7 @@ import (
 	"slices"
 	"strings"
 
-	"gtm-mcp-server/skills"
+	"github.com/paolobietolini/gtm-mcp-server/skills"
 )
 
 //go:embed docs/index.md

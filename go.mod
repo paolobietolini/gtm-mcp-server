@@ -1,4 +1,4 @@
-module gtm-mcp-server
+module github.com/paolobietolini/gtm-mcp-server
 
 go 1.26.0
 

@@ -2,11 +2,9 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"golang.org/x/oauth2"
-	"golang.org/x/oauth2/google"
 )
 
 const SATokenSourceKey ContextKey = "sa_token_source"
@@ -15,17 +13,9 @@ const SATokenSourceKey ContextKey = "sa_token_source"
 // If keyJSON is non-empty, it is parsed as a service account JSON key.
 // Otherwise Application Default Credentials are used (Workload Identity on GCP).
 func NewServiceAccountTokenSource(ctx context.Context, keyJSON string) (oauth2.TokenSource, error) {
-	if keyJSON != "" {
-		config, err := google.JWTConfigFromJSON([]byte(keyJSON), GoogleScopes...)
-		if err != nil {
-			return nil, fmt.Errorf("invalid GOOGLE_SERVICE_ACCOUNT_KEY_JSON: %w", err)
-		}
-		return config.TokenSource(ctx), nil
-	}
-
-	creds, err := google.FindDefaultCredentials(ctx, GoogleScopes...)
+	creds, err := ResolveCredentials(ctx, keyJSON)
 	if err != nil {
-		return nil, fmt.Errorf("no service account credentials found (set GOOGLE_SERVICE_ACCOUNT_KEY_JSON or GOOGLE_APPLICATION_CREDENTIALS, or use Workload Identity): %w", err)
+		return nil, err
 	}
 	return creds.TokenSource, nil
 }

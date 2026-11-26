@@ -6,7 +6,7 @@
     {
       "name": "gtm-skills",
       "source": "./",
-      "description": "Google Tag Manager skills: container audit, safe edits, tracking plans, GA4 and consent, server-side, and GTM MCP Server usage."
+      "description": "Google Tag Manager skills: container audit, safe edits, tracking plans, GA4 and consent, server-side, GTM MCP Server and gtm CLI usage."
     }
   ]
 }

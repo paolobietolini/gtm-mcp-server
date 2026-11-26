@@ -81,20 +81,6 @@ func registerUpdateTrigger(server *mcp.Server) {
 			}
 		}
 
-		// The GTM API silently drops autoEventFilter for linkClick, click, and
-		// formSubmission triggers. Remap to filter so the conditions are persisted.
-		// See: https://github.com/paolobietolini/gtm-mcp-server/issues/39
-		var autoEventFilterWarning string
-		if len(autoEventFilter) > 0 {
-			switch input.Type {
-			case "linkClick", "click", "formSubmission":
-				filter = append(filter, autoEventFilter...)
-				autoEventFilter = nil
-				autoEventFilterWarning = "Warning: the GTM API silently ignores autoEventFilter for " +
-					input.Type + " triggers (issue #39). Conditions were automatically remapped to filter."
-			}
-		}
-
 		triggerInput := &TriggerInput{
 			Name:              input.Name,
 			Type:              input.Type,
@@ -107,6 +93,7 @@ func registerUpdateTrigger(server *mcp.Server) {
 		if input.Notes != nil {
 			triggerInput.Notes = *input.Notes
 		}
+		autoEventFilterWarning := NormalizeTriggerUpdate(triggerInput)
 
 		trigger, err := wc.Client.UpdateTrigger(ctx, path, triggerInput)
 		if err != nil {

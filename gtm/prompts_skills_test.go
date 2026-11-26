@@ -8,7 +8,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"gtm-mcp-server/skills"
+	"github.com/paolobietolini/gtm-mcp-server/skills"
 )
 
 // Prompts carry the skill files themselves, so guidance exists in one place.

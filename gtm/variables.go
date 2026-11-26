@@ -22,14 +22,16 @@ type Variable struct {
 func (c *Client) ListVariables(ctx context.Context, accountID, containerID, workspaceID string) ([]Variable, error) {
 	parent := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s", accountID, containerID, workspaceID)
 
-	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListVariablesResponse, error) {
-		return c.Service.Accounts.Containers.Workspaces.Variables.List(parent).Context(ctx).Do()
+	items, err := listAll(ctx, func(token string) (*tagmanager.ListVariablesResponse, error) {
+		return c.Service.Accounts.Containers.Workspaces.Variables.List(parent).PageToken(token).Context(ctx).Do()
+	}, func(r *tagmanager.ListVariablesResponse) ([]*tagmanager.Variable, string) {
+		return r.Variable, r.NextPageToken
 	})
 	if err != nil {
-		return nil, mapGoogleError(err)
+		return nil, err
 	}
 
-	return toVariables(resp.Variable), nil
+	return toVariables(items), nil
 }
 
 // GetVariable returns a specific variable by ID.

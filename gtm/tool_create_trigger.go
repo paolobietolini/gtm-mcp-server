@@ -88,16 +88,10 @@ func registerCreateTrigger(server *mcp.Server) {
 			return nil, CreateTriggerOutput{}, err
 		}
 
-		message := "Trigger created successfully"
-		if isClickLinkFormTrigger(input.Type) && len(autoEventFilter) > 0 {
-			message += ". Note: autoEventFilter was automatically remapped to filter for " +
-				input.Type + " triggers (GTM API requirement)."
-		}
-
 		return nil, CreateTriggerOutput{
 			Success: true,
 			Trigger: *trigger,
-			Message: message,
+			Message: TriggerCreateMessage(triggerInput),
 		}, nil
 	}
 

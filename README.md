@@ -21,6 +21,9 @@ GTM MCP Server connects MCP clients to the Google Tag Manager API. It can
 inspect containers, create and update workspace entities, create versions, and
 publish a selected version after explicit confirmation.
 
+The repository also ships [`gtm`](#command-line-interface), a command-line tool
+that gives people and agents direct GTM access with no server to host.
+
 It authenticates either with browser-based Google OAuth (each user acts with
 their own Google identity and GTM permissions) or with a Google service account
 (one shared identity, for automation or a single local user).
@@ -28,6 +31,7 @@ their own Google identity and GTM permissions) or with a Google service account
 ## Contents
 
 - [Project status](#project-status)
+- [Command-line interface](#command-line-interface)
 - [Choose a deployment mode](#choose-a-deployment-mode)
 - [Self-hosting](#self-hosting)
 - [Connect an MCP client](#connect-an-mcp-client)
@@ -56,6 +60,177 @@ The project implements 101 methods from Google's 106-method GTM v2 discovery
 surface. The five `accounts.user_permissions` methods are intentionally
 excluded: granting and revoking GTM access is security-sensitive and should not
 be managed by an LLM.
+
+## Command-line interface
+
+`gtm` calls the Tag Manager API from your own machine, for shells, scripts and
+agents such as Claude Code, Codex and Cursor. There is no server, MCP client
+configuration or API key. It covers account, container and workspace discovery,
+tag, trigger and variable create, read, update and delete, workspace status, and
+version creation and publication. The MCP server covers the rest of the API.
+
+### Install
+
+With Go 1.26 or later:
+
+```bash
+go install github.com/paolobietolini/gtm-mcp-server/cmd/gtm@latest
+```
+
+`@latest` needs a release newer than `v1.13.0`; before that release, use `@main`.
+Releases after `v1.13.0` also attach prebuilt archives named
+`gtm_<version>_<os>_<arch>` to the
+[release page](https://github.com/paolobietolini/gtm-mcp-server/releases). From a
+clone:
+
+```bash
+go build -o bin/gtm ./cmd/gtm
+```
+
+[Git Time Metric](https://github.com/git-time-metric/gtm) also installs a
+program named `gtm`. If you use it, install this one under another name, for
+example `go build -o ~/.local/bin/gtmctl ./cmd/gtm`.
+
+### Authenticate
+
+[Enable the Tag Manager API](#step-1-enable-the-tag-manager-api) in a Google
+Cloud project. `gtm` finds credentials as stdio mode does:
+`GOOGLE_SERVICE_ACCOUNT_KEY_JSON`, then Application Default Credentials (the file
+in `GOOGLE_APPLICATION_CREDENTIALS`, then the gcloud login file, then the service
+account attached on Google Cloud).
+
+**The plain gcloud login is not enough.** `gcloud auth application-default login`
+does not request Tag Manager scopes by default. Adding them to `--scopes` uses
+gcloud's own OAuth client, which Google can reject with "This app is blocked"
+([troubleshooting](https://docs.cloud.google.com/docs/authentication/troubleshoot-adc)).
+Use one of these instead.
+
+**Option 1: your own OAuth client**, to act as yourself. In the Google Cloud
+project, configure the OAuth consent screen, create an OAuth client of type
+**Desktop app** and download its JSON file. While an external consent screen is in
+**Testing**, add yourself as a test user; Google expires those logins after 7
+days.
+
+```bash
+SCOPES=https://www.googleapis.com/auth/cloud-platform
+SCOPES+=,https://www.googleapis.com/auth/userinfo.email
+for s in delete.containers edit.containers edit.containerversions manage.accounts publish; do
+  SCOPES+=,https://www.googleapis.com/auth/tagmanager.$s
+done
+gcloud auth application-default login \
+  --client-id-file=client_secret.json --scopes="$SCOPES"
+```
+
+Request fewer `tagmanager` scopes to limit what the CLI can do, for example only
+`tagmanager.readonly` for audits.
+
+**Option 2: a service account**, for automation. Create it and add it to GTM as in
+[step 2b](#step-2b-create-the-service-account-service-account-mode-and-stdio),
+then either point to its key file:
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/path/to/sa.json
+```
+
+or impersonate it without a key. This needs the IAM Service Account Credentials
+API and the Service Account Token Creator role on that account:
+
+```bash
+gcloud auth application-default login \
+  --impersonate-service-account=gtm-mcp@PROJECT_ID.iam.gserviceaccount.com
+```
+
+Check the result:
+
+```bash
+gtm auth status
+```
+
+It prints the credential source and type, the account email when Google reports
+one, the quota project, and granted and missing scopes. It exits with code 3 if
+the credentials have no Tag Manager scope.
+
+If a request fails for lack of a quota project, run
+`gcloud auth application-default set-quota-project PROJECT_ID`.
+
+### Use
+
+```bash
+gtm accounts list --output table
+gtm containers list --account 123
+gtm workspaces list --account 123 --container 456
+
+export GTM_ACCOUNT_ID=123 GTM_CONTAINER_ID=456 GTM_WORKSPACE_ID=7
+gtm tags list
+gtm tags create --file tag.json --dry-run
+gtm tags create --file tag.json
+gtm tags delete --tag-id 12 --confirm
+gtm workspaces status
+gtm versions create --name "Add sign_up event" --notes "GA4 sign_up on form submit"
+gtm versions publish --version-id 9 --confirm
+```
+
+`gtm help` lists every command and `gtm <noun> <verb> --help` its flags. A command
+`gtm <nouns> <verb>` matches the MCP tool `verb_noun`.
+
+Missing `--account`, `--container` and `--workspace` flags are read from the
+environment variables above, then from `$XDG_CONFIG_HOME/gtm/config.json`
+(normally `~/.config/gtm/config.json`), or from the file named by `GTM_CONFIG`:
+
+```json
+{"accountId": "123", "containerId": "456", "workspaceId": "7"}
+```
+
+No configuration is read from the working directory, including `.env`.
+
+`--file` takes a JSON object (`-` reads stdin):
+
+```json
+{
+  "name": "HTML - Banner",
+  "type": "html",
+  "firingTriggerId": ["12"],
+  "parameter": [{"type": "template", "key": "html", "value": "<script></script>"}]
+}
+```
+
+Parameter and condition shapes are in
+[tool-input-formats.md](skills/gtm-mcp/references/tool-input-formats.md); the
+[`gtm-cli` skill](skills/gtm-cli/SKILL.md) lists the keys for each entity.
+Unknown keys are rejected. On update, tags keep every omitted key; triggers and
+variables require `name` and `type` and keep other omitted keys.
+
+### Output and exit codes
+
+API commands print JSON with the same shape as the matching MCP tool's output;
+`--output table` is for reading. Errors are JSON on stderr:
+
+```json
+{"error": {"code": "not_found", "message": "resource not found: ..."}}
+```
+
+| Exit | `error.code` |
+|---|---|
+| 0 | success |
+| 1 | `api_error`, `cancelled`, `error` |
+| 2 | `usage`, `invalid_input`, `invalid_request` |
+| 3 | `auth` |
+| 4 | `permission_denied` |
+| 5 | `not_found` |
+| 6 | `conflict`, `precondition_failed` |
+| 7 | `rate_limited` |
+| 8 | `confirmation_required` |
+
+A command gives up after two minutes. If a write ends in exit code 1, check the
+container before retrying: the change may have been applied.
+
+### Safeguards
+
+- `delete` and `publish` commands require `--confirm`.
+- `versions create` refuses a workspace without changes or with merge conflicts.
+- Every command that writes accepts `--dry-run`, which prints the request and
+  sends no write. An update still reads the current entity, to show the full body
+  that would be sent. A dry run needs no `--confirm`.
 
 ## Choose a deployment mode
 
@@ -974,7 +1149,7 @@ when the entity does not exist in the latest container version.
 ## Safety model
 
 - Delete operations, publication, and disabling built-in variables require
-  `confirm: true`.
+  `confirm: true` (`--confirm` in the [CLI](#command-line-interface)).
 - Update operations fetch the current resource fingerprint and use Google's
   optimistic concurrency checks.
 - `create_version` first checks that the workspace has changes and no merge
@@ -1026,7 +1201,8 @@ authentication or mutation safeguards.
 ## Skills
 
 [`skills/`](skills) holds [Agent Skills](https://agentskills.io) with the GTM
-know-how, usable without this server. Each one works with the MCP tools or with
+know-how, usable without this server. The know-how skills work with the MCP tools,
+with the [`gtm` CLI](#command-line-interface) for the operations it covers, or with
 a container export (GTM > Admin > Export Container) pasted or attached in a chat.
 
 | Skill | Use it for |
@@ -1037,6 +1213,7 @@ a container export (GTM > Admin > Export Container) pasted or attached in a chat
 | [`gtm-ga4-consent`](skills/gtm-ga4-consent/SKILL.md) | GA4 setup and debugging, consent mode v2 |
 | [`gtm-server-side`](skills/gtm-server-side/SKILL.md) | Server containers, data flow, transformations |
 | [`gtm-mcp`](skills/gtm-mcp/SKILL.md) | Operating this server's tools; only useful with the server |
+| [`gtm-cli`](skills/gtm-cli/SKILL.md) | Operating the `gtm` command-line tool |
 
 Each skill folder is self-contained: install all of them or only some.
 
@@ -1203,8 +1380,9 @@ To publish a release:
 3. Push a matching tag such as `v1.13.0`.
 
 The release workflow rejects a tag that does not match `server.json`, then
-creates cross-platform archives and a checksums file with GoReleaser and
-attaches them to the GitHub release. It does not deploy anything.
+creates cross-platform archives of the server (`gtm-mcp-server_*`) and the CLI
+(`gtm_*`) plus a checksums file with GoReleaser and attaches them to the GitHub
+release. It does not deploy anything.
 
 Recent commits on `main` can be newer than the latest tagged release. Check the
 [release page](https://github.com/paolobietolini/gtm-mcp-server/releases) when

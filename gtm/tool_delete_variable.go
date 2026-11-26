@@ -25,10 +25,10 @@ type DeleteVariableOutput struct {
 func registerDeleteVariable(server *mcp.Server) {
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, input DeleteVariableInput) (*mcp.CallToolResult, DeleteVariableOutput, error) {
 		// Safety guard: require explicit confirmation
-		if !input.Confirm {
+		if err := CheckConfirm(OpDeleteVariable, input.Confirm); err != nil {
 			return nil, DeleteVariableOutput{
 				Success: false,
-				Message: "Deletion requires confirm: true. This is a safety guard to prevent accidental deletions.",
+				Message: err.Error(),
 			}, nil
 		}
 

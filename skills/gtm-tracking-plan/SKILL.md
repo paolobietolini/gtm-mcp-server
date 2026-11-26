@@ -16,7 +16,8 @@ consent in detail, use gtm-ga4-consent.
 
 | Source | How |
 |--------|-----|
-| Live access | `list_tags`, `list_triggers`, `list_variables`, `get_tag`, `get_trigger` |
+| MCP tools | `list_tags`, `list_triggers`, `list_variables`, `get_tag`, `get_trigger` |
+| `gtm` CLI | `gtm tags list`, `gtm triggers list`, `gtm variables list`, `gtm tags get`, `gtm triggers get`; see gtm-cli |
 | Export JSON | Read [container-export.md](references/container-export.md) first |
 | Neither | Plan from the goals, and ask for an export if a container exists |
 
