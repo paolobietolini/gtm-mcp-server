@@ -3,6 +3,7 @@ package gtm
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	tagmanager "google.golang.org/api/tagmanager/v2"
 )
@@ -135,8 +136,8 @@ func (c *Client) CreateTrigger(ctx context.Context, accountID, containerID, work
 	// These trigger types require conditions to be set via the filter field instead.
 	filter := input.Filter
 	autoEventFilter := input.AutoEventFilter
-	if isClickLinkFormTrigger(input.Type) && len(autoEventFilter) > 0 && len(filter) == 0 {
-		filter = autoEventFilter
+	if isClickLinkFormTrigger(input.Type) && len(autoEventFilter) > 0 {
+		filter = slices.Concat(filter, autoEventFilter)
 		autoEventFilter = nil
 	}
 

@@ -244,6 +244,6 @@ Always call `get_tag_templates` for exact format — do not guess the parameter 
 
 ## Known Limitations
 
-- The Google Tag Manager API drops `autoEventFilter` on click/form triggers, so the server moves those conditions to `filter`. Send all conditions in one field: on create, if `filterJson` is also set, the auto-event conditions are lost
+- The Google Tag Manager API drops `autoEventFilter` on click/form triggers, so the server moves those conditions to `filter`
 - OAuth tokens are kept in memory unless the operator sets `TOKEN_STORE_PATH`; without it, server restarts require re-authentication
 - Rate limits per client IP: 10 req/s for `/authorize`, `/oauth/callback`, and `/token`; 2 req/s for `/register`; standard Google API quotas for GTM operations

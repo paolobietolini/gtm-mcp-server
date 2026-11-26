@@ -38,8 +38,7 @@ Changes happen in a workspace. Nothing is live until a version is published.
 - For a Google tag use `googtag` with a `tagId` template parameter.
 - Custom event triggers take `customEventFilterJson`. Click and form triggers
   take `autoEventFilterJson`; the server moves those conditions to `filter`,
-  because the GTM API drops them otherwise. Send all conditions in one field: on
-  create, if `filterJson` is also set, the auto-event conditions are lost.
+  because the GTM API drops them otherwise.
 - `create_trigger` cannot set trigger group members. Create the `triggerGroup`,
   then set them with `update_trigger` and `parameterJson`.
 
