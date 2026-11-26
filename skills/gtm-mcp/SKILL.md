@@ -31,15 +31,18 @@ Changes happen in a workspace. Nothing is live until a version is published.
 - Call `get_tag_templates` or `get_trigger_templates` for the parameter format.
 - Read [tool-input-formats.md](references/tool-input-formats.md) for the JSON
   string inputs.
-- Create variables, then triggers, then tags. `firingTriggerId` is an array of
-  trigger ID strings.
+- Create variables, then triggers, then tags. `create_tag` takes
+  `firingTriggerIds`, an array of trigger ID strings.
 - GA4 event tags use type `gaawe`: `measurementId` is an empty `tagReference` and
   the value goes in `measurementIdOverride`.
-- The tag examples show `gaawc`, the legacy GA4 configuration type. For a Google
-  tag use `googtag` with a `tagId` template parameter.
+- For a Google tag use `googtag` with a `tagId` template parameter. The tag
+  examples show the legacy `gaawc` type, which GTM saves as `googtag`.
 - Custom event triggers take `customEventFilterJson`. Click and form triggers
   take `autoEventFilterJson`; the server moves those conditions to `filter`,
-  because the GTM API drops them otherwise.
+  because the GTM API drops them otherwise. Send all conditions in one field: on
+  create, if `filterJson` is also set, the auto-event conditions are lost.
+- `create_trigger` cannot set trigger group members. Create the `triggerGroup`,
+  then set them with `update_trigger` and `parameterJson`.
 
 ## Safety guards
 
