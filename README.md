@@ -48,7 +48,7 @@ their own Google identity and GTM permissions) or with a Google service account
 
 | Item | Current state |
 |---|---|
-| Version in `server.json` | `1.14.0` |
+| Version in `server.json` | `1.15.0` |
 | Transport | MCP Streamable HTTP, or stdio for local service-account use |
 | Runtime tools | 64 GTM tools by default; 94 with `GTM_TOOL_GROUPS=all`; plus 2 utility tools in both cases |
 | MCP resources | 8 resource definitions (2 resources, 6 URI templates) |
@@ -468,7 +468,7 @@ Caddy terminates HTTPS and obtains certificates automatically. On the server:
 ```bash
 git clone https://github.com/paolobietolini/gtm-mcp-server.git
 cd gtm-mcp-server
-git checkout v1.14.0   # use the latest tag from the release page
+git checkout v1.15.0   # use the latest tag from the release page
 ```
 
 Create `.env` as in step 3 (with `TOKEN_STORE_PATH=/data/tokens.json` for
@@ -564,7 +564,7 @@ docker run -d \
 #### Option B: Prebuilt binary with systemd
 
 ```bash
-VERSION=1.14.0   # latest version from the release page
+VERSION=1.15.0   # latest version from the release page
 ARCH=amd64       # or arm64
 curl -fsSLO "https://github.com/paolobietolini/gtm-mcp-server/releases/download/v${VERSION}/gtm-mcp-server_${VERSION}_linux_${ARCH}.tar.gz"
 curl -fsSLO "https://github.com/paolobietolini/gtm-mcp-server/releases/download/v${VERSION}/gtm-mcp-server_${VERSION}_checksums.txt"
@@ -631,7 +631,7 @@ Requires Go 1.26 or later.
 ```bash
 git clone https://github.com/paolobietolini/gtm-mcp-server.git
 cd gtm-mcp-server
-git checkout v1.14.0   # or stay on main for unreleased changes
+git checkout v1.15.0   # or stay on main for unreleased changes
 go build -o gtm-mcp-server .
 ./gtm-mcp-server
 ```
@@ -700,7 +700,7 @@ your proxy to restore the real client address first.
    curl -sS https://gtm-mcp.example.com/health
    ```
 
-   Expected: `{"service":"gtm-mcp-server","status":"healthy","version":"1.14.0"}`.
+   Expected: `{"service":"gtm-mcp-server","status":"healthy","version":"1.15.0"}`.
 2. OAuth metadata (OAuth mode):
 
    ```bash
@@ -1372,7 +1372,7 @@ To publish a release:
 
 1. Update `server.json`.
 2. Commit the release changes.
-3. Push a matching tag such as `v1.14.0`.
+3. Push a matching tag such as `v1.15.0`.
 
 The release workflow rejects a tag that does not match `server.json`, then
 creates cross-platform archives of the server (`gtm-mcp-server_*`) and the CLI
