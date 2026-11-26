@@ -40,14 +40,16 @@ type Tag struct {
 func (c *Client) ListTags(ctx context.Context, accountID, containerID, workspaceID string) ([]Tag, error) {
 	parent := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s", accountID, containerID, workspaceID)
 
-	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListTagsResponse, error) {
-		return c.Service.Accounts.Containers.Workspaces.Tags.List(parent).Context(ctx).Do()
+	items, err := listAll(ctx, func(token string) (*tagmanager.ListTagsResponse, error) {
+		return c.Service.Accounts.Containers.Workspaces.Tags.List(parent).PageToken(token).Context(ctx).Do()
+	}, func(r *tagmanager.ListTagsResponse) ([]*tagmanager.Tag, string) {
+		return r.Tag, r.NextPageToken
 	})
 	if err != nil {
-		return nil, mapGoogleError(err)
+		return nil, err
 	}
 
-	return toTags(resp.Tag), nil
+	return toTags(items), nil
 }
 
 // GetTag returns a specific tag by ID.

@@ -27,14 +27,16 @@ type Trigger struct {
 func (c *Client) ListTriggers(ctx context.Context, accountID, containerID, workspaceID string) ([]Trigger, error) {
 	parent := fmt.Sprintf("accounts/%s/containers/%s/workspaces/%s", accountID, containerID, workspaceID)
 
-	resp, err := retryWithBackoff(ctx, 3, func() (*tagmanager.ListTriggersResponse, error) {
-		return c.Service.Accounts.Containers.Workspaces.Triggers.List(parent).Context(ctx).Do()
+	items, err := listAll(ctx, func(token string) (*tagmanager.ListTriggersResponse, error) {
+		return c.Service.Accounts.Containers.Workspaces.Triggers.List(parent).PageToken(token).Context(ctx).Do()
+	}, func(r *tagmanager.ListTriggersResponse) ([]*tagmanager.Trigger, string) {
+		return r.Trigger, r.NextPageToken
 	})
 	if err != nil {
-		return nil, mapGoogleError(err)
+		return nil, err
 	}
 
-	return toTriggers(resp.Trigger), nil
+	return toTriggers(items), nil
 }
 
 // GetTrigger returns a specific trigger by ID.
