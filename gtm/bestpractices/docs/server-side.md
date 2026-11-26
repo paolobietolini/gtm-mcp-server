@@ -1,7 +1,7 @@
 # Server-Side Container Practices
 
-Applies when the container usage context is "server". Check with
-`list_clients` — server containers have clients; web containers do not.
+Applies when the container usage context is "server". Server containers have
+clients; web containers do not (`list_clients`).
 
 ## Clients
 
