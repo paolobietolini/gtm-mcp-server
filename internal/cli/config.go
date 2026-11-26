@@ -94,7 +94,7 @@ func (a *App) loadConfig() (config, error) {
 		if !filepath.IsAbs(dir) {
 			return c, nil
 		}
-		path = filepath.Join(dir, "gtm", "config.json")
+		path = filepath.Join(dir, "gtm-cli", "config.json")
 	}
 
 	data, err := os.ReadFile(path)

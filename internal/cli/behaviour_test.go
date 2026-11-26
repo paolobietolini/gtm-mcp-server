@@ -74,7 +74,7 @@ func TestDefaultsPrecedence(t *testing.T) {
 		on("GET accounts/10/containers/20/workspaces", `{}`).
 		on("GET accounts/11/containers/20/workspaces", `{}`).
 		on("GET accounts/12/containers/20/workspaces", `{}`)
-	path := filepath.Join(h.env["HOME"], ".config", "gtm", "config.json")
+	path := filepath.Join(h.env["HOME"], ".config", "gtm-cli", "config.json")
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		t.Fatal(err)
 	}
@@ -97,16 +97,16 @@ func TestDefaultsPrecedence(t *testing.T) {
 func TestConfigLocations(t *testing.T) {
 	h := newHarness(t).on("GET accounts/5/containers", `{}`)
 	dir := t.TempDir()
-	if err := os.MkdirAll(filepath.Join(dir, "gtm"), 0o700); err != nil {
+	if err := os.MkdirAll(filepath.Join(dir, "gtm-cli"), 0o700); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "gtm", "config.json"), []byte(`{"accountId":"5"}`), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(dir, "gtm-cli", "config.json"), []byte(`{"accountId":"5"}`), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	h.env["XDG_CONFIG_HOME"] = dir
 	h.ok("containers", "list")
 	h.env["XDG_CONFIG_HOME"] = ""
-	h.env["GTM_CONFIG"] = filepath.Join(dir, "gtm", "config.json")
+	h.env["GTM_CONFIG"] = filepath.Join(dir, "gtm-cli", "config.json")
 	h.ok("containers", "list")
 }
 

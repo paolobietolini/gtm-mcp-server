@@ -15,7 +15,8 @@ How to drive the tools. For what to do with them, use the matching skill:
 | GA4 and consent mode | gtm-ga4-consent |
 | Server containers | gtm-server-side |
 
-Without an MCP server, use the `gtm` command-line tool (gtm-cli).
+Without an MCP server, use the `gtm-cli` command-line tool and its skill of the
+same name.
 
 If those skills are not installed, read the server's best-practices resources.
 

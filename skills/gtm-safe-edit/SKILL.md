@@ -12,7 +12,7 @@ requested change and move cleanup to a later version.
 
 ## Inputs
 
-- **Live access:** through MCP tools or the `gtm` command-line tool (see
+- **Live access:** through MCP tools or the `gtm-cli` command-line tool (see
   gtm-cli). Read the current entities before proposing anything.
 - **Export JSON:** read [container-export.md](references/container-export.md),
   then give steps for the GTM interface.
@@ -42,16 +42,16 @@ Show the plan before changing anything. It contains, in order:
 
 ## Apply
 
-| Step | Operation | MCP tool | `gtm` CLI | GTM interface |
+| Step | Operation | MCP tool | `gtm-cli` | GTM interface |
 |------|-----------|----------|-----------|---------------|
 | Rollback target | Get the live version | `get_live_version` | not available | Versions |
 | Isolate | Create a workspace | `create_workspace` | not available | Workspace menu |
-| Formats | Get parameter examples | `get_tag_templates`, `get_trigger_templates` | `gtm tags get`, `gtm triggers get` on a similar entity | not needed |
-| Change | Create or update | `create_variable`, `create_trigger`, `create_tag`, `update_tag` | `gtm variables create`, `gtm triggers create`, `gtm tags create`, `gtm tags update` | Variables, Triggers, Tags |
+| Formats | Get parameter examples | `get_tag_templates`, `get_trigger_templates` | `gtm-cli tags get`, `gtm-cli triggers get` on a similar entity | not needed |
+| Change | Create or update | `create_variable`, `create_trigger`, `create_tag`, `update_tag` | `gtm-cli variables create`, `gtm-cli triggers create`, `gtm-cli tags create`, `gtm-cli tags update` | Variables, Triggers, Tags |
 | Compile check | Preview the workspace | `quick_preview_workspace` | not available | Preview |
-| Review | Get workspace status | `get_workspace_status` | `gtm workspaces status` | Workspace Changes |
-| Version | Create a version | `create_version` | `gtm versions create` | Submit > Create Version |
-| Publish | Publish the version | `publish_version` | `gtm versions publish` | Publish |
+| Review | Get workspace status | `get_workspace_status` | `gtm-cli workspaces status` | Workspace Changes |
+| Version | Create a version | `create_version` | `gtm-cli versions create` | Submit > Create Version |
+| Publish | Publish the version | `publish_version` | `gtm-cli versions publish` | Publish |
 
 Where the CLI has no command, the user does that step in the GTM interface. With
 the CLI, add `--dry-run` to preview each change.
@@ -70,4 +70,4 @@ After publishing, report the new version ID and the rollback version ID.
 
 Delete only what the user asked for or approved by name, in a version separate
 from feature work. Check every reference first (`delete_tag`, `delete_trigger`,
-`delete_variable`, or `gtm <nouns> delete`).
+`delete_variable`, or `gtm-cli <nouns> delete`).
