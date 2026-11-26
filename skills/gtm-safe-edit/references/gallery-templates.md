@@ -16,6 +16,14 @@ repository name.
 
 If you cannot browse, ask the user for the repository URL.
 
+Known repositories:
+
+| Template | galleryOwner | galleryRepository |
+|----------|--------------|-------------------|
+| iubenda Cookie Solution | iubenda | gtm-cookie-solution |
+| Cookiebot CMP | Usercentrics | gtm-templates-cookiebot-cmp |
+| Meta Pixel | meta | GoogleTagManager-WebTemplate-For-FacebookPixel |
+
 ## Review before use
 
 A template runs on the user's site. Report its publisher and the permissions it
@@ -29,5 +37,5 @@ requests (scripts it injects, domains it sends to, data it reads).
 | GTM interface | Templates > Search Gallery > Add to workspace |
 
 The import goes into the workspace, so the safe-edit workflow applies. Use the
-template type the import returns (`cvt_...`) when creating the tag or variable.
+template type the import returns (`cvt_{galleryTemplateId}`) when creating the tag or variable.
 Check existing templates first (`list_templates`) to avoid a duplicate.
