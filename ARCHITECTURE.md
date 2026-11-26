@@ -42,8 +42,8 @@
 ### `main.go`
 Entry point. Wires config, auth, middleware, MCP server, and HTTP mux together. Handles graceful shutdown (SIGINT/SIGTERM, 10s timeout).
 
-### `cmd/gtm/` and `internal/cli/`
-The `gtm` command-line tool. `cmd/gtm` wires the process environment; `internal/cli` parses commands, calls `gtm.Client` and formats results. It never calls MCP handlers: API logic and safety rules are shared through `gtm/`, and credentials through `auth/`. `--dry-run` intercepts non-GET requests in the HTTP transport, so it shows exactly what the client built.
+### `cmd/gtm-cli/` and `internal/cli/`
+The `gtm-cli` command-line tool. `cmd/gtm-cli` wires the process environment; `internal/cli` parses commands, calls `gtm.Client` and formats results. It never calls MCP handlers: API logic and safety rules are shared through `gtm/`, and credentials through `auth/`. `--dry-run` intercepts non-GET requests in the HTTP transport, so it shows exactly what the client built.
 
 ### `config/`
 Loads environment variables (with `.env`/`.env.local` dotenv support). Single `Config` struct, no globals. Validation is deferred — server starts even without OAuth credentials so `/health` and `/ping` always work.

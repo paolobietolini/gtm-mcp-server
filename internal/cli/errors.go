@@ -26,7 +26,7 @@ const (
 	exitConfirmation = 8
 )
 
-const authHint = "`gtm auth status` shows the identity in use. For Tag Manager scopes, log in with " +
+const authHint = "`gtm-cli auth status` shows the identity in use. For Tag Manager scopes, log in with " +
 	"your own OAuth client (gcloud auth application-default login --client-id-file=...) or use a " +
 	"service account; see https://github.com/paolobietolini/gtm-mcp-server#command-line-interface"
 

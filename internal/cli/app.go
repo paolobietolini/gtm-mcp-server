@@ -1,4 +1,4 @@
-// Package cli implements the gtm command-line interface. It parses arguments,
+// Package cli implements the gtm-cli command-line interface. It parses arguments,
 // calls gtm.Client and prints the result. Safety rules and API logic live in
 // package gtm, shared with the MCP server.
 package cli
@@ -62,7 +62,7 @@ func (a *App) run(ctx context.Context, args []string) error {
 
 	noun := args[0]
 	if !knownNoun(noun) {
-		return usageError("unknown command %q; flags go after the command, see `gtm help`", noun)
+		return usageError("unknown command %q; flags go after the command, see `gtm-cli help`", noun)
 	}
 	if len(args) == 1 || isHelp(args[1]) {
 		a.usage(noun)
@@ -70,7 +70,7 @@ func (a *App) run(ctx context.Context, args []string) error {
 	}
 	cmd := findCommand(noun, args[1])
 	if cmd == nil {
-		return usageError("unknown command %q, see `gtm %s --help`", noun+" "+args[1], noun)
+		return usageError("unknown command %q, see `gtm-cli %s --help`", noun+" "+args[1], noun)
 	}
 	return a.execute(ctx, cmd, args[2:])
 }
@@ -80,7 +80,7 @@ func (a *App) execute(ctx context.Context, cmd *command, args []string) error {
 	fs := cmd.flagSet(&opts)
 	if err := fs.Parse(args); err != nil {
 		if errors.Is(err, flag.ErrHelp) {
-			fmt.Fprintf(a.Stdout, "gtm %s %s: %s\n\nFlags:\n", cmd.noun, cmd.verb, cmd.summary)
+			fmt.Fprintf(a.Stdout, "gtm-cli %s %s: %s\n\nFlags:\n", cmd.noun, cmd.verb, cmd.summary)
 			fs.SetOutput(a.Stdout)
 			fs.PrintDefaults()
 			return nil
@@ -159,7 +159,7 @@ func isHelp(arg string) bool { return arg == "--help" || arg == "-h" || arg == "
 
 func (a *App) usage(noun string) {
 	var b strings.Builder
-	b.WriteString("gtm - Google Tag Manager from the command line\n\nUsage: gtm <noun> <verb> [flags]\n\nCommands:\n")
+	b.WriteString("gtm-cli - Google Tag Manager from the command line\n\nUsage: gtm-cli <noun> <verb> [flags]\n\nCommands:\n")
 	for _, cmd := range commands {
 		if noun == "" || cmd.noun == noun {
 			fmt.Fprintf(&b, "  %-22s %s\n", cmd.noun+" "+cmd.verb, cmd.summary)
@@ -168,12 +168,12 @@ func (a *App) usage(noun string) {
 	if noun == "" {
 		fmt.Fprintf(&b, "  %-22s %s\n", "version", "Print the CLI version")
 	}
-	b.WriteString("\nRun `gtm <noun> <verb> --help` for flags.\n")
+	b.WriteString("\nRun `gtm-cli <noun> <verb> --help` for flags.\n")
 	if noun == "" {
 		b.WriteString(`
 ID defaults: --account, --container and --workspace fall back to
 GTM_ACCOUNT_ID, GTM_CONTAINER_ID and GTM_WORKSPACE_ID, then to the config file
-(GTM_CONFIG, or ~/.config/gtm/config.json).
+(GTM_CONFIG, or ~/.config/gtm-cli/config.json).
 
 Output is JSON; errors are JSON on stderr.
 Exit codes: 0 ok, 1 API or network error, 2 usage or invalid input,

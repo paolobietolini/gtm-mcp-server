@@ -12,18 +12,18 @@ approval before publishing.
 ## Get the configuration
 
 - **Live access:** read tags, triggers, variables and, on server containers,
-  clients and transformations, through MCP tools or the `gtm` command-line tool
-  (see gtm-cli).
+  clients and transformations, through MCP tools or the `gtm-cli` command-line tool
+  (see the gtm-cli skill).
 - **Export JSON:** read [container-export.md](references/container-export.md)
   first.
 - **Neither:** ask for an export (GTM > Admin > Export Container).
 
-| Operation | MCP tool | `gtm` CLI |
+| Operation | MCP tool | `gtm-cli` |
 |-----------|----------|-----------|
-| Find the workspace | `list_accounts`, `list_containers`, `list_workspaces` | `gtm accounts list`, `gtm containers list`, `gtm workspaces list` |
-| Read entities | `list_tags`, `list_triggers`, `list_variables`, `list_folders` | `gtm tags list`, `gtm triggers list`, `gtm variables list`; no folders |
+| Find the workspace | `list_accounts`, `list_containers`, `list_workspaces` | `gtm-cli accounts list`, `gtm-cli containers list`, `gtm-cli workspaces list` |
+| Read entities | `list_tags`, `list_triggers`, `list_variables`, `list_folders` | `gtm-cli tags list`, `gtm-cli triggers list`, `gtm-cli variables list`; no folders |
 | Read server entities | `list_clients`, `list_transformations` | not available: ask for an export |
-| Read one entity in full | `get_tag`, `get_trigger`, `get_variable`, `get_template` | `gtm tags get`, `gtm triggers get`, `gtm variables get`; no templates |
+| Read one entity in full | `get_tag`, `get_trigger`, `get_variable`, `get_template` | `gtm-cli tags get`, `gtm-cli triggers get`, `gtm-cli variables get`; no templates |
 
 ## Check
 

@@ -22,8 +22,8 @@ builds:
     ldflags:
       - -s -w
   - id: cli
-    main: ./cmd/gtm
-    binary: gtm
+    main: ./cmd/gtm-cli
+    binary: gtm-cli
     env:
       - CGO_ENABLED=0
     goos: *goos
@@ -51,7 +51,7 @@ archives:
       - goos: windows
         formats:
           - zip
-    name_template: "gtm_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    name_template: "gtm-cli_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 changelog:
   sort: asc

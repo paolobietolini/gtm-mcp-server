@@ -14,7 +14,7 @@ work in a new workspace, show the changes and get approval before publishing.
 | Source | How |
 |--------|-----|
 | MCP tools | `list_tags`, `list_triggers`, `list_variables`, `get_tag` |
-| `gtm` CLI | `gtm tags list`, `gtm triggers list`, `gtm variables list`, `gtm tags get`; see gtm-cli |
+| `gtm-cli` | `gtm-cli tags list`, `gtm-cli triggers list`, `gtm-cli variables list`, `gtm-cli tags get`; see the gtm-cli skill |
 | Export JSON | Read [container-export.md](references/container-export.md) first |
 | Neither | For setup, work from the goals. For debugging, ask for an export |
 

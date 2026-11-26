@@ -49,7 +49,7 @@ type command struct {
 }
 
 func (cmd *command) flagSet(opts *options) *flag.FlagSet {
-	fs := flag.NewFlagSet("gtm "+cmd.noun+" "+cmd.verb, flag.ContinueOnError)
+	fs := flag.NewFlagSet("gtm-cli "+cmd.noun+" "+cmd.verb, flag.ContinueOnError)
 	// Errors are reported as JSON, so keep the flag package quiet.
 	fs.SetOutput(io.Discard)
 	fs.StringVar(&opts.output, "output", "json", "output format: json or table")
@@ -98,7 +98,7 @@ func findCommand(noun, verb string) *command {
 	return nil
 }
 
-// commands mirror the MCP tools: the tool verb_noun is `gtm <nouns> <verb>`,
+// commands mirror the MCP tools: the tool verb_noun is `gtm-cli <nouns> <verb>`,
 // and the output has the same shape as the tool's.
 var commands = buildCommands()
 
@@ -359,7 +359,7 @@ func versionCommands() []*command {
 				if err != nil {
 					return nil, err
 				}
-				return gtm.CreateVersionOutput{Success: true, Version: *version, Message: "Version created successfully. Use `gtm versions publish` to make it live."}, nil
+				return gtm.CreateVersionOutput{Success: true, Version: *version, Message: "Version created successfully. Use `gtm-cli versions publish` to make it live."}, nil
 			},
 		},
 		{

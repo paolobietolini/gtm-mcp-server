@@ -119,7 +119,7 @@ func (h *harness) ok(args ...string) map[string]any {
 	h.t.Helper()
 	got := h.run(args...)
 	if got.exit != 0 || got.stderr != "" {
-		h.t.Fatalf("gtm %s: exit=%d stderr=%s", strings.Join(args, " "), got.exit, got.stderr)
+		h.t.Fatalf("gtm-cli %s: exit=%d stderr=%s", strings.Join(args, " "), got.exit, got.stderr)
 	}
 	return decodeObject(h.t, got.stdout)
 }
@@ -130,11 +130,11 @@ func (h *harness) fails(exit int, code string, args ...string) string {
 	h.t.Helper()
 	got := h.run(args...)
 	if got.exit != exit {
-		h.t.Fatalf("gtm %s: exit=%d want %d; stdout=%s stderr=%s", strings.Join(args, " "), got.exit, exit, got.stdout, got.stderr)
+		h.t.Fatalf("gtm-cli %s: exit=%d want %d; stdout=%s stderr=%s", strings.Join(args, " "), got.exit, exit, got.stdout, got.stderr)
 	}
 	failure, _ := decodeObject(h.t, got.stderr)["error"].(map[string]any)
 	if failure["code"] != code {
-		h.t.Fatalf("gtm %s: code=%v want %s; stderr=%s", strings.Join(args, " "), failure["code"], code, got.stderr)
+		h.t.Fatalf("gtm-cli %s: code=%v want %s; stderr=%s", strings.Join(args, " "), failure["code"], code, got.stderr)
 	}
 	message, _ := failure["message"].(string)
 	return message

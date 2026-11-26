@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 )
@@ -214,7 +215,7 @@ func TestHelpAndUsage(t *testing.T) {
 	h := newHarness(t).noCredentials()
 	for _, args := range [][]string{{}, {"help"}, {"--help"}, {"tags"}, {"tags", "--help"}, {"tags", "create", "--help"}} {
 		got := h.run(args...)
-		if got.exit != 0 || !strings.Contains(got.stdout, "gtm") || got.stderr != "" {
+		if got.exit != 0 || !strings.Contains(got.stdout, "gtm-cli") || got.stderr != "" {
 			t.Errorf("%v: %+v", args, got)
 		}
 	}
@@ -235,5 +236,25 @@ func TestVersionCommand(t *testing.T) {
 		if got := newHarness(t).ok(args...); got["version"] != "1.2.3" {
 			t.Fatalf("%v", got)
 		}
+	}
+}
+
+// The command is gtm-cli so that it does not collide with other programs named
+// gtm. Nothing it prints may tell people to run the old name.
+func TestMessagesUseTheCommandName(t *testing.T) {
+	oldName := regexp.MustCompile("(^|[\\s`])gtm([\\s`]|$)")
+	runs := [][]string{{"help"}, {"nonsense"}, {"tags", "nonsense"}, {"--output", "table"}}
+	for _, cmd := range commands {
+		runs = append(runs, []string{cmd.noun, cmd.verb, "--help"})
+	}
+	for _, args := range runs {
+		got := newHarness(t).run(args...)
+		printed := got.stdout + got.stderr
+		if !strings.Contains(printed, "gtm-cli") || oldName.MatchString(printed) {
+			t.Errorf("gtm-cli %s should name the command gtm-cli:\n%s", strings.Join(args, " "), printed)
+		}
+	}
+	if oldName.MatchString(authHint) || !strings.Contains(authHint, "gtm-cli auth status") {
+		t.Errorf("auth hint names the wrong command: %s", authHint)
 	}
 }

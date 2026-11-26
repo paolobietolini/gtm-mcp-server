@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-// skillCommandRe matches "gtm <noun> <verb>" in backticks or at the start of a
+// skillCommandRe matches "gtm-cli <noun> <verb>" in backticks or at the start of a
 // shell line.
-var skillCommandRe = regexp.MustCompile("(?m)(?:`|^)gtm ([a-z]+) ([a-z]+)")
+var skillCommandRe = regexp.MustCompile("(?m)(?:`|^)gtm-cli ([a-z]+) ([a-z]+)")
 
 // Skills teach agents to run commands, so every command they name must exist.
 func TestSkillsNameRealCommands(t *testing.T) {
@@ -41,7 +41,7 @@ func TestSkillsNameRealCommands(t *testing.T) {
 	}
 	for _, cmd := range commands {
 		if !covered[cmd.noun+" "+cmd.verb] {
-			t.Errorf("skills/gtm-cli/SKILL.md does not show `gtm %s %s`", cmd.noun, cmd.verb)
+			t.Errorf("skills/gtm-cli/SKILL.md does not show `gtm-cli %s %s`", cmd.noun, cmd.verb)
 		}
 	}
 }

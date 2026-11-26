@@ -1,4 +1,4 @@
-// Command gtm gives people and agents direct access to Google Tag Manager,
+// Command gtm-cli gives people and agents direct access to Google Tag Manager,
 // without a server to host.
 package main
 

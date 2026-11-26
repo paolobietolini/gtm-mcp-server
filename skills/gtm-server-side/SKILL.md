@@ -14,7 +14,7 @@ approval before publishing.
 | Source | How |
 |--------|-----|
 | MCP tools | `list_clients`, `list_transformations`, `list_tags`, `list_triggers`, `list_variables`, `get_template` |
-| `gtm` CLI | Tags, triggers and variables only (see gtm-cli). Clients, transformations and templates need MCP tools or an export |
+| `gtm-cli` | Tags, triggers and variables only (see the gtm-cli skill). Clients, transformations and templates need MCP tools or an export |
 | Export JSON | Read [container-export.md](references/container-export.md) first |
 | Neither | Ask for an export of the server container |
 
