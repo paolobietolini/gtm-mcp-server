@@ -14,7 +14,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"gtm-mcp-server/gtm"
+	"github.com/paolobietolini/gtm-mcp-server/gtm"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )

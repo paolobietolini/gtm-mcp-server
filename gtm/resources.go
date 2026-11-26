@@ -8,7 +8,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/yosida95/uritemplate/v3"
 
-	"gtm-mcp-server/gtm/bestpractices"
+	"github.com/paolobietolini/gtm-mcp-server/gtm/bestpractices"
 )
 
 // URI template patterns for GTM resources

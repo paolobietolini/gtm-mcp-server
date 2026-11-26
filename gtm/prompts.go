@@ -8,7 +8,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
-	"gtm-mcp-server/gtm/bestpractices"
+	"github.com/paolobietolini/gtm-mcp-server/gtm/bestpractices"
 )
 
 // RegisterPrompts adds all GTM prompts to the MCP server.

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"gtm-mcp-server/auth"
+	"github.com/paolobietolini/gtm-mcp-server/auth"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"golang.org/x/oauth2"
