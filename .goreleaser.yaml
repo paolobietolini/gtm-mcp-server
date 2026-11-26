@@ -7,28 +7,51 @@ before:
     - go mod tidy
 
 builds:
-  - main: .
+  - id: server
+    main: .
     binary: gtm-mcp-server
     env:
       - CGO_ENABLED=0
-    goos:
+    goos: &goos
       - linux
       - darwin
       - windows
-    goarch:
+    goarch: &goarch
       - amd64
       - arm64
     ldflags:
       - -s -w
+  - id: cli
+    main: ./cmd/gtm
+    binary: gtm
+    env:
+      - CGO_ENABLED=0
+    goos: *goos
+    goarch: *goarch
+    ldflags:
+      - -s -w -X main.version={{ .Version }}
 
 archives:
-  - formats:
+  - id: server
+    ids:
+      - server
+    formats:
       - tar.gz
     format_overrides:
       - goos: windows
         formats:
           - zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+  - id: cli
+    ids:
+      - cli
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: "gtm_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 changelog:
   sort: asc

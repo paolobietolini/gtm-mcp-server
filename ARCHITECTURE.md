@@ -42,6 +42,9 @@
 ### `main.go`
 Entry point. Wires config, auth, middleware, MCP server, and HTTP mux together. Handles graceful shutdown (SIGINT/SIGTERM, 10s timeout).
 
+### `cmd/gtm/` and `internal/cli/`
+The `gtm` command-line tool. `cmd/gtm` wires the process environment; `internal/cli` parses commands, calls `gtm.Client` and formats results. It never calls MCP handlers: API logic and safety rules are shared through `gtm/`, and credentials through `auth/`. `--dry-run` intercepts non-GET requests in the HTTP transport, so it shows exactly what the client built.
+
 ### `config/`
 Loads environment variables (with `.env`/`.env.local` dotenv support). Single `Config` struct, no globals. Validation is deferred — server starts even without OAuth credentials so `/health` and `/ping` always work.
 
@@ -67,6 +70,7 @@ All Google Tag Manager API interaction. Split into layers:
 tool_*.go        → MCP tool handlers (parse input, call client, format output)
 mutations.go     → Create/Update/Delete logic (fingerprint handling, field remapping)
 *.go (read)      → List/Get operations (accounts, containers, tags, triggers, etc.)
+guards.go        → Safety rules shared by MCP and CLI (confirmation, version preconditions)
 handler_helpers  → resolveWorkspace/resolveContainer (DRY: parse IDs → authenticated client)
 types.go         → Input/output structs shared between tools and client methods
 validation.go    → Input validation (required fields, format checks)
@@ -80,7 +84,7 @@ bestpractices/   → best-practice topics, read from the embedded skills
 
 **Fingerprint pattern:** Update operations fetch the current entity first, then pass `current.Fingerprint` as a URL parameter (not body field) to the Google API for optimistic concurrency control.
 
-**autoEventFilter remapping:** The GTM API silently drops `autoEventFilter` for `linkClick`/`click`/`formSubmission` triggers. `mutations.go` owns the remapping to `filter` — tool handlers don't duplicate this logic.
+**autoEventFilter remapping:** The GTM API silently drops `autoEventFilter` for `linkClick`/`click`/`formSubmission` triggers. `mutations.go` remaps it to `filter`, and `NormalizeTriggerUpdate` in `guards.go` also merges it into an explicit `filter` on updates — callers don't duplicate this logic.
 
 ### `middleware/`
 - **Rate limiting.** Per-IP token bucket (`golang.org/x/time/rate`). When `TRUST_PROXY=true`, uses the **rightmost** `X-Forwarded-For` entry for client IP (the one the proxy appended; entries left of it are client-supplied and spoofable); otherwise uses `RemoteAddr` only to prevent spoofing.
@@ -193,6 +197,7 @@ go test ./...          # All tests
 go test ./auth/ -v     # Auth package (OAuth flow, middleware, token store)
 go test ./gtm/ -v      # GTM package (error mapping)
 go test ./middleware/   # Rate limiting
+go test ./internal/cli/ # CLI commands against a fake API
 go test ./skills/       # Skill frontmatter, links, copies, embedding, tool names
 go run ./cmd/tool-schema-report  # Tool count, payload size, and largest schemas
 ```
