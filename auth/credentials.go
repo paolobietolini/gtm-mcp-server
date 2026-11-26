@@ -62,7 +62,7 @@ func ResolveCredentials(ctx context.Context, keyJSON string) (*Credentials, erro
 
 	found, err := google.FindDefaultCredentials(ctx, GoogleScopes...)
 	if err != nil {
-		return nil, fmt.Errorf("no service account credentials found (set GOOGLE_SERVICE_ACCOUNT_KEY_JSON or GOOGLE_APPLICATION_CREDENTIALS, or use Workload Identity): %w", err)
+		return nil, fmt.Errorf("no Google credentials found (set GOOGLE_SERVICE_ACCOUNT_KEY_JSON or GOOGLE_APPLICATION_CREDENTIALS, or use Workload Identity): %w", err)
 	}
 
 	creds := &Credentials{TokenSource: found.TokenSource}
