@@ -2,7 +2,7 @@
 
 ## GA4 structure
 
-- One GA4 config tag (`gaawc`, "Google tag") per container, firing on Initialization or All Pages, with the measurement ID sourced from a lookup table variable (`LT - GA4 Measurement ID`) keyed on hostname or environment. One tag then serves dev/staging/prod and staging traffic never hits the production property.
+- One Google tag for GA4 (type `googtag`; `gaawc` is the legacy GA4 Configuration type) per container, firing on Initialization or All Pages, with the measurement ID sourced from a lookup table variable (`LT - GA4 Measurement ID`) keyed on hostname or environment. One tag then serves dev/staging/prod and staging traffic never hits the production property.
   - Simple single-environment containers may use a `CONST - GA4 Measurement ID` variable instead — but never a literal ID typed into the tag.
   - More than one config tag is only justified when intentionally sending to multiple GA4 properties simultaneously (e.g. a rollup property). Two config tags resolving to the same measurement ID = duplicate measurement; flag it.
 - Event tags (`gaawe`) must reference the config via measurement ID; put the variable reference in `measurementIdOverride`, keep `measurementId` as an empty `tagReference`.

@@ -10,6 +10,7 @@ go-sdk-main/
 .env.local
 .*/
 !.github/
+!.claude-plugin/
 !.goreleaser.yaml
 
 # Local docs / specs

@@ -76,7 +76,7 @@ prompts.go       → MCP prompts (audit, best-practices review, safe-edit plan, 
 bestpractices/   → go:embed'd markdown rule docs (naming, safe edits, GA4/consent, server-side)
 ```
 
-**Best-practices single source:** the rule docs in `gtm/bestpractices/docs/*.md` are the only copy. Resources serve them verbatim (`gtm://best-practices/{topic}`, no auth required) and prompts inject them into their message text via `bestpractices.Get(topic)` — editing a doc updates every surface.
+**Best-practices single source:** edit the rule docs only in `gtm/bestpractices/docs/*.md`. Resources serve them verbatim (`gtm://best-practices/{topic}`, no auth required) and prompts inject them into their message text via `bestpractices.Get(topic)`. The Agent Skills in `skills/` need self-contained folders, so they hold generated copies: `go test ./skills -update` rewrites them and `go test ./skills` fails when one differs.
 
 **Fingerprint pattern:** Update operations fetch the current entity first, then pass `current.Fingerprint` as a URL parameter (not body field) to the Google API for optimistic concurrency control.
 
@@ -193,6 +193,7 @@ go test ./...          # All tests
 go test ./auth/ -v     # Auth package (OAuth flow, middleware, token store)
 go test ./gtm/ -v      # GTM package (error mapping)
 go test ./middleware/   # Rate limiting
+go test ./skills/       # Skill frontmatter, links, generated copies, tool names
 go run ./cmd/tool-schema-report  # Tool count, payload size, and largest schemas
 ```
 
