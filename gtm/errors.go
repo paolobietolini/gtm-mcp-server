@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"google.golang.org/api/googleapi"
@@ -38,21 +39,19 @@ func retryWithBackoff[T any](ctx context.Context, maxRetries int, fn func() (T, 
 
 		// Check if it's a rate limit error
 		var apiErr *googleapi.Error
-		if errors.As(err, &apiErr) {
-			if apiErr.Code == 403 || apiErr.Code == 429 {
-				if attempt < maxRetries {
-					waitTime := time.Duration(1<<uint(attempt)) * time.Second
-					if waitTime > 32*time.Second {
-						waitTime = 32 * time.Second
-					}
+		if errors.As(err, &apiErr) && isRateLimit(apiErr) {
+			if attempt < maxRetries {
+				waitTime := time.Duration(1<<uint(attempt)) * time.Second
+				if waitTime > 32*time.Second {
+					waitTime = 32 * time.Second
+				}
 
-					select {
-					case <-time.After(waitTime):
-						lastErr = err
-						continue
-					case <-ctx.Done():
-						return zero, ctx.Err()
-					}
+				select {
+				case <-time.After(waitTime):
+					lastErr = err
+					continue
+				case <-ctx.Done():
+					return zero, ctx.Err()
 				}
 			}
 		}
@@ -61,6 +60,26 @@ func retryWithBackoff[T any](ctx context.Context, maxRetries int, fn func() (T, 
 	}
 
 	return zero, fmt.Errorf("max retries exceeded: %w", lastErr)
+}
+
+// isRateLimit reports whether the API rejected a request for exceeding a quota.
+// Google uses 403 as well as 429 for this, so a 403 needs a closer look: an
+// ordinary permission error must not be retried or reported as a rate limit.
+func isRateLimit(apiErr *googleapi.Error) bool {
+	if apiErr.Code == 429 {
+		return true
+	}
+	if apiErr.Code != 403 {
+		return false
+	}
+	for _, item := range apiErr.Errors {
+		switch item.Reason {
+		case "rateLimitExceeded", "userRateLimitExceeded", "quotaExceeded":
+			return true
+		}
+	}
+	message := strings.ToLower(apiErr.Message)
+	return strings.Contains(message, "rate limit") || strings.Contains(message, "quota exceeded")
 }
 
 // formatAPIErrorDetail extracts all available detail from a Google API error.
@@ -88,6 +107,9 @@ func mapGoogleError(err error) error {
 	var apiErr *googleapi.Error
 	if errors.As(err, &apiErr) {
 		detail := formatAPIErrorDetail(apiErr)
+		if isRateLimit(apiErr) {
+			return fmt.Errorf("%w: %s", ErrRateLimit, detail)
+		}
 		switch apiErr.Code {
 		case 404:
 			return fmt.Errorf("%w: %s", ErrNotFound, detail)
@@ -95,8 +117,6 @@ func mapGoogleError(err error) error {
 			return fmt.Errorf("%w: %s", ErrConflict, detail)
 		case 403:
 			return fmt.Errorf("%w: %s", ErrPermission, detail)
-		case 429:
-			return fmt.Errorf("%w: %s", ErrRateLimit, detail)
 		case 400:
 			return fmt.Errorf("%w: %s", ErrInvalidRequest, detail)
 		default:
