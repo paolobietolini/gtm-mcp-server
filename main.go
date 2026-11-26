@@ -12,11 +12,11 @@ import (
 	"syscall"
 	"time"
 
-	"gtm-mcp-server/auth"
-	"gtm-mcp-server/config"
-	"gtm-mcp-server/dashboard"
-	"gtm-mcp-server/gtm"
-	"gtm-mcp-server/middleware"
+	"github.com/paolobietolini/gtm-mcp-server/auth"
+	"github.com/paolobietolini/gtm-mcp-server/config"
+	"github.com/paolobietolini/gtm-mcp-server/dashboard"
+	"github.com/paolobietolini/gtm-mcp-server/gtm"
+	"github.com/paolobietolini/gtm-mcp-server/middleware"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"golang.org/x/oauth2"

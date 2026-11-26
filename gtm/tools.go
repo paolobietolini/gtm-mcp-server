@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"gtm-mcp-server/auth"
+	"github.com/paolobietolini/gtm-mcp-server/auth"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )

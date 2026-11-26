@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"gtm-mcp-server/auth"
-	"gtm-mcp-server/config"
+	"github.com/paolobietolini/gtm-mcp-server/auth"
+	"github.com/paolobietolini/gtm-mcp-server/config"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"golang.org/x/oauth2"
