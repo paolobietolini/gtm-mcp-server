@@ -1228,16 +1228,18 @@ group exposes 94 GTM tools and serializes to 115,748 bytes.
 
 ### Editing skills and best-practice documents
 
-The rule documents in `gtm/bestpractices/docs/` are the source for both the
-server and the skills. Skills carry copies in their `references/` folders, as
-does `skills/shared/` content. Edit the source, then regenerate:
+`skills/` is the only source: the server embeds these folders and reads its
+best-practice resources and prompt guidance from them. A file used by several
+skills is edited in one of them, listed in `copies` in
+[`skills/skills_test.go`](skills/skills_test.go), then copied to the others:
 
 ```bash
 go test ./skills -update
 ```
 
 `go test ./skills` fails if a copy differs, if skill frontmatter or links are
-invalid, or if a skill names a tool the server does not register.
+invalid, if a skill refers to anything outside its folder, or if it names a tool
+the server does not register. Rebuild the server to pick up changes.
 
 Pull requests run `go test`, `govulncheck`, `gosec`, Gitleaks, Trivy, `staticcheck`, and
 CodeQL. Request-level GTM tests use local fake Google endpoints. Mutating live

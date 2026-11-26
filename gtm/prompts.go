@@ -9,6 +9,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"gtm-mcp-server/gtm/bestpractices"
+	"gtm-mcp-server/skills"
 )
 
 // RegisterPrompts adds all GTM prompts to the MCP server.
@@ -123,11 +124,7 @@ func handleAuditContainerPrompt(ctx context.Context, req *mcp.GetPromptRequest) 
 		return nil, err
 	}
 
-	namingRules, err := bestpractices.Get("naming-organization")
-	if err != nil {
-		return nil, err
-	}
-	consentRules, err := bestpractices.Get("ga4-consent")
+	text, err := auditPromptText(string(dataJSON))
 	if err != nil {
 		return nil, err
 	}
@@ -135,42 +132,31 @@ func handleAuditContainerPrompt(ctx context.Context, req *mcp.GetPromptRequest) 
 	return &mcp.GetPromptResult{
 		Description: "Container audit analysis request",
 		Messages: []*mcp.PromptMessage{
-			{
-				Role: "user",
-				Content: &mcp.TextContent{
-					Text: fmt.Sprintf(`Please audit this GTM workspace for potential issues. Here is the current configuration:
+			{Role: "user", Content: &mcp.TextContent{Text: text}},
+		},
+	}, nil
+}
+
+func auditPromptText(workspaceJSON string) (string, error) {
+	docs, err := skillFiles(
+		"gtm-container-audit/references/audit-checks.md",
+		"gtm-safe-edit/references/naming-organization.md",
+		"gtm-ga4-consent/references/ga4-consent.md",
+	)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`Please audit this GTM workspace for potential issues. Here is the current configuration:
 
 %s
 
-Please analyze and report on:
+Run every check below:
 
-1. **Naming Consistency**
-   - Are tag, trigger, and variable names following a consistent pattern?
-   - Are there any names that are unclear or non-descriptive?
+%s
 
-2. **Duplicate Detection**
-   - Are there any tags that appear to be duplicates (same type and similar configuration)?
-   - Are there triggers that fire on the same conditions?
+---
 
-3. **Orphaned Items**
-   - Are there any triggers that are not used by any tags?
-   - Are there any variables that don't appear to be referenced?
-
-4. **Best Practices**
-   - Are tags properly organized with appropriate triggers?
-   - Are there any paused tags that might be forgotten?
-   - Are there missing triggers for common use cases?
-
-5. **GA4 Configuration** (if applicable)
-   - Is there a GA4 configuration tag?
-   - Are event tags properly linked to the configuration?
-   - Are ecommerce events configured correctly?
-
-6. **Security Concerns**
-   - Are there any custom HTML tags that might pose security risks?
-   - Are there any tags loading external scripts?
-
-Use the following rules as the reference standard for sections 1, 3, 4, and 5. If the container consistently follows its own different convention, treat that as acceptable and note the difference:
+Use the following rules as the reference standard. If the container consistently follows its own different convention, treat that as acceptable and note the difference:
 
 %s
 
@@ -178,11 +164,7 @@ Use the following rules as the reference standard for sections 1, 3, 4, and 5. I
 
 %s
 
-Please provide specific recommendations for improvements.`, string(dataJSON), namingRules, consentRules),
-				},
-			},
-		},
-	}, nil
+Please provide specific recommendations for improvements.`, workspaceJSON, docs[0], docs[1], docs[2]), nil
 }
 
 func handleGenerateTrackingPlanPrompt(ctx context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
@@ -234,65 +216,33 @@ func handleGenerateTrackingPlanPrompt(ctx context.Context, req *mcp.GetPromptReq
 		return nil, err
 	}
 
+	text, err := trackingPlanPromptText(string(dataJSON))
+	if err != nil {
+		return nil, err
+	}
+
 	return &mcp.GetPromptResult{
 		Description: "Generate tracking plan documentation",
 		Messages: []*mcp.PromptMessage{
-			{
-				Role: "user",
-				Content: &mcp.TextContent{
-					Text: fmt.Sprintf(`Please generate a comprehensive Markdown tracking plan document from this GTM workspace configuration:
+			{Role: "user", Content: &mcp.TextContent{Text: text}},
+		},
+	}, nil
+}
+
+func trackingPlanPromptText(workspaceJSON string) (string, error) {
+	docs, err := skillFiles("gtm-tracking-plan/references/plan-template.md")
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf(`Please generate a comprehensive Markdown tracking plan document from this GTM workspace configuration:
 
 %s
 
-Generate a document with the following structure:
+Follow this template:
 
-# Tracking Plan
+%s
 
-## Overview
-- Summary of the tracking implementation
-- Total counts (tags, triggers, variables)
-
-## Events
-
-For each tag, create a section:
-
-### [Event Name]
-- **Tag Name:** [name]
-- **Tag Type:** [type]
-- **Trigger(s):** [list of trigger names]
-- **Description:** [inferred purpose]
-- **Parameters:** [if applicable]
-
-## Triggers
-
-For each trigger:
-
-### [Trigger Name]
-- **Type:** [type]
-- **Conditions:** [filter conditions if any]
-- **Used by:** [list of tags using this trigger]
-
-## Variables
-
-For each variable:
-
-### [Variable Name]
-- **Type:** [type]
-- **Purpose:** [inferred purpose]
-
-## Data Layer Requirements
-
-List all dataLayer events and variables that need to be pushed from the website.
-
-## Implementation Notes
-
-Any observations about the implementation, dependencies, or recommendations.
-
-Format the output as clean, professional Markdown.`, string(dataJSON)),
-				},
-			},
-		},
-	}, nil
+Format the output as clean, professional Markdown.`, workspaceJSON, docs[0]), nil
 }
 
 func handleSuggestGA4SetupPrompt(ctx context.Context, req *mcp.GetPromptRequest) (*mcp.GetPromptResult, error) {
@@ -316,6 +266,15 @@ func handleSuggestGA4SetupPrompt(ctx context.Context, req *mcp.GetPromptRequest)
 		return nil, err
 	}
 
+	docs, err := skillFiles(
+		"gtm-ga4-consent/references/ga4-setup.md",
+		"gtm-ga4-consent/references/ga4-consent.md",
+		"gtm-safe-edit/references/naming-organization.md",
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &mcp.GetPromptResult{
 		Description: "GA4 setup recommendations",
 		Messages: []*mcp.PromptMessage{
@@ -331,37 +290,23 @@ Here are the available tag and trigger templates that can be used:
 
 %s
 
-Please provide:
+Follow this order of work and deliver what it lists:
 
-1. **Recommended Tags**
-   - List each tag needed with:
-     - Tag name (following naming convention "<Platform> - <Type> - <Descriptor>", e.g. "GA4 - Event - purchase")
-     - Tag type
-     - Configuration details
-     - Which trigger to use
+%s
 
-2. **Recommended Triggers**
-   - List each trigger needed with:
-     - Trigger name
-     - Trigger type
-     - Filter conditions (if any)
+---
 
-3. **Required Variables**
-   - List any Data Layer variables needed
-   - List any built-in variables to enable
+Apply these GA4 and consent rules:
 
-4. **Data Layer Requirements**
-   - Specify what dataLayer pushes the website needs to implement
-   - Provide example code snippets for each event
+%s
 
-5. **Implementation Order**
-   - Step-by-step order to create the tags, triggers, and variables
+---
 
-6. **Testing Checklist**
-   - Key scenarios to test
-   - Expected GA4 events and parameters
+Name new entities following this convention:
 
-Please be specific about the GTM configuration - use the exact parameter formats shown in the templates.`, goals, string(templatesJSON)),
+%s
+
+Please be specific about the GTM configuration - use the exact parameter formats shown in the templates.`, goals, string(templatesJSON), docs[0], docs[1], docs[2]),
 				},
 			},
 		},
@@ -496,6 +441,11 @@ func handleFindGalleryTemplatePrompt(ctx context.Context, req *mcp.GetPromptRequ
 		return nil, fmt.Errorf("templateName is required")
 	}
 
+	docs, err := skillFiles("gtm-safe-edit/references/gallery-templates.md")
+	if err != nil {
+		return nil, err
+	}
+
 	return &mcp.GetPromptResult{
 		Description: "Find and import a Community Template Gallery template",
 		Messages: []*mcp.PromptMessage{
@@ -504,41 +454,29 @@ func handleFindGalleryTemplatePrompt(ctx context.Context, req *mcp.GetPromptRequ
 				Content: &mcp.TextContent{
 					Text: fmt.Sprintf(`I need to find and import the "%s" template from the GTM Community Template Gallery.
 
-**How to find a Community Template:**
+Follow this guide:
 
-1. **Search the web** for: "%s GTM community template github"
-   - Community templates are hosted on GitHub
-   - Look for results from github.com
+%s
 
-2. **Extract the repository info** from the GitHub URL:
-   - URL format: github.com/{owner}/{repository}
-   - Example: github.com/iubenda/gtm-cookie-solution
-     - galleryOwner: "iubenda"
-     - galleryRepository: "gtm-cookie-solution"
+Gallery search: https://tagmanager.google.com/gallery/#/?filter=%s
 
-3. **Browse the Gallery directly** (optional):
-   - Visit: https://tagmanager.google.com/gallery/#/?filter=%s
-   - Click on the template to see details
-
-**Common templates for reference:**
-
-| Template | galleryOwner | galleryRepository |
-|----------|--------------|-------------------|
-| iubenda Cookie Solution | iubenda | gtm-cookie-solution |
-| Cookiebot CMP | Usercentrics | gtm-templates-cookiebot-cmp |
-| Meta Pixel | meta | GoogleTagManager-WebTemplate-For-FacebookPixel |
-
-**Once you have the owner and repository:**
-
-Use the import_gallery_template tool:
-- galleryOwner: [owner from GitHub]
-- galleryRepository: [repository from GitHub]
-
-The tool will return the template type (cvt_{galleryTemplateId}) to use when creating tags.
-
-Please search for the "%s" template and provide the galleryOwner and galleryRepository values.`, templateName, templateName, templateName, templateName),
+Please search for the "%s" template and provide the galleryOwner and galleryRepository values.`, templateName, docs[0], templateName, templateName),
 				},
 			},
 		},
 	}, nil
+}
+
+// skillFiles reads files of the embedded skills, so prompts and skills share one
+// copy of the guidance.
+func skillFiles(paths ...string) ([]string, error) {
+	docs := make([]string, len(paths))
+	for i, path := range paths {
+		data, err := skills.FS.ReadFile(path)
+		if err != nil {
+			return nil, fmt.Errorf("read skill file: %w", err)
+		}
+		docs[i] = string(data)
+	}
+	return docs, nil
 }
