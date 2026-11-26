@@ -16,10 +16,10 @@ For containers serving EEA/UK traffic:
 
 1. A consent management platform (CMP) tag fires before all marketing tags — Consent Initialization trigger, not All Pages.
 2. Default consent state is set (denied for `ad_storage`, `ad_user_data`, `ad_personalization`, `analytics_storage` unless the user's policy says otherwise) before any Google tag fires.
-3. Every tag has appropriate consent settings: check `consentSettings` — advertising tags require `ad_storage`; analytics tags require `analytics_storage`.
+3. Every tag has appropriate consent handling. Google tags have built-in consent checks: in advanced consent mode add no requirement to them; in basic mode check `consentSettings` for `ad_storage` on advertising tags and `analytics_storage` on analytics tags. Other marketing tags always need a requirement.
 4. No marketing pixel fires on a plain Page View trigger without consent checks in a consent-mode container.
 
-Flag as **fail**: marketing tags with `consentStatus: notSet` in a container that has a CMP tag.
+Flag as **fail**: non-Google marketing tags with `consentStatus: notSet` in a container that has a CMP tag.
 
 ## Data layer conventions
 

@@ -19,9 +19,6 @@
 | Create | `create_variable`, `create_trigger`, `create_tag` |
 | Enable built-in variables | `enable_built_in_variables` |
 
-The MCP tag examples may still show `gaawc`. For a new Google tag use `googtag`
-with a `tagId` template parameter.
-
 ## What to deliver
 
 - Tags, triggers and variables with names, types, key settings and firing

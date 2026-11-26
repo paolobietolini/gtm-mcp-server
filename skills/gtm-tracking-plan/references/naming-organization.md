@@ -24,7 +24,7 @@ Rules:
 
 Flag and propose removal (never auto-delete) of:
 
-- Triggers not referenced by any tag's `firingTriggerId` or `blockingTriggerId`.
+- Triggers not referenced by any tag's `firingTriggerId` or `blockingTriggerId`, nor by a trigger group.
 - Variables not referenced by any tag, trigger, or other variable (search for `{{Variable Name}}` in serialized entities).
 - Paused tags older than the last few published versions with no stated reason.
 

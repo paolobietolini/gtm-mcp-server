@@ -335,7 +335,7 @@ Please provide:
 
 1. **Recommended Tags**
    - List each tag needed with:
-     - Tag name (following naming convention: "[Category] - [Action]")
+     - Tag name (following naming convention "<Platform> - <Type> - <Descriptor>", e.g. "GA4 - Event - purchase")
      - Tag type
      - Configuration details
      - Which trigger to use
@@ -525,8 +525,8 @@ func handleFindGalleryTemplatePrompt(ctx context.Context, req *mcp.GetPromptRequ
 | Template | galleryOwner | galleryRepository |
 |----------|--------------|-------------------|
 | iubenda Cookie Solution | iubenda | gtm-cookie-solution |
-| Cookiebot | nicktue-gtm-templates | cookiebot-gtm |
-| Facebook Pixel | nicktue-gtm-templates | facebook-pixel |
+| Cookiebot CMP | Usercentrics | gtm-templates-cookiebot-cmp |
+| Meta Pixel | meta | GoogleTagManager-WebTemplate-For-FacebookPixel |
 
 **Once you have the owner and repository:**
 
@@ -534,7 +534,7 @@ Use the import_gallery_template tool:
 - galleryOwner: [owner from GitHub]
 - galleryRepository: [repository from GitHub]
 
-The tool will return the template type (cvt_{containerId}_{templateId}) to use when creating tags.
+The tool will return the template type (cvt_{galleryTemplateId}) to use when creating tags.
 
 Please search for the "%s" template and provide the galleryOwner and galleryRepository values.`, templateName, templateName, templateName, templateName),
 				},

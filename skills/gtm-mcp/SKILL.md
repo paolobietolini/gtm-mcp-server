@@ -35,8 +35,7 @@ Changes happen in a workspace. Nothing is live until a version is published.
   `firingTriggerIds`, an array of trigger ID strings.
 - GA4 event tags use type `gaawe`: `measurementId` is an empty `tagReference` and
   the value goes in `measurementIdOverride`.
-- For a Google tag use `googtag` with a `tagId` template parameter. The tag
-  examples show the legacy `gaawc` type, which GTM saves as `googtag`.
+- For a Google tag use `googtag` with a `tagId` template parameter.
 - Custom event triggers take `customEventFilterJson`. Click and form triggers
   take `autoEventFilterJson`; the server moves those conditions to `filter`,
   because the GTM API drops them otherwise. Send all conditions in one field: on
@@ -68,7 +67,7 @@ off by default. If a tool is missing, say so instead of working around it.
 | `plan_safe_edit` | Plan a change |
 | `generate_tracking_plan` | Document a workspace |
 | `suggest_ga4_setup` | Recommend a GA4 structure from goals |
-| `find_gallery_template` | Find and import a Gallery template. Verify any example repository it lists |
+| `find_gallery_template` | Find and import a Gallery template |
 
 `gtm://best-practices` and `gtm://best-practices/{topic}` serve the rule
 documents.

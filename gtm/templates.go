@@ -14,13 +14,13 @@ type TagTemplate struct {
 func GetTagTemplates() []TagTemplate {
 	return []TagTemplate{
 		{
-			Name:        "GA4 Configuration",
-			Description: "Google Analytics 4 configuration tag (fires on all pages)",
-			Type:        "gaawc",
+			Name:        "Google Tag (GA4 Configuration)",
+			Description: "Google tag that configures Google Analytics 4 (fires on all pages)",
+			Type:        "googtag",
 			Parameters: `[
-  {"type": "template", "key": "measurementId", "value": "G-XXXXXXXXXX"}
+  {"type": "template", "key": "tagId", "value": "G-XXXXXXXXXX"}
 ]`,
-			Notes: "Use gaawc type for GA4 Config tags. The measurementId should be your GA4 Measurement ID.",
+			Notes: "Use googtag type. tagId is the GA4 Measurement ID or a variable reference holding it.",
 		},
 		{
 			Name:        "GA4 Event (Simple)",
@@ -41,18 +41,18 @@ func GetTagTemplates() []TagTemplate {
   {"type": "tagReference", "key": "measurementId", "value": ""},
   {"type": "template", "key": "measurementIdOverride", "value": "{{GA4 Measurement ID}}"},
   {"type": "template", "key": "eventName", "value": "button_click"},
-  {"type": "list", "key": "eventParameters", "list": [
+  {"type": "list", "key": "eventSettingsTable", "list": [
     {"type": "map", "map": [
-      {"type": "template", "key": "name", "value": "button_id"},
-      {"type": "template", "key": "value", "value": "{{Click ID}}"}
+      {"type": "template", "key": "parameter", "value": "button_id"},
+      {"type": "template", "key": "parameterValue", "value": "{{Click ID}}"}
     ]},
     {"type": "map", "map": [
-      {"type": "template", "key": "name", "value": "button_text"},
-      {"type": "template", "key": "value", "value": "{{Click Text}}"}
+      {"type": "template", "key": "parameter", "value": "button_text"},
+      {"type": "template", "key": "parameterValue", "value": "{{Click Text}}"}
     ]}
   ]}
 ]`,
-			Notes: "Event parameters use name/value pairs inside map structures. Do NOT use the parameter name as the key directly.",
+			Notes: "Event parameters are rows of eventSettingsTable, each a map with parameter and parameterValue. Do NOT use the parameter name as the key directly.",
 		},
 		{
 			Name:        "GA4 Ecommerce Purchase",
@@ -64,10 +64,10 @@ func GetTagTemplates() []TagTemplate {
   {"type": "template", "key": "eventName", "value": "purchase"},
   {"type": "boolean", "key": "sendEcommerceData", "value": "true"},
   {"type": "template", "key": "getEcommerceDataFrom", "value": "dataLayer"},
-  {"type": "list", "key": "eventParameters", "list": [
+  {"type": "list", "key": "eventSettingsTable", "list": [
     {"type": "map", "map": [
-      {"type": "template", "key": "name", "value": "transaction_id"},
-      {"type": "template", "key": "value", "value": "{{DL - Transaction ID}}"}
+      {"type": "template", "key": "parameter", "value": "transaction_id"},
+      {"type": "template", "key": "parameterValue", "value": "{{DL - Transaction ID}}"}
     ]}
   ]}
 ]`,
