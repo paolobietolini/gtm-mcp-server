@@ -1,0 +1,12 @@
+{
+  "name": "gtm-mcp-server",
+  "owner": { "name": "Paolo Bietolini" },
+  "description": "Agent Skills for Google Tag Manager",
+  "plugins": [
+    {
+      "name": "gtm-skills",
+      "source": "./",
+      "description": "Google Tag Manager skills: container audit, safe edits, tracking plans, GA4 and consent, server-side, and GTM MCP Server usage."
+    }
+  ]
+}
