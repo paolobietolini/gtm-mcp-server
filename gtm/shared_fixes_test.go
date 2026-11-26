@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 
 	"google.golang.org/api/googleapi"
@@ -62,5 +63,21 @@ func TestCoreListsFollowEveryPage(t *testing.T) {
 				t.Fatalf("got %d items, err=%v", n, err)
 			}
 		})
+	}
+}
+
+func TestPublishVersionWithoutVersionIsAnError(t *testing.T) {
+	for _, body := range []string{`{}`, `{"compilerError":true}`} {
+		client := versionTestClient(t, func(w http.ResponseWriter, _ *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			fmt.Fprint(w, body)
+		})
+		version, err := client.PublishVersion(context.Background(), "1", "2", "9")
+		if err == nil || version != nil {
+			t.Fatalf("%s: version=%+v err=%v", body, version, err)
+		}
+		if body != `{}` && !strings.Contains(err.Error(), "compiler error") {
+			t.Fatalf("%s: err=%v", body, err)
+		}
 	}
 }
