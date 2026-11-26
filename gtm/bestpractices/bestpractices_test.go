@@ -1,6 +1,7 @@
 package bestpractices
 
 import (
+	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -31,6 +32,27 @@ func TestGetReturnsNonEmptyDocs(t *testing.T) {
 		}
 		if !strings.HasPrefix(strings.TrimSpace(doc), "#") {
 			t.Errorf("Get(%q) doc does not start with a markdown heading", topic)
+		}
+	}
+}
+
+// Every topic except the resource index is a skill file, kept in one place.
+func TestTopicsComeFromSkills(t *testing.T) {
+	for _, topic := range Topics() {
+		if topic == "index" {
+			continue
+		}
+		path, ok := skillDocs[topic]
+		if !ok {
+			t.Errorf("topic %q has no skill file", topic)
+			continue
+		}
+		want, err := os.ReadFile("../../skills/" + path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got, err := Get(topic); err != nil || got != string(want) {
+			t.Errorf("Get(%q) does not return skills/%s: %v", topic, path, err)
 		}
 	}
 }

@@ -15,8 +15,7 @@ How to drive the tools. For what to do with them, use the matching skill:
 | GA4 and consent mode | gtm-ga4-consent |
 | Server containers | gtm-server-side |
 
-If those skills are not installed, read the server's `gtm://best-practices`
-resource and the topics it lists.
+If those skills are not installed, read the server's best-practices resources.
 
 ## Discover IDs
 
@@ -67,6 +66,3 @@ off by default. If a tool is missing, say so instead of working around it.
 | `generate_tracking_plan` | Document a workspace |
 | `suggest_ga4_setup` | Recommend a GA4 structure from goals |
 | `find_gallery_template` | Find and import a Gallery template |
-
-`gtm://best-practices` and `gtm://best-practices/{topic}` serve the rule
-documents.

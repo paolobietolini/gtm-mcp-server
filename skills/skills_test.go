@@ -1,11 +1,11 @@
-// Package skills_test validates the Agent Skills in this directory. The skills
-// are plain files; this package contains only tests.
+// Package skills_test validates the Agent Skills in this directory.
 package skills_test
 
 import (
 	"bytes"
 	"context"
 	"flag"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -15,29 +15,23 @@ import (
 	"unicode/utf8"
 
 	"gtm-mcp-server/gtm"
+	"gtm-mcp-server/skills"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-var update = flag.Bool("update", false, "rewrite generated skill references from their sources")
+var update = flag.Bool("update", false, "rewrite copied skill references from their canonical files")
 
-const (
-	// sharedDir holds sources used only by skills. It is not a skill.
-	sharedDir     = "shared"
-	serverDocsDir = "../gtm/bestpractices/docs"
-)
-
-// generated maps each source file to the skills that carry a copy of it in
+// copies maps each canonical reference file to the other skills that carry it in
 // references/. Each skill folder must work on its own (zip upload, copy to a
-// skills directory), so shared content is duplicated and checked here.
-var generated = map[string][]string{
-	serverDocsDir + "/naming-organization.md": {"gtm-container-audit", "gtm-safe-edit", "gtm-tracking-plan"},
-	serverDocsDir + "/safe-edit-workflow.md":  {"gtm-safe-edit"},
-	serverDocsDir + "/ga4-consent.md":         {"gtm-container-audit", "gtm-ga4-consent", "gtm-tracking-plan"},
-	serverDocsDir + "/server-side.md":         {"gtm-container-audit", "gtm-server-side"},
-	serverDocsDir + "/tool-input-formats.md":  {"gtm-mcp"},
-	sharedDir + "/container-export.md": {
-		"gtm-container-audit", "gtm-ga4-consent", "gtm-safe-edit", "gtm-server-side", "gtm-tracking-plan",
+// skills directory, skill:// resources), so shared content is duplicated and
+// checked here. The server reads only the canonical file.
+var copies = map[string][]string{
+	"gtm-safe-edit/references/naming-organization.md": {"gtm-container-audit", "gtm-tracking-plan"},
+	"gtm-ga4-consent/references/ga4-consent.md":       {"gtm-container-audit", "gtm-tracking-plan"},
+	"gtm-server-side/references/server-side.md":       {"gtm-container-audit"},
+	"gtm-container-audit/references/container-export.md": {
+		"gtm-ga4-consent", "gtm-safe-edit", "gtm-server-side", "gtm-tracking-plan",
 	},
 }
 
@@ -49,7 +43,7 @@ func skillNames(t *testing.T) []string {
 	}
 	var names []string
 	for _, e := range entries {
-		if e.IsDir() && e.Name() != sharedDir {
+		if e.IsDir() {
 			names = append(names, e.Name())
 		}
 	}
@@ -81,17 +75,21 @@ func read(t *testing.T, path string) string {
 }
 
 // Declared first so that -update writes the copies before other tests read them.
-func TestGeneratedReferencesMatchSources(t *testing.T) {
-	copies := map[string]bool{}
-	for source, skills := range generated {
+func TestCopiedReferencesMatchCanonicalFiles(t *testing.T) {
+	declared := map[string]bool{}
+	canonical := map[string]string{}
+	for source, others := range copies {
+		name := filepath.Base(source)
+		declared[filepath.FromSlash(source)] = true
+		canonical[name] = source
 		want, err := os.ReadFile(source)
 		if err != nil {
-			t.Errorf("source: %v", err)
+			t.Errorf("canonical file: %v", err)
 			continue
 		}
-		for _, skill := range skills {
-			dst := filepath.Join(skill, "references", filepath.Base(source))
-			copies[dst] = true
+		for _, skill := range others {
+			dst := filepath.Join(skill, "references", name)
+			declared[dst] = true
 			if *update {
 				if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 					t.Fatal(err)
@@ -102,32 +100,85 @@ func TestGeneratedReferencesMatchSources(t *testing.T) {
 			}
 			got, err := os.ReadFile(dst)
 			if err != nil || !bytes.Equal(got, want) {
-				t.Errorf("%s differs from %s; edit the source, then run: go test ./skills -update", dst, source)
+				t.Errorf("%s differs from %s; edit the latter, then run: go test ./skills -update", dst, source)
 			}
 		}
 	}
 
-	// A server doc added later must reach a skill. The index lists server
-	// resource URIs and has no use outside the server.
-	docs, err := filepath.Glob(serverDocsDir + "/*.md")
-	if err != nil || len(docs) == 0 {
-		t.Fatalf("no server docs found: %v", err)
+	// A file name used by two skills must be declared, or the two could drift.
+	files, err := filepath.Glob(filepath.Join("*", "references", "*"))
+	if err != nil || len(files) == 0 {
+		t.Fatalf("no reference files found: %v", err)
 	}
-	for _, doc := range docs {
-		if filepath.Base(doc) != "index.md" && len(generated[filepath.ToSlash(doc)]) == 0 {
-			t.Errorf("%s is not copied into any skill; add it to generated", doc)
+	seen := map[string][]string{}
+	for _, file := range files {
+		seen[filepath.Base(file)] = append(seen[filepath.Base(file)], file)
+	}
+	for name, paths := range seen {
+		if len(paths) < 2 && canonical[name] == "" {
+			continue
+		}
+		for _, path := range paths {
+			if !declared[path] {
+				t.Errorf("%s shares its name with another reference; list it in copies", path)
+			}
 		}
 	}
+}
 
-	// A hand-made file must not shadow a generated name, where it could drift.
-	for source := range generated {
-		matches, err := filepath.Glob(filepath.Join("*", "references", filepath.Base(source)))
+// The server serves the embedded files as they are, so they must be exactly what
+// a user installs from the folders.
+func TestEmbeddedSkillsMatchFolders(t *testing.T) {
+	if *update {
+		t.Skip("embedded files predate this update; run go test again")
+	}
+	roots, err := fs.ReadDir(skills.FS, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var embedded []string
+	for _, e := range roots {
+		embedded = append(embedded, e.Name())
+	}
+	names := skillNames(t)
+	if !slices.Equal(embedded, names) {
+		t.Fatalf("embedded skills %v, folders %v", embedded, names)
+	}
+
+	// Per-skill limits of the MCP skills extension (SEP-2640).
+	const maxFiles, maxBytes = 512, 16 << 20
+	for _, name := range names {
+		var files, size int
+		err := filepath.WalkDir(name, func(path string, d os.DirEntry, err error) error {
+			if err != nil || d.IsDir() {
+				return err
+			}
+			want := read(t, path)
+			got, err := fs.ReadFile(skills.FS, filepath.ToSlash(path))
+			if err != nil || string(got) != want {
+				t.Errorf("%s is not embedded as it is on disk: %v", path, err)
+			}
+			files++
+			size += len(want)
+			return nil
+		})
 		if err != nil {
 			t.Fatal(err)
 		}
-		for _, m := range matches {
-			if !copies[m] {
-				t.Errorf("%s is not listed in generated", m)
+		if files > maxFiles || size > maxBytes {
+			t.Errorf("%s has %d files and %d bytes, over %d files or %d bytes", name, files, size, maxFiles, maxBytes)
+		}
+	}
+}
+
+// A skill may be read from a folder, a ZIP or skill://<name>/, so it can only
+// point at its own files, by relative path.
+func TestSkillsAreSelfContained(t *testing.T) {
+	for _, file := range markdownFiles(t, ".") {
+		doc := read(t, file)
+		for _, banned := range []string{"gtm://", "skill://", "../", "](/"} {
+			if strings.Contains(doc, banned) {
+				t.Errorf("%s contains %q; use relative references to files in the same skill", file, banned)
 			}
 		}
 	}
