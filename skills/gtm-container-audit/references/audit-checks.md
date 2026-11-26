@@ -38,7 +38,7 @@ Propose removal. Never delete during an audit.
 - The CMP fires on Consent Initialization.
 - Each other marketing tag has a consent requirement. Google tags have built-in
   checks: an added requirement is needed only if the site must block them until
-  consent (basic mode). This refines the checklist in ga4-consent.md.
+  consent (basic mode).
 - A tag blocked on first page load also needs a trigger on the consent event.
 
 ## Security and privacy

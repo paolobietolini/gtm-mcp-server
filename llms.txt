@@ -235,15 +235,15 @@ Read the relevant best-practices document before creating or editing entities. K
 
 GA4 tags use a specific nested parameter structure. Key points:
 
-- Tag type `gaawc` = GA4 Configuration, `gaawe` = GA4 Event
+- Tag type `googtag` = Google tag (GA4 configuration, ID in `tagId`), `gaawe` = GA4 Event
 - `measurementId` must be an empty `tagReference` type; use `measurementIdOverride` for the actual value
-- Event parameters are nested: `list` → `map` → `template` with `name`/`value` keys
+- Event parameters are rows of `eventSettingsTable`: `list` → `map` → `template` with `parameter`/`parameterValue` keys
 - Ecommerce tags need `sendEcommerceData: true` and `getEcommerceDataFrom: dataLayer`
 
 Always call `get_tag_templates` for exact format — do not guess the parameter structure.
 
 ## Known Limitations
 
-- `autoEventFilter` on click/form triggers is silently dropped by the Google Tag Manager API (use the GTM web interface for those conditions)
+- The Google Tag Manager API drops `autoEventFilter` on click/form triggers, so the server moves those conditions to `filter`. Send all conditions in one field: on create, if `filterJson` is also set, the auto-event conditions are lost
 - OAuth tokens are kept in memory unless the operator sets `TOKEN_STORE_PATH`; without it, server restarts require re-authentication
 - Rate limits per client IP: 10 req/s for `/authorize`, `/oauth/callback`, and `/token`; 2 req/s for `/register`; standard Google API quotas for GTM operations

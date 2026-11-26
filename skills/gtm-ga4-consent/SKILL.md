@@ -38,7 +38,7 @@ pings (advanced) is a legal and business decision: explain both and ask.
 
 | Mode | Google tags | Other marketing tags |
 |------|-------------|----------------------|
-| Advanced | Rely on built-in consent checks; add no consent requirement. The checklist's per-tag requirement does not apply to them | Require consent |
+| Advanced | Rely on built-in consent checks; add no consent requirement | Require consent |
 | Basic | Require additional consent | Require consent |
 
 A tag blocked for missing consent is not replayed when the visitor accepts. Also
