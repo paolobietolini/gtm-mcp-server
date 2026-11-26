@@ -35,6 +35,7 @@ their own Google identity and GTM permissions) or with a Google service account
 - [Tools](#tools)
 - [Safety model](#safety-model)
 - [Resources](#resources) and [Prompts](#prompts)
+- [Skills](#skills)
 - [Configuration reference](#configuration-reference)
 - [Releases](#releases)
 - [Development](#development)
@@ -1022,6 +1023,69 @@ consent, server-side containers, and detailed tool input formats.
 Prompts prepare context and instructions for the model. They do not bypass tool
 authentication or mutation safeguards.
 
+## Skills
+
+[`skills/`](skills) holds [Agent Skills](https://agentskills.io) with the GTM
+know-how, usable without this server. Each one works with the MCP tools or with
+a container export (GTM > Admin > Export Container) pasted or attached in a chat.
+
+| Skill | Use it for |
+|---|---|
+| [`gtm-container-audit`](skills/gtm-container-audit/SKILL.md) | Audit and scored best-practices review |
+| [`gtm-safe-edit`](skills/gtm-safe-edit/SKILL.md) | Planning, applying, publishing and rolling back changes |
+| [`gtm-tracking-plan`](skills/gtm-tracking-plan/SKILL.md) | Tracking plans and data layer specs |
+| [`gtm-ga4-consent`](skills/gtm-ga4-consent/SKILL.md) | GA4 setup and debugging, consent mode v2 |
+| [`gtm-server-side`](skills/gtm-server-side/SKILL.md) | Server containers, data flow, transformations |
+| [`gtm-mcp`](skills/gtm-mcp/SKILL.md) | Operating this server's tools; only useful with the server |
+
+Each skill folder is self-contained: install all of them or only some.
+
+### Claude Code
+
+Install them as a plugin from this repository:
+
+```text
+/plugin marketplace add paolobietolini/gtm-mcp-server
+/plugin install gtm-skills@gtm-mcp-server
+```
+
+Plugin skills are namespaced, for example `/gtm-skills:gtm-safe-edit`. The
+plugin install copies the whole repository into Claude Code's plugin cache.
+
+Alternatively, from a clone, copy the folders into your personal skills
+directory (or into `.claude/skills/` of a project):
+
+```bash
+mkdir -p ~/.claude/skills
+cp -r skills/gtm-* ~/.claude/skills/
+```
+
+### claude.ai
+
+Code execution and file creation must be enabled (Settings > Capabilities; on
+Team and Enterprise plans an owner controls this and can turn off custom
+skills). Build one ZIP per skill, with the skill folder at the ZIP root:
+
+```bash
+mkdir -p dist
+(cd skills && for s in gtm-*; do zip -qr "../dist/$s.zip" "$s"; done)
+```
+
+Then open **Customize > Skills**, click **+**, choose **Create skill** >
+**Upload a skill**, upload a ZIP, and turn the skill on.
+
+### Other clients
+
+Copy the `skills/gtm-*` folders into the directory your client reads:
+
+| Client | Project | Personal |
+|---|---|---|
+| [Codex](https://learn.chatgpt.com/docs/build-skills) | `.agents/skills/` | `~/.agents/skills/` |
+| [VS Code / GitHub Copilot](https://code.visualstudio.com/docs/copilot/customization/agent-skills) | `.github/skills/` | `~/.copilot/skills/` |
+
+For other clients that support the standard, see their documentation and the
+[Agent Skills site](https://agentskills.io).
+
 ## Configuration reference
 
 All settings are environment variables, optionally loaded from `.env` and
@@ -1162,7 +1226,20 @@ estimate, and largest definitions. The default GTM tool surface serializes to
 new parity work does not silently consume unlimited model context. The `all`
 group exposes 94 GTM tools and serializes to 115,748 bytes.
 
-Pull requests run `govulncheck`, `gosec`, Gitleaks, Trivy, `staticcheck`, and
+### Editing skills and best-practice documents
+
+The rule documents in `gtm/bestpractices/docs/` are the source for both the
+server and the skills. Skills carry copies in their `references/` folders, as
+does `skills/shared/` content. Edit the source, then regenerate:
+
+```bash
+go test ./skills -update
+```
+
+`go test ./skills` fails if a copy differs, if skill frontmatter or links are
+invalid, or if a skill names a tool the server does not register.
+
+Pull requests run `go test`, `govulncheck`, `gosec`, Gitleaks, Trivy, `staticcheck`, and
 CodeQL. Request-level GTM tests use local fake Google endpoints. Mutating live
 tests must use a disposable container and clean up their entities.
 
@@ -1176,8 +1253,7 @@ For a deep dive into the Google Tag Manager MCP server, read the
 
 - [`llms.txt`](llms.txt) is embedded in the binary and served by every
   instance at `<BASE_URL>/llms.txt`.
-- [`skills/gtm-mcp/gtm-mcp.md`](skills/gtm-mcp/gtm-mcp.md) contains a Claude
-  Code skill with workflow guidance.
+- [`skills/`](skills) contains the [Agent Skills](#skills).
 - [`examples/gtm_agent.py`](examples/gtm_agent.py) demonstrates a programmatic
   MCP client.
 - [Google Tag Manager API v2 reference](https://developers.google.com/tag-platform/tag-manager/api/reference/rest)
