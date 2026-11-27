@@ -38,6 +38,10 @@ type options struct {
 	name, notes                   string
 	output                        string
 	confirm, dryRun               bool
+	// entities asks workspaces status for full entities.
+	entities bool
+	// latest and live select a version for versions get.
+	latest, live bool
 }
 
 // Run executes one command and returns the process exit code.

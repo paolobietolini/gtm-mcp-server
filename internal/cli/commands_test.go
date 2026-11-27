@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
@@ -129,6 +130,102 @@ func TestVersionsCreateWithoutChanges(t *testing.T) {
 	if message != "No changes in workspace to create version from" || len(h.sent()) != 1 {
 		t.Fatalf("message=%q requests=%+v", message, h.sent())
 	}
+}
+
+const workspaceStatus = `{
+  "workspaceChange": [
+    {"changeStatus": "updated", "tag": {"tagId": "4", "name": "GA4 - purchase", "type": "gaawe", "fingerprint": "f2",
+      "parameter": [{"type": "template", "key": "eventName", "value": "purchase"}]}},
+    {"changeStatus": "added", "trigger": {"triggerId": "9", "name": "CE - purchase", "type": "customEvent"}},
+    {"changeStatus": "deleted", "variable": {"variableId": "5", "name": "DLV - old", "type": "v"}}
+  ],
+  "mergeConflict": [
+    {"entityInWorkspace": {"tag": {"tagId": "6", "name": "HTML - banner"}},
+     "entityInBaseVersion": {"tag": {"tagId": "6", "name": "HTML - banner v2"}}},
+    {"entityInBaseVersion": {"variable": {"variableId": "7", "name": "Const"}}}
+  ]
+}`
+
+func TestWorkspaceStatusListsChanges(t *testing.T) {
+	h := newHarness(t).withWorkspace().on("GET "+ws+"/status", workspaceStatus)
+
+	got := h.ok("workspaces", "status")
+	changes, _ := at(got, "status", "changes").([]any)
+	if len(changes) != 3 || at(got, "status", "changeCount") != float64(3) {
+		t.Fatalf("changes: %v", got)
+	}
+	want := map[string]any{"type": "tag", "id": "4", "name": "GA4 - purchase", "changeStatus": "updated"}
+	if !reflect.DeepEqual(changes[0], want) {
+		t.Fatalf("change without --entities: %v", changes[0])
+	}
+	if at(changes[1], "changeStatus") != "added" || at(changes[2], "type") != "variable" || at(changes[2], "changeStatus") != "deleted" {
+		t.Fatalf("changes: %v", changes)
+	}
+	conflicts, _ := at(got, "status", "conflicts").([]any)
+	// A conflict whose workspace side was deleted is named from the base version.
+	if len(conflicts) != 2 || at(conflicts[0], "name") != "HTML - banner" ||
+		at(conflicts[1], "type") != "variable" || at(conflicts[1], "id") != "7" || at(conflicts[1], "baseEntity") != nil {
+		t.Fatalf("conflicts: %v", conflicts)
+	}
+
+	got = h.ok("workspaces", "status", "--entities")
+	changes, _ = at(got, "status", "changes").([]any)
+	params, _ := at(changes[0], "entity", "parameter").([]any)
+	if len(params) != 1 || at(params[0], "value") != "purchase" || at(changes[0], "entity", "fingerprint") != "f2" {
+		t.Fatalf("change with --entities: %v", changes[0])
+	}
+	conflicts, _ = at(got, "status", "conflicts").([]any)
+	if at(conflicts[0], "entity", "name") != "HTML - banner" || at(conflicts[0], "baseEntity", "name") != "HTML - banner v2" ||
+		at(conflicts[1], "entity") != nil || at(conflicts[1], "baseEntity", "name") != "Const" {
+		t.Fatalf("conflicts with --entities: %v", conflicts)
+	}
+}
+
+func TestWorkspaceStatusWithoutChangesHasEmptyLists(t *testing.T) {
+	h := newHarness(t).withWorkspace().on("GET "+ws+"/status", `{}`)
+	got := h.run("workspaces", "status")
+	if got.exit != 0 || !strings.Contains(got.stdout, `"changes": []`) || !strings.Contains(got.stdout, `"conflicts": []`) {
+		t.Fatalf("%+v", got)
+	}
+}
+
+func TestVersionsGet(t *testing.T) {
+	const container = "accounts/1/containers/2"
+	version := `{"containerVersionId":"8","name":"Release","tag":[{"tagId":"4","name":"GA4 - purchase"}]}`
+	h := newHarness(t).withWorkspace().
+		on("GET "+container+"/versions/8", version).
+		on("GET "+container+"/versions:live", version).
+		on("GET "+container+"/version_headers:latest", `{"containerVersionId":"8"}`)
+
+	for _, args := range [][]string{{"--version-id", "8"}, {"--live"}, {"--latest"}} {
+		got := h.ok(append([]string{"versions", "get"}, args...)...)
+		tags, _ := at(got, "version", "tag").([]any)
+		if at(got, "version", "containerVersionId") != "8" || len(tags) != 1 || at(tags[0], "name") != "GA4 - purchase" {
+			t.Fatalf("versions get %v: %v", args, got)
+		}
+	}
+	var paths []string
+	for _, r := range h.sent() {
+		paths = append(paths, r.method+" "+r.path)
+	}
+	want := []string{
+		"GET " + container + "/versions/8",
+		"GET " + container + "/versions:live",
+		"GET " + container + "/version_headers:latest",
+		"GET " + container + "/versions/8",
+	}
+	if !reflect.DeepEqual(paths, want) {
+		t.Fatalf("requests: %v", paths)
+	}
+}
+
+func TestVersionsGetNeedsOneVersion(t *testing.T) {
+	h := newHarness(t).withWorkspace()
+	h.fails(2, "usage", "versions", "get")
+	h.fails(2, "usage", "versions", "get", "--latest", "--live")
+	h.fails(2, "usage", "versions", "get", "--version-id", "8", "--latest")
+	h.fails(2, "usage", "versions", "get", "--version-id", "8/../9")
+	h.noRequests()
 }
 
 func TestDestructiveCommandsRequireConfirm(t *testing.T) {

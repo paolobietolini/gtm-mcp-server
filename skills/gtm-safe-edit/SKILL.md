@@ -44,12 +44,12 @@ Show the plan before changing anything. It contains, in order:
 
 | Step | Operation | MCP tool | `gtm-cli` | GTM interface |
 |------|-----------|----------|-----------|---------------|
-| Rollback target | Get the live version | `get_live_version` | not available | Versions |
+| Rollback target | Get the live version | `get_live_version` | `gtm-cli versions get --live` | Versions |
 | Isolate | Create a workspace | `create_workspace` | not available | Workspace menu |
 | Formats | Get parameter examples | `get_tag_templates`, `get_trigger_templates` | `gtm-cli tags get`, `gtm-cli triggers get` on a similar entity | not needed |
 | Change | Create or update | `create_variable`, `create_trigger`, `create_tag`, `update_tag` | `gtm-cli variables create`, `gtm-cli triggers create`, `gtm-cli tags create`, `gtm-cli tags update` | Variables, Triggers, Tags |
 | Compile check | Preview the workspace | `quick_preview_workspace` | not available | Preview |
-| Review | Get workspace status | `get_workspace_status` | `gtm-cli workspaces status` | Workspace Changes |
+| Review | List workspace changes | `get_workspace_status` | `gtm-cli workspaces status` | Workspace Changes |
 | Version | Create a version | `create_version` | `gtm-cli versions create` | Submit > Create Version |
 | Publish | Publish the version | `publish_version` | `gtm-cli versions publish` | Publish |
 

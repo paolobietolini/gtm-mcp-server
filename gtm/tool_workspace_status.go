@@ -32,6 +32,6 @@ func registerGetWorkspaceStatus(server *mcp.Server) {
 
 	mcp.AddTool(server, &mcp.Tool{
 		Name:        "get_workspace_status",
-		Description: "Check if a workspace has pending changes or merge conflicts before versioning.",
+		Description: "List a workspace's pending changes and merge conflicts before versioning.",
 	}, handler)
 }
