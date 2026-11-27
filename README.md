@@ -163,6 +163,7 @@ gtm-cli tags delete --tag-id 12 --confirm
 gtm-cli workspaces status
 gtm-cli versions create --name "Add sign_up event" --notes "GA4 sign_up on form submit"
 gtm-cli versions publish --version-id 9 --confirm
+gtm-cli versions get --live
 ```
 
 `gtm-cli help` lists every command and `gtm-cli <noun> <verb> --help` its flags. A command
@@ -194,6 +195,37 @@ Parameter and condition shapes are in
 [`gtm-cli` skill](skills/gtm-cli/SKILL.md) lists the keys for each entity.
 Unknown keys are rejected. On update, tags keep every omitted key; triggers and
 variables require `name` and `type` and keep other omitted keys.
+
+### Review a workspace before versioning
+
+`gtm-cli workspaces status` lists each entity the workspace adds, updates or
+deletes, and each merge conflict:
+
+```json
+{"status": {"hasChanges": true, "hasConflicts": false, "changeCount": 1, "conflictCount": 0,
+  "changes": [{"type": "tag", "id": "4", "name": "GA4 - purchase", "changeStatus": "updated"}],
+  "conflicts": []}}
+```
+
+`--entities` adds each entity in full, in the shape of the collections that
+`gtm-cli versions get --latest` returns, so the two can be compared field by
+field. [`examples/workspace-diff.sh`](examples/workspace-diff.sh) pairs them and
+runs `diff -u` on each changed entity:
+
+```text
+--- tag/4 "GA4 - purchase" in the latest version
++++ tag/4 "GA4 - purchase" in the workspace (updated)
+@@ -14,7 +14,7 @@
+     {
+       "key": "measurementIdOverride",
+       "type": "template",
+-      "value": "G-OLD"
++      "value": "G-NEW"
+     }
+```
+
+The comparison is with the latest version, which the workspace is based on, not
+with the live version. Update an out-of-date workspace first.
 
 ### Output and exit codes
 
@@ -967,7 +999,7 @@ Always available, regardless of `GTM_TOOL_GROUPS`.
 | `update_workspace` | Update selected workspace fields |
 | `delete_workspace` | Delete a workspace; requires `confirm: true` |
 | `quick_preview_workspace` | Compile an ephemeral preview without saving or publishing |
-| `get_workspace_status` | Show pending changes and merge conflicts |
+| `get_workspace_status` | List the entities added, updated or deleted, and merge conflicts |
 | `bulk_update_workspace` | Apply multiple entity changes; requires `confirm: true`. *Opt-in: `workspace-admin`* |
 | `resolve_workspace_conflict` | Replace a conflict with a resolved entity; requires `confirm: true`. *Opt-in: `workspace-admin`* |
 | `sync_workspace` | Synchronize with the latest container version; requires `confirm: true`. *Opt-in: `workspace-admin`* |
@@ -1431,6 +1463,8 @@ For a deep dive into the Google Tag Manager MCP server, read the
 - [`skills/`](skills) contains the [Agent Skills](#skills).
 - [`examples/gtm_agent.py`](examples/gtm_agent.py) demonstrates a programmatic
   MCP client.
+- [`examples/workspace-diff.sh`](examples/workspace-diff.sh) diffs a workspace
+  against the latest version with `gtm-cli`, `jq` and `diff`.
 - [Google Tag Manager API v2 reference](https://developers.google.com/tag-platform/tag-manager/api/reference/rest)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 

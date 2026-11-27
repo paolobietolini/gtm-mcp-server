@@ -130,9 +130,16 @@ func buildCommands() []*command {
 			},
 		},
 		{
-			noun: "workspaces", verb: "status", summary: "Show pending changes and conflicts", level: levelWorkspace,
+			noun: "workspaces", verb: "status", summary: "List pending changes and conflicts", level: levelWorkspace,
+			flags: func(fs *flag.FlagSet, opts *options) {
+				fs.BoolVar(&opts.entities, "entities", false, "include each changed entity in full, to compare with versions get")
+			},
 			run: func(ctx context.Context, c *gtm.Client, in *invocation) (any, error) {
-				status, err := c.GetWorkspaceStatus(ctx, in.account, in.container, in.workspace)
+				get := c.GetWorkspaceStatus
+				if in.entities {
+					get = c.GetWorkspaceStatusWithEntities
+				}
+				status, err := get(ctx, in.account, in.container, in.workspace)
 				if err != nil {
 					return nil, err
 				}
@@ -347,6 +354,53 @@ func variableCommands() []*command {
 
 func versionCommands() []*command {
 	return []*command{
+		{
+			noun: "versions", verb: "get", summary: "Show a version and its entities", level: levelContainer,
+			flags: func(fs *flag.FlagSet, opts *options) {
+				fs.StringVar(&opts.id, "version-id", "", "ID of the version")
+				fs.BoolVar(&opts.latest, "latest", false, "the latest version, which workspaces are based on")
+				fs.BoolVar(&opts.live, "live", false, "the published version")
+			},
+			prepare: func(in *invocation) error {
+				selected := 0
+				for _, set := range []bool{in.id != "", in.latest, in.live} {
+					if set {
+						selected++
+					}
+				}
+				if selected != 1 {
+					return usageError("pass exactly one of --version-id, --latest or --live")
+				}
+				if in.id != "" && !idRe.MatchString(in.id) {
+					return usageError("--version-id must be a numeric ID, got %q", in.id)
+				}
+				return nil
+			},
+			run: func(ctx context.Context, c *gtm.Client, in *invocation) (any, error) {
+				var version *gtm.ContainerVersionDetails
+				var err error
+				switch {
+				case in.live:
+					version, err = c.GetLiveContainerVersion(ctx, in.account, in.container)
+				case in.latest:
+					var header gtm.VersionInfo
+					header, err = c.LatestVersionHeader(ctx, gtm.BuildContainerPath(in.account, in.container))
+					// The ID goes into a URL path, like the IDs from flags.
+					if err == nil && !idRe.MatchString(header.VersionID) {
+						err = fmt.Errorf("container %s has no usable latest version (ID %q)", in.container, header.VersionID)
+					}
+					if err == nil {
+						version, err = c.GetContainerVersion(ctx, in.account, in.container, header.VersionID)
+					}
+				default:
+					version, err = c.GetContainerVersion(ctx, in.account, in.container, in.id)
+				}
+				if err != nil {
+					return nil, err
+				}
+				return gtm.GetVersionOutput{Version: *version}, nil
+			},
+		},
 		{
 			noun: "versions", verb: "create", summary: "Create a version from workspace changes", level: levelWorkspace, writes: true,
 			flags: func(fs *flag.FlagSet, opts *options) {
